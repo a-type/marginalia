@@ -1,0 +1,108 @@
+.panel {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 auto 1.25rem;
+  max-width: 48rem;
+  border: 1px solid #ded2c1;
+  border-radius: 0.25rem;
+  background: #fffdf8;
+  padding: 1rem 1.25rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  box-shadow: 0 0.75rem 2rem rgba(67, 47, 26, 0.06);
+}
+
+.form,
+.intro,
+.identity,
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.form {
+  flex: 1;
+  gap: 0.75rem;
+}
+
+.intro,
+.identity {
+  gap: 0.2rem;
+}
+
+.intro span,
+.did,
+.field span,
+.status {
+  color: #725e4c;
+  font-size: 0.75rem;
+}
+
+.controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
+}
+
+.field {
+  flex: 1;
+  gap: 0.3rem;
+}
+
+.field input {
+  width: 100%;
+  border: 1px solid #bfae99;
+  border-radius: 0.25rem;
+  background: white;
+  padding: 0.6rem 0.7rem;
+  color: #2d241d;
+  font: inherit;
+}
+
+.field input:focus {
+  outline: 2px solid #1680d8;
+  outline-offset: 1px;
+}
+
+.primaryButton,
+.secondaryButton {
+  border-radius: 0.25rem;
+  padding: 0.65rem 0.9rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: 1px solid #0875be;
+  background: #1680d8;
+  color: white;
+}
+
+.secondaryButton {
+  border: 1px solid #bfae99;
+  background: transparent;
+  color: #725e4c;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.error {
+  width: 100%;
+  margin: 0;
+  color: #a52828;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 560px) {
+  .panel,
+  .controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

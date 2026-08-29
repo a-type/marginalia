@@ -7,7 +7,6 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import babel from '@rolldown/plugin-babel'
 import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
-import neon from './neon-vite-plugin.ts'
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
@@ -19,11 +18,13 @@ const config = defineConfig({
       strategy: ['url', 'baseLocale'],
     }),
     nitro({ rollupConfig: { external: [/^@sentry\//] } }),
-    neon,
     tanstackStart(),
     viteReact(),
     babel({ presets: [reactCompilerPreset()] }),
   ],
+  server: {
+    port: 7654,
+  },
 })
 
 export default config

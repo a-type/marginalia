@@ -5,9 +5,12 @@ Welcome to your new TanStack Start app!
 To run this application:
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
+
+Copy `.env.example` to `.env` and set `SESSION_PASSWORD`. Local ATProto OAuth expects the app at
+`http://127.0.0.1:3000`; open that address rather than `localhost`.
 
 # Building For Production
 
@@ -41,9 +44,11 @@ Railpack runs the project's build script and starts the generated Nitro server
 with `node .output/server/index.mjs`. The server handles SSR, server functions,
 API routes, and static assets.
 
-Need a database? Add one from the Railway project canvas, then connect it to the
-app with a Railway reference variable. The variable name and value depend on the
-database service you choose.
+For ATProto login, set `APP_URL` to the generated public HTTPS origin and set a
+unique `SESSION_PASSWORD` of at least 32 characters. The app exposes its OAuth
+client metadata at `/oauth-client-metadata.json` and persists accounts, OAuth
+state, and OAuth sessions in SQLite. Set `DATABASE_PATH` to a persistent volume
+path when deploying to Railway.
 
 # Paraglide i18n
 
@@ -52,15 +57,6 @@ This add-on wires up ParaglideJS for localized routing and message formatting.
 - Messages live in `project.inlang/messages`.
 - URLs are localized through the Paraglide Vite plugin and router `rewrite` hooks.
 - Run the dev server or build to regenerate the `src/paraglide` outputs.
-
-## Setting up Neon
-
-When running the `dev` command, `vite-plugin-neon-new` will identify there is not a database setup. It will then create and seed a claimable database.
-
-It is the same process as [Neon Launchpad](https://neon.new).
-
-> [!IMPORTANT]
-> Claimable databases expire in 72 hours.
 
 ## Routing
 

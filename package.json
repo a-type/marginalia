@@ -6,7 +6,7 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "vite dev",
     "generate-routes": "tsr generate",
     "build": "vite build",
     "preview": "vite preview",
@@ -16,15 +16,14 @@
     "start": "node .output/server/index.mjs"
   },
   "dependencies": {
-    "@a-type/ui": "^6.1.33",
+    "@a-type/ui": "^6.1.38",
     "@arbor-css/core": "^0.0.147",
     "@arbor-css/postcss": "^0.0.147",
-    "@atproto/common-web": "^0.5.9",
-    "@atproto/lex": "^0.3.6",
-    "@atproto/oauth-client-node": "^0.5.3",
-    "@atproto/syntax": "^0.7.4",
-    "@atproto/tap": "^0.4.4",
-    "@neondatabase/serverless": "^1.0.2",
+    "@atproto/common-web": "^0.5.10",
+    "@atproto/lex": "^0.3.8",
+    "@atproto/oauth-client-node": "^0.5.4",
+    "@atproto/syntax": "^0.7.5",
+    "@atproto/tap": "^0.4.6",
     "@tanstack/react-devtools": "latest",
     "@tanstack/react-query": "latest",
     "@tanstack/react-query-devtools": "latest",
@@ -32,31 +31,27 @@
     "@tanstack/react-router-devtools": "latest",
     "@tanstack/react-router-ssr-query": "latest",
     "@tanstack/react-start": "latest",
+    "better-sqlite3": "^13.0.3",
+    "kysely": "^0.29.5",
     "nitro": "3.0.260610-beta",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "vite-plugin-neon-new": "^0.8.0"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@inlang/paraglide-js": "^2.13.1",
+    "@inlang/paraglide-js": "^2.25.0",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tanstack/devtools-vite": "latest",
     "@tanstack/eslint-config": "latest",
-    "@tanstack/router-cli": "^1.132.0",
+    "@tanstack/router-cli": "^1.167.33",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^22.10.2",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
-    "@vitejs/plugin-react": "^6.0.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^9.20.0",
-    "prettier": "^3.8.1",
+    "prettier": "^3.9.6",
     "typescript": "^6.0.2",
-    "vite": "^8.0.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "lightningcss"
-    ]
+    "vite": "^8.2.2"
   }
 }
