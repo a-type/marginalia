@@ -59,7 +59,7 @@ export interface USFMDocumentComponentProps {
 export type USFMNodeComponent = ComponentType<USFMNodeComponentProps>
 
 export type USFMComponents = Partial<
-  Record<USFMNodeCategory | string, USFMNodeComponent>
+  Record<USFMNodeCategory, USFMNodeComponent>
 > & {
   document?: ComponentType<USFMDocumentComponentProps>
 }

@@ -9,6 +9,7 @@ import type {
   USFMDocument,
   USFMMarkerNode,
   USFMNode,
+  USFMNodeCategory,
 } from './types'
 
 export interface USFMRendererProps {
@@ -25,7 +26,7 @@ function RenderMarker({
   components: USFMComponents
 }) {
   const Component =
-    components[node.marker] ??
+    components[node.marker as USFMNodeCategory] ??
     components[node.category] ??
     components.unknown ??
     Fragment
