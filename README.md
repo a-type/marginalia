@@ -17,21 +17,7 @@ To build this application for production:
 npm run build
 ```
 
-## Styling
-
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Remove `@tailwindcss/vite` and `tailwindcss` from `package.json`
-
 ## Linting & Formatting
-
 
 This project uses [eslint](https://eslint.org/) and [prettier](https://prettier.io/) for linting and formatting. Eslint is configured using [tanstack/eslint-config](https://tanstack.com/config/latest/docs/eslint). The following scripts are available:
 
@@ -40,7 +26,6 @@ npm run lint
 npm run format
 npm run check
 ```
-
 
 ## Deploy to Railway
 
@@ -60,7 +45,6 @@ Need a database? Add one from the Railway project canvas, then connect it to the
 app with a Railway reference variable. The variable name and value depend on the
 database service you choose.
 
-
 # Paraglide i18n
 
 This add-on wires up ParaglideJS for localized routing and message formatting.
@@ -69,17 +53,14 @@ This add-on wires up ParaglideJS for localized routing and message formatting.
 - URLs are localized through the Paraglide Vite plugin and router `rewrite` hooks.
 - Run the dev server or build to regenerate the `src/paraglide` outputs.
 
-
 ## Setting up Neon
 
 When running the `dev` command, `vite-plugin-neon-new` will identify there is not a database setup. It will then create and seed a claimable database.
 
 It is the same process as [Neon Launchpad](https://neon.new).
 
-> [!IMPORTANT]  
+> [!IMPORTANT]
 > Claimable databases expire in 72 hours.
-
-
 
 ## Routing
 
@@ -98,7 +79,7 @@ Now that you have two routes you can use a `Link` component to navigate between 
 To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
 
 ```tsx
-import { Link } from "@tanstack/react-router";
+import { Link } from '@tanstack/react-router'
 ```
 
 Then anywhere in your JSX you can use it like so:
@@ -166,11 +147,11 @@ const getServerTime = createServerFn({
 // Use in a component
 function MyComponent() {
   const [time, setTime] = useState('')
-  
+
   useEffect(() => {
     getServerTime().then(setTime)
   }, [])
-  
+
   return <div>Server time: {time}</div>
 }
 ```
@@ -222,8 +203,6 @@ function PeopleComponent() {
 ```
 
 Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-
 
 # Learn More
 
