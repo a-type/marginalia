@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { AuthPanel } from '#/components/AuthPanel'
+import { AuthPanel } from '#/components/auth/AuthPanel'
 import { USFMRenderer } from '#/components/usfm'
 import firstJohn from '#/data/usfm-source/web/92-1JNeng-web-c.usfm?raw'
 import { getCurrentAccountFn } from '#/lib/auth.functions'
