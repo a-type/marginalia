@@ -22,6 +22,35 @@ interface DatabaseSchema {
     value: string
     updated_at: Generated<string>
   }
+  com_marginalia_commentary: {
+    tid: string
+    uri: string
+    cid: string | null
+    authorDid: string
+    name: string
+    recordJson: string
+    createdAt: Generated<string>
+    updatedAt: Generated<string>
+  }
+  com_marginalia_annotation: {
+    tid: string
+    uri: string
+    cid: string | null
+    authorDid: string
+    commentaryId: string | null
+    comment: string | null
+    color: string | null
+    recordJson: string
+    createdAt: Generated<string>
+    updatedAt: Generated<string>
+  }
+  com_marginalia_annotation_verse: {
+    annotationUri: string
+    verseId: string
+    bookId: string
+    chapter: number
+    verse: number
+  }
 }
 
 let startup: Promise<Kysely<DatabaseSchema>> | undefined

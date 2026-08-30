@@ -13,7 +13,8 @@
     "lint": "eslint",
     "format": "prettier --write . && eslint --fix",
     "check": "prettier --check .",
-    "start": "node .output/server/index.mjs"
+    "start": "node .output/server/index.mjs",
+    "lexicons": "lex build --lexicons ./lexicons --out ./src/lexicons --clear"
   },
   "dependencies": {
     "@a-type/ui": "^6.1.38",

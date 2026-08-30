@@ -99,7 +99,7 @@ export class AppError extends Error {
   }
 
   get statusCode() {
-    if (this.code === 0) {
+    if (this.code < 20000 || this.code >= 60000) {
       return 500
     }
     return Math.floor(this.code / 100)

@@ -50,6 +50,34 @@ client metadata at `/oauth-client-metadata.json` and persists accounts, OAuth
 state, and OAuth sessions in SQLite. Set `DATABASE_PATH` to a persistent volume
 path when deploying to Railway.
 
+## ATProto Tap Webhook
+
+The app accepts Tap webhook events at `/api/tap/webhook` and persists records for
+the local lexicons:
+
+- `com.marginalia.commentary`
+- `com.marginalia.annotation`
+
+Run Tap in webhook mode with collection filters for the app lexicons:
+
+```bash
+TAP_WEBHOOK_URL="$APP_URL/api/tap/webhook" \
+TAP_COLLECTION_FILTERS="com.marginalia.commentary,com.marginalia.annotation" \
+TAP_ADMIN_PASSWORD="$TAP_ADMIN_PASSWORD" \
+tap run --no-replay
+```
+
+When `TAP_ADMIN_PASSWORD` is set in the app environment, the webhook endpoint
+requires Tap's Basic auth header. Add repos to Tap with its admin API to trigger
+backfill and live delivery:
+
+```bash
+curl -u "admin:$TAP_ADMIN_PASSWORD" \
+  -H "Content-Type: application/json" \
+  -d '{"dids":["did:plc:..."]}' \
+  http://127.0.0.1:2480/repos/add
+```
+
 # Paraglide i18n
 
 This add-on wires up ParaglideJS for localized routing and message formatting.
