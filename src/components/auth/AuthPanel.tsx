@@ -1,39 +1,39 @@
-import { useServerFn } from '@tanstack/react-start'
-import { useState } from 'react'
-import type { FormEvent } from 'react'
+import { useServerFn } from '@tanstack/react-start';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 
-import { loginFn, logoutFn } from '#/lib/auth.functions'
-import type { Account } from '#/lib/auth.server'
+import { loginFn, logoutFn } from '#/lib/auth.functions';
+import type { Account } from '#/lib/auth.server';
 
-import cls from './AuthPanel.module.css'
+import cls from './AuthPanel.module.css';
 
 export function AuthPanel({ account }: { account: Account | null }) {
-  const login = useServerFn(loginFn)
-  const logout = useServerFn(logoutFn)
-  const [identifier, setIdentifier] = useState('')
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState('')
+  const login = useServerFn(loginFn);
+  const logout = useServerFn(logoutFn);
+  const [identifier, setIdentifier] = useState('');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setPending(true)
-    setError('')
+    event.preventDefault();
+    setPending(true);
+    setError('');
     try {
-      await login({ data: { identifier } })
+      await login({ data: { identifier } });
     } catch (cause) {
-      setPending(false)
-      setError(cause instanceof Error ? cause.message : 'Unable to sign in')
+      setPending(false);
+      setError(cause instanceof Error ? cause.message : 'Unable to sign in');
     }
   }
 
   async function handleLogout() {
-    setPending(true)
-    setError('')
+    setPending(true);
+    setError('');
     try {
-      await logout()
+      await logout();
     } catch (cause) {
-      setPending(false)
-      setError(cause instanceof Error ? cause.message : 'Unable to sign out')
+      setPending(false);
+      setError(cause instanceof Error ? cause.message : 'Unable to sign out');
     }
   }
 
@@ -59,7 +59,7 @@ export function AuthPanel({ account }: { account: Account | null }) {
           </p>
         )}
       </section>
-    )
+    );
   }
 
   return (
@@ -99,5 +99,5 @@ export function AuthPanel({ account }: { account: Account | null }) {
         )}
       </form>
     </section>
-  )
+  );
 }

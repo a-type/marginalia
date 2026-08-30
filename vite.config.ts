@@ -1,12 +1,12 @@
-import { paraglideVitePlugin } from '@inlang/paraglide-js'
-import { devtools } from '@tanstack/devtools-vite'
-import { defineConfig } from 'vite'
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
+import { devtools } from '@tanstack/devtools-vite';
+import { defineConfig } from 'vite';
 
-import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 
-import babel from '@rolldown/plugin-babel'
-import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react'
-import { nitro } from 'nitro/vite'
+import babel from '@rolldown/plugin-babel';
+import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react';
+import { nitro } from 'nitro/vite';
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
@@ -25,6 +25,6 @@ const config = defineConfig({
   server: {
     port: 7654,
   },
-})
+});
 
-export default config
+export default config;

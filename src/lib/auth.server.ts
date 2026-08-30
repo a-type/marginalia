@@ -1,17 +1,17 @@
-import type { SessionConfig } from '@tanstack/react-start/server'
-import { clearSession, useSession } from '@tanstack/react-start/server'
-import { sql } from 'kysely'
+import type { SessionConfig } from '@tanstack/react-start/server';
+import { clearSession, useSession } from '@tanstack/react-start/server';
+import { sql } from 'kysely';
 
-import { getRequiredClient } from '#/db'
-import { AppError } from './error'
+import { getRequiredClient } from '#/db';
+import { AppError } from './error';
 
 interface AppSessionData {
-  did: string
+  did: string;
 }
 
 export interface Account {
-  did: string
-  handle: string | null
+  did: string;
+  handle: string | null;
 }
 
 function getSessionConfig(): SessionConfig {
@@ -19,13 +19,13 @@ function getSessionConfig(): SessionConfig {
     process.env.SESSION_PASSWORD ??
     (process.env.NODE_ENV === 'development'
       ? 'local-development-session-password'
-      : undefined)
+      : undefined);
 
   if (!password || password.length < 32) {
     throw new AppError(
       AppError.Code.InternalServerError,
       'SESSION_PASSWORD must contain at least 32 characters',
-    )
+    );
   }
 
   return {
@@ -38,24 +38,24 @@ function getSessionConfig(): SessionConfig {
       secure: process.env.NODE_ENV === 'production',
       path: '/',
     },
-  }
+  };
 }
 
 export async function getAppSession() {
-  return useSession<AppSessionData>(getSessionConfig())
+  return useSession<AppSessionData>(getSessionConfig());
 }
 
 export async function setAppSession(did: string) {
-  const session = await getAppSession()
-  await session.update({ did })
+  const session = await getAppSession();
+  await session.update({ did });
 }
 
 export async function clearAppSession() {
-  await clearSession(getSessionConfig())
+  await clearSession(getSessionConfig());
 }
 
 export async function upsertAccount(did: string, handle: string | null) {
-  const db = await getRequiredClient()
+  const db = await getRequiredClient();
   await db
     .insertInto('accounts')
     .values({ did, handle })
@@ -65,27 +65,27 @@ export async function upsertAccount(did: string, handle: string | null) {
         last_login_at: sql`CURRENT_TIMESTAMP`,
       }),
     )
-    .execute()
+    .execute();
 }
 
 export async function getCurrentAccount(): Promise<Account | null> {
-  const session = await getAppSession()
-  if (!session.data.did) return null
+  const session = await getAppSession();
+  if (!session.data.did) return null;
 
-  const db = await getRequiredClient()
+  const db = await getRequiredClient();
   const account = await db
     .selectFrom('accounts')
     .select(['did', 'handle'])
     .where('did', '=', session.data.did)
-    .executeTakeFirst()
+    .executeTakeFirst();
 
   if (!account) {
-    await session.clear()
-    return null
+    await session.clear();
+    return null;
   }
 
   return {
     did: account.did,
     handle: account.handle,
-  }
+  };
 }

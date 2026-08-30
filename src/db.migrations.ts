@@ -1,5 +1,5 @@
-import { sql } from 'kysely'
-import type { MigrationProvider } from 'kysely/migration'
+import { sql } from 'kysely';
+import type { MigrationProvider } from 'kysely/migration';
 
 export const migrationProvider: MigrationProvider = {
   async getMigrations() {
@@ -16,7 +16,7 @@ export const migrationProvider: MigrationProvider = {
             .addColumn('last_login_at', 'text', (column) =>
               column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
             )
-            .execute()
+            .execute();
           await db.schema
             .createTable('atproto_oauth_states')
             .addColumn('key', 'text', (column) => column.primaryKey())
@@ -24,7 +24,7 @@ export const migrationProvider: MigrationProvider = {
             .addColumn('created_at', 'text', (column) =>
               column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
             )
-            .execute()
+            .execute();
           await db.schema
             .createTable('atproto_oauth_sessions')
             .addColumn('did', 'text', (column) =>
@@ -37,12 +37,12 @@ export const migrationProvider: MigrationProvider = {
             .addColumn('updated_at', 'text', (column) =>
               column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
             )
-            .execute()
+            .execute();
         },
         async down(db) {
-          await db.schema.dropTable('atproto_oauth_sessions').execute()
-          await db.schema.dropTable('atproto_oauth_states').execute()
-          await db.schema.dropTable('accounts').execute()
+          await db.schema.dropTable('atproto_oauth_sessions').execute();
+          await db.schema.dropTable('atproto_oauth_states').execute();
+          await db.schema.dropTable('accounts').execute();
         },
       },
       '002_lexicon_records': {
@@ -61,7 +61,7 @@ export const migrationProvider: MigrationProvider = {
             .addColumn('updatedAt', 'text', (column) =>
               column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
             )
-            .execute()
+            .execute();
 
           await db.schema
             .createTable('com_marginalia_annotation')
@@ -79,7 +79,7 @@ export const migrationProvider: MigrationProvider = {
             .addColumn('updatedAt', 'text', (column) =>
               column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
             )
-            .execute()
+            .execute();
 
           await db.schema
             .createTable('com_marginalia_annotation_verse')
@@ -97,50 +97,52 @@ export const migrationProvider: MigrationProvider = {
               'annotationUri',
               'verseId',
             ])
-            .execute()
+            .execute();
 
           await db.schema
             .createIndex('com_marginalia_commentary_authorDid_idx')
             .on('com_marginalia_commentary')
             .column('authorDid')
-            .execute()
+            .execute();
 
           await db.schema
             .createIndex('com_marginalia_annotation_authorDid_idx')
             .on('com_marginalia_annotation')
             .column('authorDid')
-            .execute()
+            .execute();
 
           await db.schema
             .createIndex('com_marginalia_annotation_commentaryId_idx')
             .on('com_marginalia_annotation')
             .column('commentaryId')
-            .execute()
+            .execute();
 
           await db.schema
             .createIndex('com_marginalia_annotation_verse_verseId_idx')
             .on('com_marginalia_annotation_verse')
             .column('verseId')
-            .execute()
+            .execute();
 
           await db.schema
             .createIndex('com_marginalia_annotation_verse_bookId_idx')
             .on('com_marginalia_annotation_verse')
             .column('bookId')
-            .execute()
+            .execute();
 
           await db.schema
             .createIndex('com_marginalia_annotation_verse_bookId_chapter_idx')
             .on('com_marginalia_annotation_verse')
             .columns(['bookId', 'chapter'])
-            .execute()
+            .execute();
         },
         async down(db) {
-          await db.schema.dropTable('com_marginalia_annotation_verse').execute()
-          await db.schema.dropTable('com_marginalia_annotation').execute()
-          await db.schema.dropTable('com_marginalia_commentary').execute()
+          await db.schema
+            .dropTable('com_marginalia_annotation_verse')
+            .execute();
+          await db.schema.dropTable('com_marginalia_annotation').execute();
+          await db.schema.dropTable('com_marginalia_commentary').execute();
         },
       },
-    }
+    };
   },
-}
+};

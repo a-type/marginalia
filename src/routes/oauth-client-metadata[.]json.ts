@@ -1,6 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router';
 
-import { oauth } from '#/lib/atproto.server'
+import { oauth } from '#/lib/atproto.server';
 
 export const Route = createFileRoute('/oauth-client-metadata.json')({
   server: {
@@ -11,4 +11,4 @@ export const Route = createFileRoute('/oauth-client-metadata.json')({
         }),
     },
   },
-})
+});

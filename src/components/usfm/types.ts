@@ -1,4 +1,4 @@
-import type { ComponentType, ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react';
 
 export type USFMNodeCategory =
   | 'book'
@@ -18,48 +18,48 @@ export type USFMNodeCategory =
   | 'milestone'
   | 'figure'
   | 'break'
-  | 'unknown'
+  | 'unknown';
 
 export interface USFMTextNode {
-  type: 'text'
-  value: string
+  type: 'text';
+  value: string;
 }
 
 export interface USFMMarkerNode {
-  type: 'marker'
-  marker: string
-  category: USFMNodeCategory
-  argument?: string
-  attributes: Record<string, string>
-  children: USFMNode[]
-  closed: boolean
+  type: 'marker';
+  marker: string;
+  category: USFMNodeCategory;
+  argument?: string;
+  attributes: Record<string, string>;
+  children: USFMNode[];
+  closed: boolean;
 }
 
-export type USFMNode = USFMTextNode | USFMMarkerNode
+export type USFMNode = USFMTextNode | USFMMarkerNode;
 
 export interface USFMDocument {
-  type: 'document'
-  children: USFMNode[]
+  type: 'document';
+  children: USFMNode[];
 }
 
 export interface USFMNodeComponentProps {
-  node: USFMMarkerNode
-  marker: string
-  category: USFMNodeCategory
-  argument?: string
-  attributes: Record<string, string>
-  children: ReactNode
+  node: USFMMarkerNode;
+  marker: string;
+  category: USFMNodeCategory;
+  argument?: string;
+  attributes: Record<string, string>;
+  children: ReactNode;
 }
 
 export interface USFMDocumentComponentProps {
-  document: USFMDocument
-  children: ReactNode
+  document: USFMDocument;
+  children: ReactNode;
 }
 
-export type USFMNodeComponent = ComponentType<USFMNodeComponentProps>
+export type USFMNodeComponent = ComponentType<USFMNodeComponentProps>;
 
 export type USFMComponents = Partial<
   Record<USFMNodeCategory, USFMNodeComponent>
 > & {
-  document?: ComponentType<USFMDocumentComponentProps>
-}
+  document?: ComponentType<USFMDocumentComponentProps>;
+};

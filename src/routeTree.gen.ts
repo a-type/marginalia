@@ -8,105 +8,111 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as OauthClientMetadataDotjsonRouteImport } from './routes/oauth-client-metadata[.]json'
-import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
-import { Route as ApiTapWebhookRouteImport } from './routes/api/tap/webhook'
+import { Route as rootRouteImport } from './routes/__root';
+import { Route as IndexRouteImport } from './routes/index';
+import { Route as OauthClientMetadataDotjsonRouteImport } from './routes/oauth-client-metadata[.]json';
+import { Route as OauthCallbackRouteImport } from './routes/oauth/callback';
+import { Route as ApiTapWebhookRouteImport } from './routes/api/tap/webhook';
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const OauthClientMetadataDotjsonRoute =
   OauthClientMetadataDotjsonRouteImport.update({
     id: '/oauth-client-metadata.json',
     path: '/oauth-client-metadata.json',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const OauthCallbackRoute = OauthCallbackRouteImport.update({
   id: '/oauth/callback',
   path: '/oauth/callback',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiTapWebhookRoute = ApiTapWebhookRouteImport.update({
   id: '/api/tap/webhook',
   path: '/api/tap/webhook',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute
-  '/oauth/callback': typeof OauthCallbackRoute
-  '/api/tap/webhook': typeof ApiTapWebhookRoute
+  '/': typeof IndexRoute;
+  '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute;
+  '/oauth/callback': typeof OauthCallbackRoute;
+  '/api/tap/webhook': typeof ApiTapWebhookRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute
-  '/oauth/callback': typeof OauthCallbackRoute
-  '/api/tap/webhook': typeof ApiTapWebhookRoute
+  '/': typeof IndexRoute;
+  '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute;
+  '/oauth/callback': typeof OauthCallbackRoute;
+  '/api/tap/webhook': typeof ApiTapWebhookRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute
-  '/oauth/callback': typeof OauthCallbackRoute
-  '/api/tap/webhook': typeof ApiTapWebhookRoute
+  __root__: typeof rootRouteImport;
+  '/': typeof IndexRoute;
+  '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute;
+  '/oauth/callback': typeof OauthCallbackRoute;
+  '/api/tap/webhook': typeof ApiTapWebhookRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
-    '/' | '/oauth-client-metadata.json' | '/oauth/callback' | '/api/tap/webhook'
-  fileRoutesByTo: FileRoutesByTo
+    | '/'
+    | '/oauth-client-metadata.json'
+    | '/oauth/callback'
+    | '/api/tap/webhook';
+  fileRoutesByTo: FileRoutesByTo;
   to:
-    '/' | '/oauth-client-metadata.json' | '/oauth/callback' | '/api/tap/webhook'
+    | '/'
+    | '/oauth-client-metadata.json'
+    | '/oauth/callback'
+    | '/api/tap/webhook';
   id:
     | '__root__'
     | '/'
     | '/oauth-client-metadata.json'
     | '/oauth/callback'
-    | '/api/tap/webhook'
-  fileRoutesById: FileRoutesById
+    | '/api/tap/webhook';
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  OauthClientMetadataDotjsonRoute: typeof OauthClientMetadataDotjsonRoute
-  OauthCallbackRoute: typeof OauthCallbackRoute
-  ApiTapWebhookRoute: typeof ApiTapWebhookRoute
+  IndexRoute: typeof IndexRoute;
+  OauthClientMetadataDotjsonRoute: typeof OauthClientMetadataDotjsonRoute;
+  OauthCallbackRoute: typeof OauthCallbackRoute;
+  ApiTapWebhookRoute: typeof ApiTapWebhookRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/';
+      path: '/';
+      fullPath: '/';
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/oauth-client-metadata.json': {
-      id: '/oauth-client-metadata.json'
-      path: '/oauth-client-metadata.json'
-      fullPath: '/oauth-client-metadata.json'
-      preLoaderRoute: typeof OauthClientMetadataDotjsonRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/oauth-client-metadata.json';
+      path: '/oauth-client-metadata.json';
+      fullPath: '/oauth-client-metadata.json';
+      preLoaderRoute: typeof OauthClientMetadataDotjsonRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/oauth/callback': {
-      id: '/oauth/callback'
-      path: '/oauth/callback'
-      fullPath: '/oauth/callback'
-      preLoaderRoute: typeof OauthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/oauth/callback';
+      path: '/oauth/callback';
+      fullPath: '/oauth/callback';
+      preLoaderRoute: typeof OauthCallbackRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/tap/webhook': {
-      id: '/api/tap/webhook'
-      path: '/api/tap/webhook'
-      fullPath: '/api/tap/webhook'
-      preLoaderRoute: typeof ApiTapWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/tap/webhook';
+      path: '/api/tap/webhook';
+      fullPath: '/api/tap/webhook';
+      preLoaderRoute: typeof ApiTapWebhookRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
@@ -115,16 +121,16 @@ const rootRouteChildren: RootRouteChildren = {
   OauthClientMetadataDotjsonRoute: OauthClientMetadataDotjsonRoute,
   OauthCallbackRoute: OauthCallbackRoute,
   ApiTapWebhookRoute: ApiTapWebhookRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
 
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { getRouter } from './router.tsx';
+import type { createStart } from '@tanstack/react-start';
 declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
+    ssr: true;
+    router: Awaited<ReturnType<typeof getRouter>>;
   }
 }

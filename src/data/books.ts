@@ -404,4 +404,4 @@ export const books = [
     name: 'Revelation',
     chapters: 21,
   },
-]
+];

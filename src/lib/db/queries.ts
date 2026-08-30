@@ -1,36 +1,36 @@
-import { sql } from 'kysely'
+import { sql } from 'kysely';
 
-import { getRequiredClient } from '#/db'
+import { getRequiredClient } from '#/db';
 
 interface RecordMetadata {
-  uri: string
-  tid: string
-  cid: string | null
-  authorDid: string
-  recordJson: string
+  uri: string;
+  tid: string;
+  cid: string | null;
+  authorDid: string;
+  recordJson: string;
 }
 
 export interface UpsertCommentaryInput extends RecordMetadata {
-  name: string
+  name: string;
 }
 
 export interface AnnotationVerseInput {
-  verseId: string
-  bookId: string
-  chapter: number
-  verse: number
+  verseId: string;
+  bookId: string;
+  chapter: number;
+  verse: number;
 }
 
 export interface UpsertAnnotationInput extends RecordMetadata {
-  commentaryId: string | null
-  verses: readonly AnnotationVerseInput[]
-  comment: string | null
-  color: string | null
-  createdAt: string
+  commentaryId: string | null;
+  verses: readonly AnnotationVerseInput[];
+  comment: string | null;
+  color: string | null;
+  createdAt: string;
 }
 
 export async function upsertCommentary(input: UpsertCommentaryInput) {
-  const db = await getRequiredClient()
+  const db = await getRequiredClient();
 
   await db
     .insertInto('com_marginalia_commentary')
@@ -45,12 +45,12 @@ export async function upsertCommentary(input: UpsertCommentaryInput) {
         updatedAt: sql`CURRENT_TIMESTAMP`,
       }),
     )
-    .execute()
+    .execute();
 }
 
 export async function upsertAnnotation(input: UpsertAnnotationInput) {
-  const db = await getRequiredClient()
-  const { verses, ...annotation } = input
+  const db = await getRequiredClient();
+  const { verses, ...annotation } = input;
 
   await db.transaction().execute(async (transaction) => {
     await transaction
@@ -69,16 +69,16 @@ export async function upsertAnnotation(input: UpsertAnnotationInput) {
           updatedAt: sql`CURRENT_TIMESTAMP`,
         }),
       )
-      .execute()
+      .execute();
 
     await transaction
       .deleteFrom('com_marginalia_annotation_verse')
       .where('annotationUri', '=', annotation.uri)
-      .execute()
+      .execute();
 
     const uniqueVerses = [
       ...new Map(verses.map((verse) => [verse.verseId, verse])).values(),
-    ]
+    ];
     if (uniqueVerses.length > 0) {
       await transaction
         .insertInto('com_marginalia_annotation_verse')
@@ -88,13 +88,13 @@ export async function upsertAnnotation(input: UpsertAnnotationInput) {
             ...verse,
           })),
         )
-        .execute()
+        .execute();
     }
-  })
+  });
 }
 
 export async function getAnnotationsForVerse(verseId: string) {
-  const db = await getRequiredClient()
+  const db = await getRequiredClient();
   return db
     .selectFrom('com_marginalia_annotation as annotation')
     .innerJoin(
@@ -105,21 +105,21 @@ export async function getAnnotationsForVerse(verseId: string) {
     .selectAll('annotation')
     .where('verse.verseId', '=', verseId)
     .orderBy('annotation.createdAt', 'desc')
-    .execute()
+    .execute();
 }
 
 export async function deleteCommentary(uri: string) {
-  const db = await getRequiredClient()
+  const db = await getRequiredClient();
   await db
     .deleteFrom('com_marginalia_commentary')
     .where('uri', '=', uri)
-    .execute()
+    .execute();
 }
 
 export async function deleteAnnotation(uri: string) {
-  const db = await getRequiredClient()
+  const db = await getRequiredClient();
   await db
     .deleteFrom('com_marginalia_annotation')
     .where('uri', '=', uri)
-    .execute()
+    .execute();
 }

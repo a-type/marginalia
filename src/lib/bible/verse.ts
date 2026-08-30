@@ -1,7 +1,7 @@
 /**
  * Formatted verse identifier: book_id/chapter:verse, e.g. "GEN/1:1"
  */
-export type VerseId = `${BookId}/${number}:${number}`
+export type VerseId = `${BookId}/${number}:${number}`;
 
 /**
  * All deuterocanonical book IDs, in order.
@@ -82,37 +82,37 @@ export const bookIds = [
   '3JN',
   'JUD',
   'REV',
-]
-export type BookId = (typeof bookIds)[number]
+];
+export type BookId = (typeof bookIds)[number];
 
 export function isValidVerseId(verseId: string): verseId is VerseId {
-  const [bookId, chapterVerse] = verseId.split('/')
-  if (!bookId || !chapterVerse) return false
-  if (!bookIds.includes(bookId)) return false
+  const [bookId, chapterVerse] = verseId.split('/');
+  if (!bookId || !chapterVerse) return false;
+  if (!bookIds.includes(bookId)) return false;
 
-  const [chapterStr, verseStr] = chapterVerse.split(':')
-  if (!chapterStr || !verseStr) return false
+  const [chapterStr, verseStr] = chapterVerse.split(':');
+  if (!chapterStr || !verseStr) return false;
 
-  const chapter = Number(chapterStr)
-  const verse = Number(verseStr)
-  if (isNaN(chapter) || isNaN(verse)) return false
+  const chapter = Number(chapterStr);
+  const verse = Number(verseStr);
+  if (isNaN(chapter) || isNaN(verse)) return false;
 
-  return true
+  return true;
 }
 
 export function parseVerseId(verseId: VerseId): {
-  bookId: BookId
-  chapter: number
-  verse: number
+  bookId: BookId;
+  chapter: number;
+  verse: number;
 } {
-  const [bookId, chapterVerse] = verseId.split('/')
-  const [chapterStr, verseStr] = chapterVerse.split(':')
+  const [bookId, chapterVerse] = verseId.split('/');
+  const [chapterStr, verseStr] = chapterVerse.split(':');
 
   return {
     bookId,
     chapter: Number(chapterStr),
     verse: Number(verseStr),
-  }
+  };
 }
 
 export function formatVerseId(
@@ -120,5 +120,5 @@ export function formatVerseId(
   chapter: number,
   verse: number,
 ): VerseId {
-  return `${bookId}/${chapter}:${verse}`
+  return `${bookId}/${chapter}:${verse}`;
 }

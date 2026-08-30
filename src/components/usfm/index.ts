@@ -1,6 +1,6 @@
-export { parseUSFM } from './parser'
-export { defaultUSFMComponents } from './default-components'
-export { USFMRenderer } from './USFMRenderer'
+export { parseUSFM } from './parser';
+export { defaultUSFMComponents } from './default-components';
+export { USFMRenderer } from './USFMRenderer';
 
 export type {
   USFMComponents,
@@ -12,5 +12,5 @@ export type {
   USFMNodeComponent,
   USFMNodeComponentProps,
   USFMTextNode,
-} from './types'
-export type { USFMRendererProps } from './USFMRenderer'
+} from './types';
+export type { USFMRendererProps } from './USFMRenderer';

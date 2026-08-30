@@ -1,8 +1,8 @@
-import { Fragment, useMemo } from 'react'
+import { Fragment, useMemo } from 'react';
 
-import { defaultUSFMComponents } from './default-components'
-import { parseUSFM } from './parser'
-import './usfm.css'
+import { defaultUSFMComponents } from './default-components';
+import { parseUSFM } from './parser';
+import './usfm.css';
 
 import type {
   USFMComponents,
@@ -10,26 +10,26 @@ import type {
   USFMMarkerNode,
   USFMNode,
   USFMNodeCategory,
-} from './types'
+} from './types';
 
 export interface USFMRendererProps {
-  usfm: string
-  components?: USFMComponents
-  className?: string
+  usfm: string;
+  components?: USFMComponents;
+  className?: string;
 }
 
 function RenderMarker({
   node,
   components,
 }: {
-  node: USFMMarkerNode
-  components: USFMComponents
+  node: USFMMarkerNode;
+  components: USFMComponents;
 }) {
   const Component =
     components[node.marker as USFMNodeCategory] ??
     components[node.category] ??
     components.unknown ??
-    Fragment
+    Fragment;
 
   const children = node.children.map((child, index) => (
     <RenderNode
@@ -37,9 +37,9 @@ function RenderMarker({
       node={child}
       components={components}
     />
-  ))
+  ));
 
-  if (Component === Fragment) return <>{children}</>
+  if (Component === Fragment) return <>{children}</>;
 
   return (
     <Component
@@ -51,38 +51,38 @@ function RenderMarker({
     >
       {children}
     </Component>
-  )
+  );
 }
 
 function RenderNode({
   node,
   components,
 }: {
-  node: USFMNode
-  components: USFMComponents
+  node: USFMNode;
+  components: USFMComponents;
 }) {
-  if (node.type === 'text') return node.value
-  return <RenderMarker node={node} components={components} />
+  if (node.type === 'text') return node.value;
+  return <RenderMarker node={node} components={components} />;
 }
 
 function RenderDocument({
   document,
   components,
 }: {
-  document: USFMDocument
-  components: USFMComponents
+  document: USFMDocument;
+  components: USFMComponents;
 }) {
-  const Component = components.document
+  const Component = components.document;
   const children = document.children.map((node, index) => (
     <RenderNode
       key={`${node.type === 'marker' ? node.marker : 'text'}-${index}`}
       node={node}
       components={components}
     />
-  ))
+  ));
 
-  if (!Component) return <>{children}</>
-  return <Component document={document}>{children}</Component>
+  if (!Component) return <>{children}</>;
+  return <Component document={document}>{children}</Component>;
 }
 
 /**
@@ -94,15 +94,15 @@ export function USFMRenderer({
   components: componentOverrides,
   className,
 }: USFMRendererProps) {
-  const document = useMemo(() => parseUSFM(usfm), [usfm])
+  const document = useMemo(() => parseUSFM(usfm), [usfm]);
   const components = {
     ...defaultUSFMComponents,
     ...componentOverrides,
-  }
+  };
 
   return (
     <div className={className}>
       <RenderDocument document={document} components={components} />
     </div>
-  )
+  );
 }
