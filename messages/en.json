@@ -5,5 +5,14 @@
   "example_message": "Welcome to your i18n app.",
   "language_label": "Language",
   "current_locale": "Current locale: {locale}",
-  "learn_router": "Learn Paraglide JS"
+  "learn_router": "Learn Paraglide JS",
+  "topical_steep_seal_dance": "Signing out…",
+  "equal_zany_marlin_feel": "Sign out",
+  "formal_bad_camel_advise": "Continue",
+  "sour_novel_leopard_laugh": "Redirecting…",
+  "blue_shy_wasp_stab": "Unable to sign out",
+  "cozy_clean_zebra_offer": "Unable to sign in",
+  "best_royal_raven_bask": "Signed in with ATProto",
+  "legal_cool_snail_taste": "Sign in via Atmosphere",
+  "extra_happy_hare_blink": "Bluesky, Blacksky, Eurosky, etc."
 }

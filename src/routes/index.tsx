@@ -1,3 +1,4 @@
+import { Box } from '@a-type/ui';
 import { createFileRoute } from '@tanstack/react-router';
 
 import { AuthPanel } from '#/components/auth/AuthPanel';
@@ -16,11 +17,12 @@ function Home() {
 
   return (
     <main className={cls.root}>
-      <AuthPanel account={account} />
-      <div className={cls.card}>
-        <p className={cls.label}>World English Bible</p>
+      <Box className={cls.pane}>
+        <AuthPanel account={account} />
+      </Box>
+      <Box surface elevated="md" className={cls.content}>
         <USFMRenderer usfm={firstJohn} />
-      </div>
+      </Box>
     </main>
   );
 }

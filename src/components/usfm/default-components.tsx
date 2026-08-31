@@ -1,3 +1,11 @@
+import { formatVerseId } from '#/lib/bible/verse';
+import { Divider, Popover, Heading as UIHeading } from '@a-type/ui';
+import {
+  ChapterNumberProvider,
+  useBookId,
+  useChapterNumber,
+  VerseIdProvider,
+} from './contexts';
 import type {
   USFMComponents,
   USFMDocumentComponentProps,
@@ -18,36 +26,76 @@ function Metadata({ node, children }: USFMNodeComponentProps) {
 
 function Title({ marker, children }: USFMNodeComponentProps) {
   const level = Number(/\d+$/.exec(marker)?.[0] ?? 1);
-  if (level <= 1) return <h1 className="usfm-title">{children}</h1>;
-  return <h2 className="usfm-title usfm-title-secondary">{children}</h2>;
+  if (level <= 1)
+    return (
+      <UIHeading render={<h1 />} emphasis="primary" className="usfm-title">
+        {children}
+      </UIHeading>
+    );
+  return (
+    <UIHeading
+      render={<h2 />}
+      emphasis="secondary"
+      className="usfm-title usfm-title-secondary"
+    >
+      {children}
+    </UIHeading>
+  );
 }
 
 function Heading({ marker, children }: USFMNodeComponentProps) {
   return (
-    <h3 className="usfm-heading" data-usfm-marker={marker}>
+    <UIHeading
+      render={<h3 />}
+      emphasis="ambient"
+      className="usfm-heading"
+      data-usfm-marker={marker}
+    >
       {children}
-    </h3>
+    </UIHeading>
   );
 }
 
 function Chapter({ argument, children }: USFMNodeComponentProps) {
   return (
-    <section className="usfm-chapter" data-chapter={argument}>
-      {argument && <h2 className="usfm-chapter-number">Chapter {argument}</h2>}
-      {children}
-    </section>
+    <ChapterNumberProvider chapterNumber={argument ? Number(argument) : 0}>
+      <section className="usfm-chapter" data-chapter={argument}>
+        {argument && (
+          <UIHeading
+            render={<h2 />}
+            emphasis="ambient"
+            className="usfm-chapter-number"
+          >
+            Chapter {argument}
+          </UIHeading>
+        )}
+        {children}
+      </section>
+    </ChapterNumberProvider>
   );
 }
 
 function Verse({ argument, children }: USFMNodeComponentProps) {
+  const bookId = useBookId();
+  const chapterNumber = useChapterNumber();
+  const verseNumber = argument ? Number(argument) : 0;
+  const verseId = formatVerseId(bookId, chapterNumber, verseNumber);
+
   return (
-    <span
-      className="usfm-verse"
-      id={argument ? `verse-${argument}` : undefined}
-    >
-      {argument && <sup className="usfm-verse-number">{argument}</sup>}
-      {children}
-    </span>
+    <VerseIdProvider verseId={verseId}>
+      <span
+        className="usfm-verse"
+        id={argument ? `verse-${verseId}` : undefined}
+        style={{
+          anchorName: `--${verseId}`,
+        }}
+      >
+        {verseNumber && (
+          <sup className="usfm-verse-number @mode-denser">{verseNumber}</sup>
+        )}
+        {children}
+      </span>
+    </VerseIdProvider>
   );
 }
 
@@ -110,14 +158,29 @@ function Word({ attributes, children }: USFMNodeComponentProps) {
 
 function Note({ marker, children }: USFMNodeComponentProps) {
   const label = marker.startsWith('x') ? 'Cross reference' : 'Footnote';
+
   return (
     <span className="usfm-note">
-      <sup className="usfm-note-marker" aria-label={label} tabIndex={0}>
-        {marker.startsWith('x') ? 'x' : '†'}
-      </sup>
-      <span className="usfm-note-content" role="note">
-        {children}
-      </span>
+      <Popover>
+        <Popover.Trigger
+          openOnHover
+          render={<sup />}
+          className="usfm-note-marker"
+          aria-label={label}
+          tabIndex={0}
+          role="button"
+        >
+          {marker.startsWith('x') ? 'x' : '†'}
+        </Popover.Trigger>
+        <Popover.Content
+          side="top"
+          className="usfm-note-content @mode-dense"
+          role="note"
+        >
+          <Popover.Arrow />
+          {children}
+        </Popover.Content>
+      </Popover>
     </span>
   );
 }
@@ -151,7 +214,7 @@ function Figure({ attributes, children }: USFMNodeComponentProps) {
 }
 
 function Break({ marker }: USFMNodeComponentProps) {
-  return marker === 'pb' ? <hr className="usfm-page-break" /> : <br />;
+  return marker === 'pb' ? <Divider className="usfm-page-break" /> : <br />;
 }
 
 function Unknown({ marker, attributes, children }: USFMNodeComponentProps) {
