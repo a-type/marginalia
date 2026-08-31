@@ -2,3 +2,9 @@ package-lock.json
 pnpm-lock.yaml
 yarn.lock
 **/usfm-source/*
+public/usfm/*
+project.inlang/.meta.json
+project.inlang/cache/*
+project.inlang/README.md
+src/paraglide/*
+src/routeTree.gen.ts
