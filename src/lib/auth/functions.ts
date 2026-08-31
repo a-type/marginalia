@@ -1,25 +1,20 @@
 import { redirect } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
 
-import { oauth } from './atproto.server';
-import {
-  clearAppSession,
-  getAppSession,
-  getCurrentAccount,
-} from './auth.server';
-import { AppError } from './error';
+import { oauth } from '../atproto/server';
+import { clearAppSession, getAppSession, getCurrentAccount } from './server';
+
+const loginSchema = z.object({
+  identifier: z
+    .string()
+    .trim()
+    .min(1, 'Enter a valid handle, DID, or PDS address')
+    .max(255, 'Enter a valid handle, DID, or PDS address'),
+});
 
 export const loginFn = createServerFn({ method: 'POST' })
-  .validator((data: { identifier: string }) => {
-    const identifier = data.identifier.trim();
-    if (!identifier || identifier.length > 255) {
-      throw new AppError(
-        AppError.Code.BadRequest,
-        'Enter a valid handle, DID, or PDS address',
-      );
-    }
-    return { identifier };
-  })
+  .validator(loginSchema)
   .handler(async ({ data }) => {
     const url = await oauth.authorize(data.identifier);
     throw redirect({ href: url.href });

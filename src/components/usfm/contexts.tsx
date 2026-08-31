@@ -1,12 +1,12 @@
-import type { VerseId } from '#/lib/bible/verse';
+import type { BookId, VerseId } from '#/lib/bible/verse';
 import { createContext, useContext } from 'react';
 
-export const BookIdContext = createContext<string>('NONE');
+export const BookIdContext = createContext<BookId | null>(null);
 export function BookIdProvider({
   bookId,
   children,
 }: {
-  bookId: string;
+  bookId: BookId;
   children: React.ReactNode;
 }) {
   return (
@@ -65,4 +65,29 @@ export function useVerseId() {
     throw new Error('useVerseId must be used within a VerseIdProvider');
   }
   return verseId;
+}
+
+export interface VerseInteraction {
+  isSelected: (verseId: VerseId) => boolean;
+  toggle: (verseId: VerseId) => void;
+}
+
+const VerseInteractionContext = createContext<VerseInteraction | null>(null);
+
+export function VerseInteractionProvider({
+  value,
+  children,
+}: {
+  value: VerseInteraction;
+  children: React.ReactNode;
+}) {
+  return (
+    <VerseInteractionContext.Provider value={value}>
+      {children}
+    </VerseInteractionContext.Provider>
+  );
+}
+
+export function useOptionalVerseInteraction() {
+  return useContext(VerseInteractionContext);
 }

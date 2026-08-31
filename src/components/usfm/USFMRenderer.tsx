@@ -14,8 +14,26 @@ import type {
 
 export interface USFMRendererProps {
   usfm: string;
+  chapter?: number;
   components?: USFMComponents;
   className?: string;
+}
+
+function selectChapter(
+  document: USFMDocument,
+  chapter: number | undefined,
+): USFMDocument {
+  if (chapter === undefined) return document;
+
+  return {
+    ...document,
+    children: document.children.filter(
+      (node) =>
+        node.type !== 'marker' ||
+        node.category !== 'chapter' ||
+        Number(node.argument) === chapter,
+    ),
+  };
 }
 
 function RenderMarker({
@@ -91,10 +109,14 @@ function RenderDocument({
  */
 export function USFMRenderer({
   usfm,
+  chapter,
   components: componentOverrides,
   className,
 }: USFMRendererProps) {
-  const document = useMemo(() => parseUSFM(usfm), [usfm]);
+  const document = useMemo(
+    () => selectChapter(parseUSFM(usfm), chapter),
+    [chapter, usfm],
+  );
   const components = {
     ...defaultUSFMComponents,
     ...componentOverrides,

@@ -13,6 +13,7 @@ import { getLocale } from '#/paraglide/runtime';
 import uiCss from '@a-type/ui/main.css?url';
 import appCss from '../styles.css?url';
 
+import { Provider } from '@a-type/ui';
 import type { QueryClient } from '@tanstack/react-query';
 
 interface MyRouterContext {
@@ -62,7 +63,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        <Provider manifestPath={false}>{children}</Provider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',

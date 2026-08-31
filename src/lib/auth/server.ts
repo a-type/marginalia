@@ -3,7 +3,7 @@ import { clearSession, useSession } from '@tanstack/react-start/server';
 import { sql } from 'kysely';
 
 import { getRequiredClient } from '#/db';
-import { AppError } from './error';
+import { AppError } from '../error';
 
 interface AppSessionData {
   did: string;

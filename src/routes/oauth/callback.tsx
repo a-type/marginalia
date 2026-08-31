@@ -1,12 +1,13 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
 
-import { oauth } from '#/lib/atproto.server';
-import { setAppSession, upsertAccount } from '#/lib/auth.server';
+import { oauth } from '#/lib/atproto/server';
+import { setAppSession, upsertAccount } from '#/lib/auth/server';
 import { AppError } from '#/lib/error';
 
 const callbackFn = createServerFn({ method: 'GET' })
-  .validator((search: Record<string, string>) => search)
+  .validator(z.record(z.string(), z.string()))
   .handler(async ({ data }) => {
     const { session } = await oauth.callback(new URLSearchParams(data));
     const response = await session.fetchHandler(

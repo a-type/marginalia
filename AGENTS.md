@@ -28,14 +28,15 @@ See [README.md](README.md) for deployment and TAP operation notes. Prefer [packa
 - UI messages live in [messages/](messages/). Paraglide generates the runtime in `src/paraglide/` during development/build.
 - Use the `#/*` alias for imports from `src/`. TypeScript is strict and rejects unused locals and parameters.
 - Throw structured `AppError` values from application boundaries; global handling and logging are configured in [src/start.ts](src/start.ts).
+- When referencing a verse, use the defined [`VerseId`](src/lib/bible/verse.ts) as a primary ID format whenever relevant.
 
 ## ATProto Model And Flow
 
 - Treat [lexicons/](lexicons/) as the source of truth for `com.marginalia.commentary` and `com.marginalia.annotation`. Commentary records name collections; annotation records reference verses and optionally a commentary, comment, and color.
 - Never hand-edit `src/lexicons/`; run `pnpm lexicons`. Import generated builders, parsers, validators, and NSIDs instead of duplicating protocol shapes or collection strings.
-- [src/lib/atproto.server.ts](src/lib/atproto.server.ts) owns `NodeOAuthClient` configuration and Kysely-backed OAuth state/session stores. [src/routes/oauth/callback.tsx](src/routes/oauth/callback.tsx) completes OAuth, resolves the repository handle, upserts the account, and creates the app cookie session.
+- [src/lib/atproto/server.ts](src/lib/atproto/server.ts) owns `NodeOAuthClient` configuration and Kysely-backed OAuth state/session stores. [src/routes/oauth/callback.tsx](src/routes/oauth/callback.tsx) completes OAuth, resolves the repository handle, upserts the account, and creates the app cookie session.
 - `APP_URL` must be the exact public origin used for OAuth. Local OAuth requires `127.0.0.1`, not `localhost`; for the current Vite config use `http://127.0.0.1:7654`. `SESSION_PASSWORD` must be at least 32 characters. Do not expose either session data or secrets to client modules.
-- TAP delivers repository events to `POST /api/tap/webhook`. Keep transport authorization and event unwrapping in [src/lib/tap.server.ts](src/lib/tap.server.ts), and keep database queries in [src/lib/db/queries.ts](src/lib/db/queries.ts) independent of TAP event types.
+- TAP delivers repository events to `POST /api/tap/webhook`. Keep transport authorization and event unwrapping in [src/lib/tap/server.ts](src/lib/tap/server.ts), and keep database queries in [src/lib/db/queries.ts](src/lib/db/queries.ts) independent of TAP event types.
 - Validate incoming records with generated `$parse` functions and validate verse IDs before persistence. Preserve protocol field casing such as `authorDid`, `commentaryId`, and `createdAt` in lexicon-backed database models.
 - SQLite commentary and annotation tables are a queryable local projection of ATProto records. Preserve AT URIs, CIDs, author DIDs, record keys, raw record JSON, and idempotent upsert/delete behavior. Annotation and verse rows must be updated transactionally.
 - `TAP_ADMIN_PASSWORD` is optional; when configured, the webhook must continue to verify TAP Basic authentication.

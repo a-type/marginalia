@@ -4,6 +4,7 @@ import {
   ChapterNumberProvider,
   useBookId,
   useChapterNumber,
+  useOptionalVerseInteraction,
   VerseIdProvider,
 } from './contexts';
 import type {
@@ -80,12 +81,39 @@ function Verse({ argument, children }: USFMNodeComponentProps) {
   const chapterNumber = useChapterNumber();
   const verseNumber = argument ? Number(argument) : 0;
   const verseId = formatVerseId(bookId, chapterNumber, verseNumber);
+  const interaction = useOptionalVerseInteraction();
+  const selected = interaction?.isSelected(verseId) ?? false;
+
+  const handleClick = (event: React.MouseEvent<HTMLSpanElement>) => {
+    const target = event.target;
+    const interactiveTarget =
+      target instanceof Element
+        ? target.closest('button, a, input, textarea, select, [role="button"]')
+        : null;
+    if (interactiveTarget && interactiveTarget !== event.currentTarget) {
+      return;
+    }
+    interaction?.toggle(verseId);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLSpanElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    interaction?.toggle(verseId);
+  };
 
   return (
     <VerseIdProvider verseId={verseId}>
       <span
         className="usfm-verse"
         id={argument ? `verse-${verseId}` : undefined}
+        data-verse-id={verseId}
+        data-selected={selected || undefined}
+        role={interaction ? 'button' : undefined}
+        tabIndex={interaction ? 0 : undefined}
+        aria-pressed={interaction ? selected : undefined}
+        onClick={interaction ? handleClick : undefined}
+        onKeyDown={interaction ? handleKeyDown : undefined}
         style={{
           anchorName: `--${verseId}`,
         }}
@@ -164,6 +192,7 @@ function Note({ marker, children }: USFMNodeComponentProps) {
       <Popover>
         <Popover.Trigger
           openOnHover
+          nativeButton={false}
           render={<sup />}
           className="usfm-note-marker"
           aria-label={label}

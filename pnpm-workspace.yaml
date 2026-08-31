@@ -4,3 +4,5 @@ allowBuilds:
   unrs-resolver: true
   esbuild: true
   lightningcss: true
+minimumReleaseAgeExclude:
+  - '@a-type/ui@6.1.39'

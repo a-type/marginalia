@@ -1,0 +1,28 @@
+.form,
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-sp-sm);
+}
+
+.form {
+  gap: var(--m-sp-md);
+}
+
+.fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fieldset legend {
+  margin-bottom: var(--m-sp-sm);
+}
+
+.swatch {
+  display: block;
+  width: var(--m-sp-md);
+  height: var(--m-sp-md);
+  border-radius: 50%;
+  background: var(--m-tint-heavy);
+}

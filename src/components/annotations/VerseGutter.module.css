@@ -1,0 +1,35 @@
+.gutter {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.controls,
+.indicator {
+  position: absolute;
+  right: var(--m-sp-md);
+  z-index: 1;
+  pointer-events: auto;
+}
+
+.controls {
+  display: flex;
+  gap: var(--m-sp-xs);
+}
+
+.controls[data-fixed] {
+  position: fixed;
+  right: auto;
+  top: var(--m-sp-md);
+}
+
+.indicator {
+  display: grid;
+  place-items: center;
+  width: var(--m-sp-lg);
+  height: var(--m-sp-lg);
+  translate: calc(var(--stack-index) * -0.45rem) -0.2rem;
+  border-radius: 50%;
+  color: var(--m-tint-ink);
+  background: var(--m-tint-wash);
+}

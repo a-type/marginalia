@@ -1,0 +1,11 @@
+.panel,
+.form,
+.field {
+  width: 100%;
+  min-width: 0;
+}
+
+.field input {
+  width: 100%;
+  max-width: 100%;
+}

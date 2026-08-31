@@ -1,28 +1,29 @@
-import { Box } from '@a-type/ui';
 import { createFileRoute } from '@tanstack/react-router';
+import { useEffect } from 'react';
 
-import { AuthPanel } from '#/components/auth/AuthPanel';
-import { USFMRenderer } from '#/components/usfm';
-import firstJohn from '#/data/usfm-source/web/92-1JNeng-web-c.usfm?raw';
-import { getCurrentAccountFn } from '#/lib/auth.functions';
-import cls from './index.module.css';
+import { readStoredBibleLocation } from '#/lib/bible/location';
+import { readStoredTranslationId } from '#/lib/bible/source';
 
 export const Route = createFileRoute('/')({
-  loader: () => getCurrentAccountFn(),
   component: Home,
 });
 
 function Home() {
-  const account = Route.useLoaderData();
+  const navigate = Route.useNavigate();
 
-  return (
-    <main className={cls.root}>
-      <Box className={cls.pane}>
-        <AuthPanel account={account} />
-      </Box>
-      <Box surface elevated="md" className={cls.content}>
-        <USFMRenderer usfm={firstJohn} />
-      </Box>
-    </main>
-  );
+  useEffect(() => {
+    const location = readStoredBibleLocation();
+    const translation = readStoredTranslationId();
+    void navigate({
+      to: '/$translation/$book/$chapter',
+      params: {
+        translation,
+        book: location.bookId,
+        chapter: String(location.chapter),
+      },
+      replace: true,
+    });
+  }, [navigate]);
+
+  return null;
 }

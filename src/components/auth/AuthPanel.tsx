@@ -2,8 +2,8 @@ import { useServerFn } from '@tanstack/react-start';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 
-import { loginFn, logoutFn } from '#/lib/auth.functions';
-import type { Account } from '#/lib/auth.server';
+import { loginFn, logoutFn } from '#/lib/auth/functions';
+import type { Account } from '#/lib/auth/server';
 import { m } from '#/paraglide/messages';
 
 import { Box, Button, Field, Input, Text } from '@a-type/ui';

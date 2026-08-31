@@ -5,5 +5,20 @@
   "example_message": "Willkommen in deiner i18n-App.",
   "language_label": "Sprache",
   "current_locale": "Aktuelle Sprache: {locale}",
-  "learn_router": "Paraglide JS lernen"
+  "learn_router": "Paraglide JS lernen",
+  "bible_book_label": "Buch",
+  "bible_chapter_label": "Kapitel",
+  "bible_loading": "Kapitel wird geladen…",
+  "bible_load_error": "Dieses Buch konnte nicht geladen werden.",
+  "bible_chapter_unavailable": "Dieses Kapitel ist in dieser Übersetzung nicht verfügbar.",
+  "annotation_add": "Anmerkung hinzufügen",
+  "annotation_clear_selection": "Versauswahl aufheben",
+  "annotation_dialog_title": "Anmerkung hinzufügen",
+  "annotation_color_label": "Markierungsfarbe",
+  "annotation_color_none": "Keine",
+  "annotation_comment_label": "Kommentar",
+  "annotation_comment_placeholder": "Kommentar hinzufügen",
+  "annotation_submit": "Anmerkung speichern",
+  "annotation_validation": "Wähle eine Markierungsfarbe oder gib einen Kommentar ein.",
+  "annotation_indicator": "Deine Anmerkung"
 }

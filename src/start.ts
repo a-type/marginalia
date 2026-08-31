@@ -1,8 +1,16 @@
 import { isNotFound, isRedirect } from '@tanstack/react-router';
-import { createMiddleware, createStart } from '@tanstack/react-start';
+import {
+  createCsrfMiddleware,
+  createMiddleware,
+  createStart,
+} from '@tanstack/react-start';
 
 import { AppError, AppErrorCode } from './lib/error';
 import { logger } from './logger';
+
+const csrfMiddleware = createCsrfMiddleware({
+  filter: (ctx) => ctx.handlerType === 'serverFn',
+});
 
 const errorHandlingMiddleware = createMiddleware({ type: 'function' }).server(
   async ({ next }) => {
@@ -23,5 +31,6 @@ const errorHandlingMiddleware = createMiddleware({ type: 'function' }).server(
 );
 
 export const startInstance = createStart(() => ({
+  requestMiddleware: [csrfMiddleware],
   functionMiddleware: [errorHandlingMiddleware],
 }));

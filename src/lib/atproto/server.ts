@@ -8,7 +8,7 @@ import { NodeOAuthClient } from '@atproto/oauth-client-node';
 import { sql } from 'kysely';
 
 import { getRequiredClient } from '#/db';
-import { AppError } from './error';
+import { AppError } from '../error';
 
 const scope = 'atproto transition:generic';
 if (!process.env.APP_URL) {

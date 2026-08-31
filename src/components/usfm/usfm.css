@@ -47,6 +47,21 @@
   scroll-margin-top: 2rem;
 }
 
+.usfm-verse[role='button'] {
+  border-radius: var(--m-rd-sm);
+  cursor: pointer;
+}
+
+.usfm-verse[data-selected] {
+  background: var(--m-tint-wash);
+  box-shadow: 0 0 0 var(--m-sp-xs) var(--m-tint-wash);
+}
+
+.usfm-verse[role='button']:focus-visible {
+  outline: 2px solid var(--m-tint-heavy);
+  outline-offset: 2px;
+}
+
 .usfm-verse-number {
   margin: 0 var(--m-sp-sm) 0 var(--m-sp);
   color: var(--m-tint-heavy);

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { AppError } from '#/lib/error';
-import { authorizeTapWebhook, ingestTapWebhookPayload } from '#/lib/tap.server';
+import { authorizeTapWebhook, ingestTapWebhookPayload } from '#/lib/tap/server';
 
 export const Route = createFileRoute('/api/tap/webhook')({
   server: {

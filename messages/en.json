@@ -14,5 +14,20 @@
   "cozy_clean_zebra_offer": "Unable to sign in",
   "best_royal_raven_bask": "Signed in with ATProto",
   "legal_cool_snail_taste": "Sign in via Atmosphere",
-  "extra_happy_hare_blink": "Bluesky, Blacksky, Eurosky, etc."
+  "extra_happy_hare_blink": "Bluesky, Blacksky, Eurosky, etc.",
+  "bible_book_label": "Book",
+  "bible_chapter_label": "Chapter",
+  "bible_loading": "Loading chapter…",
+  "bible_load_error": "Unable to load this book.",
+  "bible_chapter_unavailable": "This chapter is not available in this translation.",
+  "annotation_add": "Add annotation",
+  "annotation_clear_selection": "Clear verse selection",
+  "annotation_dialog_title": "Add annotation",
+  "annotation_color_label": "Highlight color",
+  "annotation_color_none": "None",
+  "annotation_comment_label": "Comment",
+  "annotation_comment_placeholder": "Add a comment",
+  "annotation_submit": "Save annotation",
+  "annotation_validation": "Choose a highlight color or enter a comment.",
+  "annotation_indicator": "Your annotation"
 }

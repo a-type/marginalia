@@ -10,6 +10,7 @@ import { nitro } from 'nitro/vite';
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
+  ssr: { noExternal: ['@a-type/ui'] },
   plugins: [
     devtools(),
     paraglideVitePlugin({
