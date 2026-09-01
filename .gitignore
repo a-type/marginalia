@@ -13,3 +13,8 @@ __unconfig*
 todos.json
 *.Identifier
 *.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.db-shm
+*.db-wal
