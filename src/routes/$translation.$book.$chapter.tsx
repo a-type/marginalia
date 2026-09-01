@@ -1,11 +1,15 @@
 import { Box } from '@a-type/ui';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
 import { AnnotationDialog } from '#/components/annotations/AnnotationDialog';
 import { VerseGutter } from '#/components/annotations/VerseGutter';
-import { AuthPanel } from '#/components/auth/AuthPanel';
+import { UserMenu } from '#/components/auth/UserMenu';
 import { BibleLocationSelector } from '#/components/bible/BibleLocationSelector';
 import type { VerseInteraction } from '#/components/usfm';
 import {
@@ -15,7 +19,6 @@ import {
 } from '#/components/usfm';
 import { listVisibleAnnotations } from '#/lib/annotations/indexeddb';
 import { requestAnnotationSync } from '#/lib/annotations/sync';
-import { getCurrentAccountFn } from '#/lib/auth/functions';
 import { parseBibleLocation, storeBibleLocation } from '#/lib/bible/location';
 import {
   formatVerseSelection,
@@ -31,14 +34,15 @@ import {
 } from '#/lib/bible/source';
 import type { BookId } from '#/lib/bible/verse';
 import { formatVerseId, parseVerseId } from '#/lib/bible/verse';
-import cls from './index.module.css';
+import { userAccountQueryOptions } from '#/queries/user';
+import cls from './$translation.$book.$chapter.module.css';
 
 export const Route = createFileRoute('/$translation/$book/$chapter')({
   validateSearch: (search: Record<string, unknown>) => {
     const verses = formatVerseSelection(parseVerseSelection(search.verses));
     return verses ? { verses } : {};
   },
-  loader: async ({ params }) => {
+  loader: async ({ params, context }) => {
     const location = parseBibleLocation(params.book, params.chapter);
     if (!location || !isTranslationId(params.translation)) throw notFound();
 
@@ -46,13 +50,14 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
     const book = getTranslationBook(manifest, location.bookId);
     if (!hasTranslationChapter(book, location.chapter)) throw notFound();
 
-    const [account, source] = await Promise.all([
-      getCurrentAccountFn(),
-      fetchTranslationSource(params.translation, book),
-    ]);
+    const source = await fetchTranslationSource(params.translation, book);
+
+    await context.queryClient.query({
+      ...userAccountQueryOptions,
+      staleTime: 'static',
+    });
 
     return {
-      account,
       location,
       manifest,
       source,
@@ -63,8 +68,7 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
 });
 
 function BibleReader() {
-  const { account, location, manifest, source, translationId } =
-    Route.useLoaderData();
+  const { location, manifest, source, translationId } = Route.useLoaderData();
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const queryClient = useQueryClient();
@@ -74,6 +78,7 @@ function BibleReader() {
     formatVerseId(location.bookId, location.chapter, verse),
   );
   const selectedSet = new Set(selectedVerses);
+  const { data: account } = useSuspenseQuery(userAccountQueryOptions);
   const annotations = useQuery({
     queryKey: ['annotations', account?.did ?? null],
     queryFn: () => listVisibleAnnotations(account?.did ?? null),
@@ -136,18 +141,18 @@ function BibleReader() {
 
   return (
     <main className={cls.root}>
-      <Box className={cls.pane}>
-        <BibleLocationSelector
-          bookId={location.bookId}
-          chapter={location.chapter}
-          manifest={manifest}
-          onBookChange={(bookId) => void navigateTo(bookId, 1)}
-          onChapterChange={(chapter) =>
-            void navigateTo(location.bookId, chapter)
-          }
-        />
-        <AuthPanel account={account} />
+      <Box className={cls.pane}></Box>
+      <Box className={cls.menubar}>
+        <UserMenu />
       </Box>
+      <BibleLocationSelector
+        bookId={location.bookId}
+        chapter={location.chapter}
+        manifest={manifest}
+        onBookChange={(bookId) => void navigateTo(bookId, 1)}
+        onChapterChange={(chapter) => void navigateTo(location.bookId, chapter)}
+        className={cls.location}
+      />
       <Box surface elevated="md" className={cls.content}>
         <BookIdProvider bookId={location.bookId}>
           <VerseInteractionProvider value={interaction}>

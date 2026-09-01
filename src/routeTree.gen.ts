@@ -14,7 +14,6 @@ import { Route as OauthClientMetadataDotjsonRouteImport } from './routes/oauth-c
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
 import { Route as TranslationBookChapterRouteImport } from './routes/$translation.$book.$chapter'
 import { Route as ApiTapWebhookRouteImport } from './routes/api/tap/webhook'
-import { Route as BookChapterRouteTmpRouteImport } from './routes/book-chapter.route.tmp'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -42,17 +41,11 @@ const ApiTapWebhookRoute = ApiTapWebhookRouteImport.update({
   path: '/api/tap/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BookChapterRouteTmpRoute = BookChapterRouteTmpRouteImport.update({
-  id: '/book-chapter/route/tmp',
-  path: '/book-chapter/route/tmp',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
-  '/book-chapter/route/tmp': typeof BookChapterRouteTmpRoute
   '/$translation/$book/$chapter': typeof TranslationBookChapterRoute
   '/api/tap/webhook': typeof ApiTapWebhookRoute
 }
@@ -60,7 +53,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
-  '/book-chapter/route/tmp': typeof BookChapterRouteTmpRoute
   '/$translation/$book/$chapter': typeof TranslationBookChapterRoute
   '/api/tap/webhook': typeof ApiTapWebhookRoute
 }
@@ -69,7 +61,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
-  '/book-chapter/route/tmp': typeof BookChapterRouteTmpRoute
   '/$translation/$book/$chapter': typeof TranslationBookChapterRoute
   '/api/tap/webhook': typeof ApiTapWebhookRoute
 }
@@ -79,7 +70,6 @@ export interface FileRouteTypes {
     | '/'
     | '/oauth-client-metadata.json'
     | '/oauth/callback'
-    | '/book-chapter/route/tmp'
     | '/$translation/$book/$chapter'
     | '/api/tap/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -87,7 +77,6 @@ export interface FileRouteTypes {
     | '/'
     | '/oauth-client-metadata.json'
     | '/oauth/callback'
-    | '/book-chapter/route/tmp'
     | '/$translation/$book/$chapter'
     | '/api/tap/webhook'
   id:
@@ -95,7 +84,6 @@ export interface FileRouteTypes {
     | '/'
     | '/oauth-client-metadata.json'
     | '/oauth/callback'
-    | '/book-chapter/route/tmp'
     | '/$translation/$book/$chapter'
     | '/api/tap/webhook'
   fileRoutesById: FileRoutesById
@@ -104,7 +92,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   OauthClientMetadataDotjsonRoute: typeof OauthClientMetadataDotjsonRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
-  BookChapterRouteTmpRoute: typeof BookChapterRouteTmpRoute
   TranslationBookChapterRoute: typeof TranslationBookChapterRoute
   ApiTapWebhookRoute: typeof ApiTapWebhookRoute
 }
@@ -146,13 +133,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTapWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/book-chapter/route/tmp': {
-      id: '/book-chapter/route/tmp'
-      path: '/book-chapter/route/tmp'
-      fullPath: '/book-chapter/route/tmp'
-      preLoaderRoute: typeof BookChapterRouteTmpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -160,7 +140,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   OauthClientMetadataDotjsonRoute: OauthClientMetadataDotjsonRoute,
   OauthCallbackRoute: OauthCallbackRoute,
-  BookChapterRouteTmpRoute: BookChapterRouteTmpRoute,
   TranslationBookChapterRoute: TranslationBookChapterRoute,
   ApiTapWebhookRoute: ApiTapWebhookRoute,
 }

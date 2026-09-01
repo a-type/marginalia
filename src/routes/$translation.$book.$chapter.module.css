@@ -6,12 +6,12 @@
   gap: var(--m-sp-md);
 
   display: grid;
-  grid-template-areas: 'pane' 'content';
+  grid-template-areas: 'menubar' 'pane' 'location' 'content';
   grid-template-columns: minmax(0, 1fr);
 
   @media (min-width: 900px) {
-    grid-template-areas: 'pane content';
-    grid-template-columns: 20rem 1fr;
+    grid-template-areas: 'g1 menubar location g2' 'g1 pane content g2';
+    grid-template-columns: 1fr 20rem minmax(300px, 800px) 1fr;
   }
 }
 
@@ -34,8 +34,10 @@
   padding-right: calc(var(--m-surface-p-inline) + 3.5rem);
 }
 
-.locationSelector {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--m-sp-sm);
+.location {
+  grid-area: location;
+}
+
+.menubar {
+  grid-area: menubar;
 }

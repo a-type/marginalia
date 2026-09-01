@@ -1,4 +1,4 @@
-import { Select } from '@a-type/ui';
+import { clsx, Select } from '@a-type/ui';
 
 import type { TranslationManifest } from '#/lib/bible/source';
 import type { BookId } from '#/lib/bible/verse';
@@ -11,6 +11,7 @@ export interface BibleLocationSelectorProps {
   manifest: TranslationManifest;
   onBookChange: (bookId: BookId) => void;
   onChapterChange: (chapter: number) => void;
+  className?: string;
 }
 
 export function BibleLocationSelector({
@@ -19,11 +20,12 @@ export function BibleLocationSelector({
   manifest,
   onBookChange,
   onChapterChange,
+  className,
 }: BibleLocationSelectorProps) {
   const book = manifest.books.find((option) => option.id === bookId);
 
   return (
-    <div className={cls.root}>
+    <div className={clsx(cls.root, className)}>
       <Select
         value={bookId}
         onValueChange={(v) => {
