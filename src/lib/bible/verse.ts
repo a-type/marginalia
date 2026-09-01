@@ -36,3 +36,7 @@ export function formatVerseId(
 ): VerseId {
   return `${bookId}/${chapter}:${verse}`;
 }
+
+export function formatVerseAnchorName(verseId: VerseId): `--verse-${string}` {
+  return `--verse-${verseId.replaceAll('/', '-').replaceAll(':', '-')}`;
+}

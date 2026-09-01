@@ -1,4 +1,4 @@
-import { formatVerseId } from '#/lib/bible/verse';
+import { formatVerseAnchorName, formatVerseId } from '#/lib/bible/verse';
 import { Divider, Popover, Heading as UIHeading } from '@a-type/ui';
 import {
   ChapterNumberProvider,
@@ -115,7 +115,7 @@ function Verse({ argument, children }: USFMNodeComponentProps) {
         onClick={interaction ? handleClick : undefined}
         onKeyDown={interaction ? handleKeyDown : undefined}
         style={{
-          anchorName: `--${verseId}`,
+          anchorName: formatVerseAnchorName(verseId),
         }}
       >
         {verseNumber && (

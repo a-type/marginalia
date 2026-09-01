@@ -27,11 +27,11 @@
 .content {
   grid-area: content;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   position: relative;
   min-width: 0;
   padding: var(--m-surface-p);
-  padding-right: calc(var(--m-surface-p-inline) + 3.5rem);
+  gap: var(--m-sp-md);
 }
 
 .location {

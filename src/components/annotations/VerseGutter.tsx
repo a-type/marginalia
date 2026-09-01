@@ -1,8 +1,8 @@
 import { Button, Icon, Tooltip } from '@a-type/ui';
-import { useEffect, useRef, useState } from 'react';
 
 import type { LocalAnnotation } from '#/lib/annotations/types';
 import type { VerseId } from '#/lib/bible/verse';
+import { formatVerseAnchorName } from '#/lib/bible/verse';
 import { m } from '#/paraglide/messages';
 import cls from './VerseGutter.module.css';
 
@@ -19,72 +19,17 @@ export function VerseGutter({
   onAdd,
   onClear,
 }: VerseGutterProps) {
-  const gutterRef = useRef<HTMLDivElement>(null);
-  const [fixedPosition, setFixedPosition] = useState<number | null>(null);
-  const [versePositions, setVersePositions] = useState<Map<VerseId, number>>(
-    new Map(),
-  );
   const anchorVerse = selectedVerses.at(0);
 
-  useEffect(() => {
-    const update = () => {
-      const container = gutterRef.current?.parentElement;
-      if (!container) return;
-
-      const containerRect = container.getBoundingClientRect();
-      const verseIds = anchorVerse
-        ? [anchorVerse]
-        : annotations.map((annotation) => annotation.verses[0]);
-      setVersePositions(
-        new Map(
-          verseIds.flatMap((verseId) => {
-            const verse = document.getElementById(`verse-${verseId}`);
-            return verse
-              ? [
-                  [
-                    verseId,
-                    verse.getBoundingClientRect().top - containerRect.top,
-                  ],
-                ]
-              : [];
-          }),
-        ),
-      );
-
-      const anchor = anchorVerse
-        ? document.getElementById(`verse-${anchorVerse}`)
-        : null;
-      if (!anchor || anchor.getBoundingClientRect().top >= 16) {
-        setFixedPosition(null);
-        return;
-      }
-      setFixedPosition(containerRect.right - 48);
-    };
-
-    update();
-    const resizeObserver = new ResizeObserver(update);
-    const container = gutterRef.current?.parentElement;
-    if (container) resizeObserver.observe(container);
-    window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
-    };
-  }, [anchorVerse, annotations]);
+  // In CSS, anchored elements cannot be mounted before their anchor targets.
+  // To work around timing issues,
 
   if (anchorVerse) {
     return (
-      <div ref={gutterRef} className={cls.gutter}>
+      <div className={cls.gutter}>
         <div
           className={cls.controls}
-          data-fixed={fixedPosition !== null || undefined}
-          style={
-            fixedPosition === null
-              ? { top: versePositions.get(anchorVerse) }
-              : { left: fixedPosition }
-          }
+          style={{ positionAnchor: formatVerseAnchorName(anchorVerse) }}
         >
           <Tooltip content={m.annotation_add()}>
             <Button aria-label={m.annotation_add()} onClick={onAdd}>
@@ -104,30 +49,34 @@ export function VerseGutter({
     );
   }
 
-  const stackCounts = new Map<VerseId, number>();
+  const annotationsByVerse = annotations.reduce((groups, annotation) => {
+    const verseId = annotation.verses[0];
+    const group = groups.get(verseId) ?? [];
+    group.push(annotation);
+    groups.set(verseId, group);
+    return groups;
+  }, new Map<VerseId, LocalAnnotation[]>());
+
   return (
-    <div ref={gutterRef} className={cls.gutter}>
-      {annotations.map((annotation) => {
-        const verseId = annotation.verses[0];
-        const stackIndex = stackCounts.get(verseId) ?? 0;
-        stackCounts.set(verseId, stackIndex + 1);
-        return (
-          <span
-            key={annotation.id}
-            className={cls.indicator}
-            role="img"
-            aria-label={m.annotation_indicator()}
-            style={
-              {
-                top: versePositions.get(verseId),
-                '--stack-index': stackIndex,
-              } as React.CSSProperties
-            }
-          >
-            <Icon name="chat" />
-          </span>
-        );
-      })}
+    <div className={cls.gutter}>
+      {[...annotationsByVerse].map(([verseId, verseAnnotations]) => (
+        <div
+          key={verseId}
+          className={cls.indicators}
+          style={{ positionAnchor: formatVerseAnchorName(verseId) }}
+        >
+          {verseAnnotations.map((annotation) => (
+            <span
+              key={annotation.id}
+              className={cls.indicator}
+              role="img"
+              aria-label={m.annotation_indicator()}
+            >
+              <Icon name="chat" />
+            </span>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
