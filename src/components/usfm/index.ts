@@ -1,5 +1,9 @@
-export { BookIdProvider, VerseInteractionProvider } from './contexts';
-export type { VerseInteraction } from './contexts';
+export {
+  BookIdProvider,
+  VerseInteractionProvider,
+  VersePresentationProvider,
+} from './contexts';
+export type { VerseInteraction, VersePresentation } from './contexts';
 export { defaultUSFMComponents } from './default-components';
 export { parseUSFM } from './parser';
 export { USFMRenderer } from './USFMRenderer';

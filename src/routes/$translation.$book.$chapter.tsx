@@ -8,14 +8,16 @@ import { createFileRoute, notFound } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
 import { AnnotationDialog } from '#/components/annotations/AnnotationDialog';
+import { AnnotationView } from '#/components/annotations/AnnotationView';
 import { VerseGutter } from '#/components/annotations/VerseGutter';
 import { UserMenu } from '#/components/auth/UserMenu';
 import { BibleLocationSelector } from '#/components/bible/BibleLocationSelector';
-import type { VerseInteraction } from '#/components/usfm';
+import type { VerseInteraction, VersePresentation } from '#/components/usfm';
 import {
   BookIdProvider,
   USFMRenderer,
   VerseInteractionProvider,
+  VersePresentationProvider,
 } from '#/components/usfm';
 import { listVisibleAnnotations } from '#/lib/annotations/indexeddb';
 import { requestAnnotationSync } from '#/lib/annotations/sync';
@@ -40,7 +42,14 @@ import cls from './$translation.$book.$chapter.module.css';
 export const Route = createFileRoute('/$translation/$book/$chapter')({
   validateSearch: (search: Record<string, unknown>) => {
     const verses = formatVerseSelection(parseVerseSelection(search.verses));
-    return verses ? { verses } : {};
+    const annotation =
+      typeof search.annotation === 'string' && search.annotation
+        ? search.annotation
+        : undefined;
+    return {
+      ...(verses ? { verses } : {}),
+      ...(annotation ? { annotation } : {}),
+    };
   },
   loader: async ({ params, context }) => {
     const location = parseBibleLocation(params.book, params.chapter);
@@ -115,8 +124,22 @@ function BibleReader() {
 
   const setSelectedNumbers = (verses: readonly number[]) =>
     navigate({
-      search: verses.length ? { verses: formatVerseSelection(verses) } : {},
+      search: {
+        ...(verses.length ? { verses: formatVerseSelection(verses) } : {}),
+        ...(search.annotation ? { annotation: search.annotation } : {}),
+      },
       replace: true,
+      resetScroll: false,
+    });
+
+  const setOpenAnnotation = (annotation?: string) =>
+    navigate({
+      search: {
+        ...(search.verses ? { verses: search.verses } : {}),
+        ...(annotation ? { annotation } : {}),
+      },
+      replace: true,
+      resetScroll: false,
     });
 
   const interaction: VerseInteraction = {
@@ -138,6 +161,54 @@ function BibleReader() {
       firstVerse.chapter === location.chapter
     );
   });
+  const openAnnotation = chapterAnnotations.find(
+    (annotation) => annotation.id === search.annotation,
+  );
+  const annotatedNumbers = openAnnotation
+    ? [
+        ...new Set(
+          openAnnotation.verses.map((verse) => parseVerseId(verse).verse),
+        ),
+      ].sort((left, right) => left - right)
+    : [];
+  const collapsedNumbers = new Set<number>();
+  const ellipsisNumbers = new Set<number>();
+  for (let index = 1; index < annotatedNumbers.length; index += 1) {
+    const previous = annotatedNumbers[index - 1];
+    const current = annotatedNumbers[index];
+    if (current - previous <= 1) continue;
+    ellipsisNumbers.add(previous + 1);
+    for (let verse = previous + 1; verse < current; verse += 1) {
+      collapsedNumbers.add(verse);
+    }
+  }
+  const lastAnnotatedNumber = annotatedNumbers.at(-1);
+  const annotatedNumberSet = new Set(annotatedNumbers);
+  const presentation: VersePresentation = {
+    active: Boolean(openAnnotation),
+    isAnnotated: (verseId) =>
+      annotatedNumberSet.has(parseVerseId(verseId).verse),
+    getVisibility: (verseId) => {
+      const verse = parseVerseId(verseId).verse;
+      if (ellipsisNumbers.has(verse)) return 'ellipsis';
+      if (collapsedNumbers.has(verse)) return 'hidden';
+      return 'visible';
+    },
+    renderAfter: (verseId) => {
+      if (
+        !openAnnotation ||
+        parseVerseId(verseId).verse !== lastAnnotatedNumber
+      ) {
+        return null;
+      }
+      return (
+        <AnnotationView
+          annotation={openAnnotation}
+          onClose={() => void setOpenAnnotation()}
+        />
+      );
+    },
+  };
 
   return (
     <main className={cls.root}>
@@ -156,13 +227,20 @@ function BibleReader() {
       <Box surface elevated="md" className={cls.content}>
         <BookIdProvider bookId={location.bookId}>
           <VerseInteractionProvider value={interaction}>
-            <USFMRenderer usfm={source} chapter={location.chapter} />
+            <VersePresentationProvider value={presentation}>
+              <USFMRenderer usfm={source} chapter={location.chapter} />
+            </VersePresentationProvider>
           </VerseInteractionProvider>
         </BookIdProvider>
         <VerseGutter
           selectedVerses={selectedVerses}
           annotations={chapterAnnotations}
           onAdd={() => setDialogOpen(true)}
+          onOpen={(annotationId) =>
+            void setOpenAnnotation(
+              search.annotation === annotationId ? undefined : annotationId,
+            )
+          }
           onClear={() => void setSelectedNumbers([])}
         />
         <AnnotationDialog

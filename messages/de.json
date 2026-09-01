@@ -20,5 +20,7 @@
   "annotation_comment_placeholder": "Kommentar hinzufügen",
   "annotation_submit": "Anmerkung speichern",
   "annotation_validation": "Wähle eine Markierungsfarbe oder gib einen Kommentar ein.",
-  "annotation_indicator": "Deine Anmerkung"
+  "annotation_indicator": "Anmerkung öffnen",
+  "annotation_close": "Anmerkung schließen",
+  "annotation_highlight_only": "Markierung"
 }

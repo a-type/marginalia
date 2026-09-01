@@ -15,8 +15,10 @@
 .indicator {
   display: grid;
   place-items: center;
+  min-width: var(--m-sp-lg);
   width: var(--m-sp-lg);
   height: var(--m-sp-lg);
+  padding: 0;
   translate: 0 -0.2rem;
   border-radius: 50%;
   color: var(--m-tint-ink);

@@ -1,0 +1,17 @@
+.root {
+  text-indent: 0;
+  transition: height var(--m-dur) var(--m-ease);
+  interpolate-size: allow-keywords;
+  overflow: clip;
+  @starting-style {
+    & {
+      height: 0;
+    }
+  }
+}
+
+.comment {
+  flex: 1;
+  min-width: 0;
+  white-space: pre-wrap;
+}

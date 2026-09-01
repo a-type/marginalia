@@ -91,3 +91,30 @@ export function VerseInteractionProvider({
 export function useOptionalVerseInteraction() {
   return useContext(VerseInteractionContext);
 }
+
+export interface VersePresentation {
+  active: boolean;
+  isAnnotated: (verseId: VerseId) => boolean;
+  getVisibility: (verseId: VerseId) => 'visible' | 'ellipsis' | 'hidden';
+  renderAfter: (verseId: VerseId) => React.ReactNode;
+}
+
+const VersePresentationContext = createContext<VersePresentation | null>(null);
+
+export function VersePresentationProvider({
+  value,
+  children,
+}: {
+  value: VersePresentation;
+  children: React.ReactNode;
+}) {
+  return (
+    <VersePresentationContext.Provider value={value}>
+      {children}
+    </VersePresentationContext.Provider>
+  );
+}
+
+export function useOptionalVersePresentation() {
+  return useContext(VersePresentationContext);
+}

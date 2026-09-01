@@ -10,6 +10,7 @@ export interface VerseGutterProps {
   selectedVerses: readonly VerseId[];
   annotations: readonly LocalAnnotation[];
   onAdd: () => void;
+  onOpen: (annotationId: string) => void;
   onClear: () => void;
 }
 
@@ -17,12 +18,10 @@ export function VerseGutter({
   selectedVerses,
   annotations,
   onAdd,
+  onOpen,
   onClear,
 }: VerseGutterProps) {
   const anchorVerse = selectedVerses.at(0);
-
-  // In CSS, anchored elements cannot be mounted before their anchor targets.
-  // To work around timing issues,
 
   if (anchorVerse) {
     return (
@@ -66,14 +65,14 @@ export function VerseGutter({
           style={{ positionAnchor: formatVerseAnchorName(verseId) }}
         >
           {verseAnnotations.map((annotation) => (
-            <span
+            <Button
               key={annotation.id}
               className={cls.indicator}
-              role="img"
               aria-label={m.annotation_indicator()}
+              onClick={() => onOpen(annotation.id)}
             >
               <Icon name="chat" />
-            </span>
+            </Button>
           ))}
         </div>
       ))}
