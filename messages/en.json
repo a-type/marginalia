@@ -31,5 +31,7 @@
   "annotation_validation": "Choose a highlight color or enter a comment.",
   "annotation_indicator": "Open annotation",
   "annotation_close": "Close annotation",
+  "annotation_previous": "Previous annotation",
+  "annotation_next": "Next annotation",
   "annotation_highlight_only": "Highlight"
 }

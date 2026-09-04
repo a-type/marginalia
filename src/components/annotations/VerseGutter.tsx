@@ -10,7 +10,6 @@ export interface VerseGutterProps {
   selectedVerses: readonly VerseId[];
   annotations: readonly LocalAnnotation[];
   onAdd: () => void;
-  onOpen: (annotationId: string) => void;
   onClear: () => void;
 }
 
@@ -18,7 +17,6 @@ export function VerseGutter({
   selectedVerses,
   annotations,
   onAdd,
-  onOpen,
   onClear,
 }: VerseGutterProps) {
   const anchorVerse = selectedVerses.at(0);
@@ -67,14 +65,11 @@ export function VerseGutter({
           style={{ positionAnchor: formatVerseAnchorName(verseId) }}
         >
           {verseAnnotations.map((annotation) => (
-            <Button
+            <span
               key={annotation.id}
-              className={cls.indicator}
-              aria-label={m.annotation_indicator()}
-              onClick={() => onOpen(annotation.id)}
-            >
-              <Icon name="chat" />
-            </Button>
+              className={`${cls.indicator} @mode-${annotation.color ?? 'neutral'}`}
+              aria-hidden="true"
+            />
           ))}
         </div>
       ))}

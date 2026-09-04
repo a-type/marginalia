@@ -22,5 +22,7 @@
   "annotation_validation": "Wähle eine Markierungsfarbe oder gib einen Kommentar ein.",
   "annotation_indicator": "Anmerkung öffnen",
   "annotation_close": "Anmerkung schließen",
+  "annotation_previous": "Vorherige Anmerkung",
+  "annotation_next": "Nächste Anmerkung",
   "annotation_highlight_only": "Markierung"
 }

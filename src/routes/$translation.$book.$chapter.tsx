@@ -126,7 +126,6 @@ function BibleReader() {
     navigate({
       search: {
         ...(verses.length ? { verses: formatVerseSelection(verses) } : {}),
-        ...(search.annotation ? { annotation: search.annotation } : {}),
       },
       replace: true,
       resetScroll: false,
@@ -161,16 +160,26 @@ function BibleReader() {
       firstVerse.chapter === location.chapter
     );
   });
-  const openAnnotation = chapterAnnotations.find(
-    (annotation) => annotation.id === search.annotation,
-  );
+  const selectedVerse =
+    selectedVerses.length === 1 ? selectedVerses.at(0) : undefined;
+  const relatedAnnotations = selectedVerse
+    ? chapterAnnotations.filter((annotation) =>
+        annotation.verses.includes(selectedVerse),
+      )
+    : [];
+  const openAnnotation =
+    relatedAnnotations.find(
+      (annotation) => annotation.id === search.annotation,
+    ) ?? relatedAnnotations.at(0);
+  const openAnnotationIndex = openAnnotation
+    ? relatedAnnotations.indexOf(openAnnotation)
+    : -1;
 
   useEffect(() => {
     const firstVerse = openAnnotation?.verses[0];
     if (!firstVerse) return;
     document.getElementById(`verse-${firstVerse}`)?.scrollIntoView({
       block: 'center',
-      behavior: 'smooth',
     });
   }, [openAnnotation]);
 
@@ -232,11 +241,6 @@ function BibleReader() {
               selectedVerses={selectedVerses}
               annotations={chapterAnnotations}
               onAdd={() => setDialogOpen(true)}
-              onOpen={(annotationId) =>
-                void setOpenAnnotation(
-                  search.annotation === annotationId ? undefined : annotationId,
-                )
-              }
               onClear={() => void setSelectedNumbers([])}
             />
             <AnnotationDialog
@@ -263,7 +267,28 @@ function BibleReader() {
           <AnnotationView
             key={openAnnotation.id}
             annotation={openAnnotation}
-            onClose={() => void setOpenAnnotation()}
+            onClose={() => void setSelectedNumbers([])}
+            onPrevious={
+              relatedAnnotations.length > 1
+                ? () =>
+                    void setOpenAnnotation(
+                      relatedAnnotations[
+                        (openAnnotationIndex - 1 + relatedAnnotations.length) %
+                          relatedAnnotations.length
+                      ].id,
+                    )
+                : undefined
+            }
+            onNext={
+              relatedAnnotations.length > 1
+                ? () =>
+                    void setOpenAnnotation(
+                      relatedAnnotations[
+                        (openAnnotationIndex + 1) % relatedAnnotations.length
+                      ].id,
+                    )
+                : undefined
+            }
           />
         )}
       </aside>
