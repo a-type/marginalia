@@ -22,34 +22,37 @@ export function AnnotationView({
   return (
     <Box
       gap
-      p
-      items="start"
+      col
+      p="sm"
+      items="stretch"
       full="width"
       className={cls.root}
       data-color={annotation.color}
       role="note"
     >
+      <Box gap="sm" justify="between">
+        <Button onClick={onAdd}>
+          <Icon name="add_note" /> {m.annotation_add()}
+        </Button>
+        <Box gap="sm" items="center">
+          {onPrevious && onNext && (
+            <>
+              <Button aria-label={m.annotation_previous()} onClick={onPrevious}>
+                <Icon name="arrowLeft" />
+              </Button>
+              <Button aria-label={m.annotation_next()} onClick={onNext}>
+                <Icon name="arrowRight" />
+              </Button>
+            </>
+          )}
+          <Button aria-label={m.annotation_close()} onClick={onClose}>
+            <Icon name="x" />
+          </Button>
+        </Box>
+      </Box>
       <span className={cls.comment}>
         {annotation.comment ?? m.annotation_highlight_only()}
       </span>
-      <div className={cls.actions}>
-        <Button aria-label={m.annotation_add()} onClick={onAdd}>
-          <Icon name="add_note" />
-        </Button>
-        {onPrevious && onNext && (
-          <div className={cls.navigation}>
-            <Button aria-label={m.annotation_previous()} onClick={onPrevious}>
-              <Icon name="arrowLeft" />
-            </Button>
-            <Button aria-label={m.annotation_next()} onClick={onNext}>
-              <Icon name="arrowRight" />
-            </Button>
-          </div>
-        )}
-        <Button aria-label={m.annotation_close()} onClick={onClose}>
-          <Icon name="x" />
-        </Button>
-      </div>
     </Box>
   );
 }

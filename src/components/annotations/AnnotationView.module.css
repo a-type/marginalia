@@ -12,12 +12,6 @@
   animation-delay: calc(var(--m-dur) * 0.65);
 }
 
-.actions,
-.navigation {
-  display: flex;
-  gap: var(--m-sp-xs);
-}
-
 .actions {
   align-items: center;
 }
