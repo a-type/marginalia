@@ -1,16 +1,16 @@
 .root {
-  min-height: 100vh;
+  height: 100dvh;
   background-color: var(--m-tint-wash);
 
   padding: var(--m-sp-lg);
   gap: var(--m-sp-md);
 
   display: grid;
-  grid-template-areas: 'menubar' 'pane' 'location' 'content';
+  grid-template-areas: 'menubar' 'pane' 'location' 'content' 'annotation';
   grid-template-columns: minmax(0, 1fr);
 
   @media (min-width: 900px) {
-    grid-template-areas: 'g1 menubar location g2' 'g1 pane content g2';
+    grid-template-areas: 'g1 menubar location g2' 'g1 pane content g2' 'g1 pane annotation g2';
     grid-template-columns: 1fr 20rem minmax(300px, 800px) 1fr;
   }
 }
@@ -26,12 +26,12 @@
 
 .content {
   grid-area: content;
-  display: flex;
-  flex-direction: row;
   position: relative;
   min-width: 0;
-  padding: var(--m-surface-p);
   gap: var(--m-sp-md);
+  overflow-y: auto;
+  overflow-x: clip;
+  min-height: 50vh;
 }
 
 .location {
@@ -44,4 +44,18 @@
 
 .menubar {
   grid-area: menubar;
+}
+
+.annotationPane {
+  grid-area: annotation;
+  height: 0;
+  overflow: clip;
+  pointer-events: none;
+  background: var(--m-tint-wash);
+  transition: height var(--m-dur) var(--m-ease);
+}
+
+.annotationPane[data-open] {
+  height: min(12rem, 35vh);
+  pointer-events: auto;
 }

@@ -12,8 +12,6 @@ export interface AnnotationViewProps {
 export function AnnotationView({ annotation, onClose }: AnnotationViewProps) {
   return (
     <Box
-      surface
-      elevated="sm"
       gap
       p
       items="start"
@@ -21,7 +19,6 @@ export function AnnotationView({ annotation, onClose }: AnnotationViewProps) {
       className={cls.root}
       data-color={annotation.color}
       role="note"
-      border
     >
       <span className={cls.comment}>
         {annotation.comment ?? m.annotation_highlight_only()}

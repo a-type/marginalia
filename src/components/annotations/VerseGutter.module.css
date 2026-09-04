@@ -1,4 +1,6 @@
 .gutter {
+  width: --fn-literal(32px);
+  flex-shrink: 0;
 }
 
 .controls,
@@ -20,7 +22,7 @@
   height: var(--m-sp-lg);
   padding: 0;
   translate: 0 -0.2rem;
-  border-radius: 50%;
+  border-radius: var(--m-rd-sm);
   color: var(--m-tint-ink);
   background: var(--m-tint-wash);
 }

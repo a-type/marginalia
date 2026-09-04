@@ -94,17 +94,6 @@ function Verse({ argument, children }: USFMNodeComponentProps) {
   const presentation = useOptionalVersePresentation();
   const selected = interaction?.isSelected(verseId) ?? false;
   const annotated = presentation?.isAnnotated(verseId) ?? false;
-  const visibility = presentation?.getVisibility(verseId) ?? 'visible';
-
-  if (visibility === 'hidden') return null;
-
-  if (visibility === 'ellipsis') {
-    return (
-      <span className="usfm-verse-gap" aria-hidden="true">
-        ...
-      </span>
-    );
-  }
 
   const handleClick = (event: React.MouseEvent<HTMLSpanElement>) => {
     const target = event.target;
@@ -124,33 +113,28 @@ function Verse({ argument, children }: USFMNodeComponentProps) {
     interaction?.toggle(verseId);
   };
 
-  const after = presentation?.renderAfter(verseId);
-
   return (
     <VerseIdProvider verseId={verseId}>
-      <>
-        <span
-          className="usfm-verse"
-          id={argument ? `verse-${verseId}` : undefined}
-          data-verse-id={verseId}
-          data-selected={selected || undefined}
-          data-annotated={annotated || undefined}
-          role={interaction ? 'button' : undefined}
-          tabIndex={interaction ? 0 : undefined}
-          aria-pressed={interaction ? selected : undefined}
-          onClick={interaction ? handleClick : undefined}
-          onKeyDown={interaction ? handleKeyDown : undefined}
-          style={{
-            anchorName: formatVerseAnchorName(verseId),
-          }}
-        >
-          {verseNumber && (
-            <sup className="usfm-verse-number @mode-denser">{verseNumber}</sup>
-          )}
-          {children}
-        </span>
-        {after}
-      </>
+      <span
+        className="usfm-verse"
+        id={argument ? `verse-${verseId}` : undefined}
+        data-verse-id={verseId}
+        data-selected={selected || undefined}
+        data-annotated={annotated || undefined}
+        role={interaction ? 'button' : undefined}
+        tabIndex={interaction ? 0 : undefined}
+        aria-pressed={interaction ? selected : undefined}
+        onClick={interaction ? handleClick : undefined}
+        onKeyDown={interaction ? handleKeyDown : undefined}
+        style={{
+          anchorName: formatVerseAnchorName(verseId),
+        }}
+      >
+        {verseNumber && (
+          <sup className="usfm-verse-number @mode-denser">{verseNumber}</sup>
+        )}
+        {children}
+      </span>
     </VerseIdProvider>
   );
 }

@@ -1,17 +1,20 @@
 .root {
   text-indent: 0;
-  transition: height var(--m-dur) var(--m-ease);
-  interpolate-size: allow-keywords;
-  overflow: clip;
-  @starting-style {
-    & {
-      height: 0;
-    }
-  }
+  max-width: 800px;
+  margin-inline: auto;
 }
 
 .comment {
   flex: 1;
   min-width: 0;
   white-space: pre-wrap;
+  animation: comment-enter var(--m-dur) var(--m-ease) both;
+  animation-delay: calc(var(--m-dur) * 0.65);
+}
+
+@keyframes comment-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--m-sp-md));
+  }
 }

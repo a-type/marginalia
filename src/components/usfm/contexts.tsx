@@ -95,8 +95,6 @@ export function useOptionalVerseInteraction() {
 export interface VersePresentation {
   active: boolean;
   isAnnotated: (verseId: VerseId) => boolean;
-  getVisibility: (verseId: VerseId) => 'visible' | 'ellipsis' | 'hidden';
-  renderAfter: (verseId: VerseId) => React.ReactNode;
 }
 
 const VersePresentationContext = createContext<VersePresentation | null>(null);

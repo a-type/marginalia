@@ -56,8 +56,7 @@
 
 .usfm[data-viewing-annotation] > :not(.usfm-chapter),
 .usfm[data-viewing-annotation] .usfm-chapter > :not(.usfm-paragraph),
-.usfm[data-viewing-annotation] .usfm-verse:not([data-annotated]),
-.usfm[data-viewing-annotation] .usfm-verse-gap {
+.usfm[data-viewing-annotation] .usfm-verse:not([data-annotated]) {
   opacity: 0.3;
 }
 
@@ -91,11 +90,6 @@
   font-weight: 700;
   line-height: 0;
   vertical-align: 0.55em;
-}
-
-.usfm-verse-gap {
-  margin: 0 var(--m-sp-xs);
-  color: var(--m-tint-ink);
 }
 
 .usfm-paragraph > .usfm-verse:first-child > .usfm-verse-number {

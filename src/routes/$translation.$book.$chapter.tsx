@@ -1,4 +1,4 @@
-import { Box } from '@a-type/ui';
+import { Box, ScrollArea } from '@a-type/ui';
 import {
   useQuery,
   useQueryClient,
@@ -164,6 +164,16 @@ function BibleReader() {
   const openAnnotation = chapterAnnotations.find(
     (annotation) => annotation.id === search.annotation,
   );
+
+  useEffect(() => {
+    const firstVerse = openAnnotation?.verses[0];
+    if (!firstVerse) return;
+    document.getElementById(`verse-${firstVerse}`)?.scrollIntoView({
+      block: 'center',
+      behavior: 'smooth',
+    });
+  }, [openAnnotation]);
+
   const annotatedNumbers = openAnnotation
     ? [
         ...new Set(
@@ -171,43 +181,11 @@ function BibleReader() {
         ),
       ].sort((left, right) => left - right)
     : [];
-  const collapsedNumbers = new Set<number>();
-  const ellipsisNumbers = new Set<number>();
-  for (let index = 1; index < annotatedNumbers.length; index += 1) {
-    const previous = annotatedNumbers[index - 1];
-    const current = annotatedNumbers[index];
-    if (current - previous <= 1) continue;
-    ellipsisNumbers.add(previous + 1);
-    for (let verse = previous + 1; verse < current; verse += 1) {
-      collapsedNumbers.add(verse);
-    }
-  }
-  const lastAnnotatedNumber = annotatedNumbers.at(-1);
   const annotatedNumberSet = new Set(annotatedNumbers);
   const presentation: VersePresentation = {
     active: Boolean(openAnnotation),
     isAnnotated: (verseId) =>
       annotatedNumberSet.has(parseVerseId(verseId).verse),
-    getVisibility: (verseId) => {
-      const verse = parseVerseId(verseId).verse;
-      if (ellipsisNumbers.has(verse)) return 'ellipsis';
-      if (collapsedNumbers.has(verse)) return 'hidden';
-      return 'visible';
-    },
-    renderAfter: (verseId) => {
-      if (
-        !openAnnotation ||
-        parseVerseId(verseId).verse !== lastAnnotatedNumber
-      ) {
-        return null;
-      }
-      return (
-        <AnnotationView
-          annotation={openAnnotation}
-          onClose={() => void setOpenAnnotation()}
-        />
-      );
-    },
   };
 
   return (
@@ -225,37 +203,56 @@ function BibleReader() {
         className={cls.location}
       />
       <Box surface elevated="md" className={cls.content}>
-        <BookIdProvider bookId={location.bookId}>
-          <VerseInteractionProvider value={interaction}>
-            <VersePresentationProvider value={presentation}>
-              <USFMRenderer usfm={source} chapter={location.chapter} />
-            </VersePresentationProvider>
-          </VerseInteractionProvider>
-        </BookIdProvider>
-        <VerseGutter
-          selectedVerses={selectedVerses}
-          annotations={chapterAnnotations}
-          onAdd={() => setDialogOpen(true)}
-          onOpen={(annotationId) =>
-            void setOpenAnnotation(
-              search.annotation === annotationId ? undefined : annotationId,
-            )
-          }
-          onClear={() => void setSelectedNumbers([])}
-        />
-        <AnnotationDialog
-          open={dialogOpen}
-          verses={selectedVerses}
-          onOpenChange={setDialogOpen}
-          onSaved={async () => {
-            await queryClient.invalidateQueries({
-              queryKey: ['annotations'],
-            });
-            if (account) void requestAnnotationSync(account.did);
-            await setSelectedNumbers([]);
-          }}
-        />
+        <ScrollArea direction="vertical">
+          <Box gap>
+            <Box p className="min-w-0">
+              <BookIdProvider bookId={location.bookId}>
+                <VerseInteractionProvider value={interaction}>
+                  <VersePresentationProvider value={presentation}>
+                    <USFMRenderer usfm={source} chapter={location.chapter} />
+                  </VersePresentationProvider>
+                </VerseInteractionProvider>
+              </BookIdProvider>
+            </Box>
+            <VerseGutter
+              selectedVerses={selectedVerses}
+              annotations={chapterAnnotations}
+              onAdd={() => setDialogOpen(true)}
+              onOpen={(annotationId) =>
+                void setOpenAnnotation(
+                  search.annotation === annotationId ? undefined : annotationId,
+                )
+              }
+              onClear={() => void setSelectedNumbers([])}
+            />
+            <AnnotationDialog
+              open={dialogOpen}
+              verses={selectedVerses}
+              onOpenChange={setDialogOpen}
+              onSaved={async () => {
+                await queryClient.invalidateQueries({
+                  queryKey: ['annotations'],
+                });
+                if (account) void requestAnnotationSync(account.did);
+                await setSelectedNumbers([]);
+              }}
+            />
+          </Box>
+        </ScrollArea>
       </Box>
+      <aside
+        className={cls.annotationPane}
+        data-open={openAnnotation ? '' : undefined}
+        aria-hidden={!openAnnotation}
+      >
+        {openAnnotation && (
+          <AnnotationView
+            key={openAnnotation.id}
+            annotation={openAnnotation}
+            onClose={() => void setOpenAnnotation()}
+          />
+        )}
+      </aside>
     </main>
   );
 }
