@@ -2,6 +2,7 @@ import { Box } from '@a-type/ui';
 import { getRouteApi } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
+import { annotationPaneStore } from '#/components/annotations/annotationPaneStore';
 import { useChapterAnnotations } from '#/components/annotations/useChapterAnnotations';
 import { UserMenu } from '#/components/auth/UserMenu';
 import { storeBibleLocation } from '#/lib/bible/location';
@@ -19,6 +20,10 @@ export function BibleReader() {
     readerRoute.useLoaderData();
   const { data: account } = useSuspenseQuery(userAccountQueryOptions);
   const annotations = useChapterAnnotations(account?.did ?? null, location);
+
+  useEffect(() => {
+    annotationPaneStore.actions.reset();
+  }, [location.bookId, location.chapter]);
 
   useEffect(() => {
     storeBibleLocation(location);

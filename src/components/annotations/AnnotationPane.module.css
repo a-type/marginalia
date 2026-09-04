@@ -1,0 +1,22 @@
+.root {
+  height: 0;
+  overflow: clip;
+  pointer-events: none;
+  background: var(--m-tint-wash);
+  transition: height var(--m-dur) var(--m-ease);
+}
+
+.root[data-open] {
+  height: min(--fn-literal(12rem), 35vh);
+  pointer-events: auto;
+}
+
+.root[data-editing] {
+  height: min(--fn-literal(24rem), 50vh);
+}
+
+.empty {
+  max-width: 800px;
+  margin-inline: auto;
+  justify-content: flex-end;
+}

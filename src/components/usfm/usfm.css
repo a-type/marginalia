@@ -43,10 +43,6 @@
   text-indent: 1.5em;
 }
 
-.usfm[data-viewing-annotation] {
-  /* background: var(--m-tint-wash); */
-}
-
 .usfm-verse {
   scroll-margin-top: 2rem;
   transition:
@@ -66,7 +62,7 @@
     color-mix(in oklch, var(--m-tint-heavy) 14%, transparent);
 }
 
-.usfm-verse[data-annotated] {
+.usfm[data-viewing-annotation] .usfm-verse[data-annotated] {
   position: relative;
   z-index: 1;
   background: white;

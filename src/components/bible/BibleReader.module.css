@@ -50,24 +50,4 @@
 
 .annotationPane {
   grid-area: annotation;
-  height: 0;
-  overflow: clip;
-  pointer-events: none;
-  background: var(--m-tint-wash);
-  transition: height var(--m-dur) var(--m-ease);
-}
-
-.annotationPane[data-open] {
-  height: min(--fn-literal(12rem), 35vh);
-  pointer-events: auto;
-}
-
-.annotationPane[data-editing] {
-  height: min(--fn-literal(24rem), 50vh);
-}
-
-.emptyAnnotation {
-  max-width: 800px;
-  margin-inline: auto;
-  justify-content: flex-end;
 }

@@ -1,21 +1,17 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
-import { listVisibleAnnotations } from '#/lib/annotations/indexeddb';
 import { requestAnnotationSync } from '#/lib/annotations/sync';
 import type { BibleLocation } from '#/lib/bible/location';
 import { parseVerseId } from '#/lib/bible/verse';
+import { chapterAnnotationsQueryOptions } from '#/queries/annotations';
 
 export function useChapterAnnotations(
   accountDid: string | null,
   location: BibleLocation,
 ) {
   const queryClient = useQueryClient();
-  const annotations = useQuery({
-    queryKey: ['annotations', accountDid],
-    queryFn: () => listVisibleAnnotations(accountDid),
-    enabled: typeof window !== 'undefined',
-  });
+  const annotations = useQuery(chapterAnnotationsQueryOptions(accountDid));
 
   useEffect(() => {
     if (!accountDid) return;

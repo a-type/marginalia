@@ -1,11 +1,16 @@
 import { formatVerseAnchorName, formatVerseId } from '#/lib/bible/verse';
 import { Divider, Popover, Heading as UIHeading } from '@a-type/ui';
 import {
+  useIsAnnotationPaneActive,
+  useIsSelectedVerse,
+  useOpenAnnotation,
+  useToggleVerseSelected,
+  useVerseAnnotations,
+} from '../annotations/annotationPaneStore';
+import {
   ChapterNumberProvider,
   useBookId,
   useChapterNumber,
-  useOptionalVerseInteraction,
-  useOptionalVersePresentation,
   VerseIdProvider,
 } from './contexts';
 import type {
@@ -15,12 +20,9 @@ import type {
 } from './types';
 
 function Document({ children }: USFMDocumentComponentProps) {
-  const presentation = useOptionalVersePresentation();
+  const paneActive = useIsAnnotationPaneActive();
   return (
-    <article
-      className="usfm"
-      data-viewing-annotation={presentation?.active || undefined}
-    >
+    <article className="usfm" data-viewing-annotation={paneActive || undefined}>
       {children}
     </article>
   );
@@ -90,11 +92,12 @@ function Verse({ argument, children }: USFMNodeComponentProps) {
   const chapterNumber = useChapterNumber();
   const verseNumber = argument ? Number(argument) : 0;
   const verseId = formatVerseId(bookId, chapterNumber, verseNumber);
-  const interaction = useOptionalVerseInteraction();
-  const presentation = useOptionalVersePresentation();
-  const selected = interaction?.isSelected(verseId) ?? false;
-  const annotated = presentation?.isAnnotated(verseId) ?? false;
-  const highlightColor = presentation?.getHighlightColor(verseId);
+  const selected = useIsSelectedVerse(verseId);
+  const annotations = useVerseAnnotations(verseId);
+  const { current: openAnnotation } = useOpenAnnotation();
+  const includedInOpenAnnotation = openAnnotation?.verses.includes(verseId);
+  const highlightColor = annotations.find((a) => a.color)?.color;
+  const toggle = useToggleVerseSelected(verseId);
 
   const handleClick = (event: React.MouseEvent<HTMLSpanElement>) => {
     const target = event.target;
@@ -105,13 +108,13 @@ function Verse({ argument, children }: USFMNodeComponentProps) {
     if (interactiveTarget && interactiveTarget !== event.currentTarget) {
       return;
     }
-    interaction?.toggle(verseId);
+    toggle();
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLSpanElement>) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
-    interaction?.toggle(verseId);
+    toggle();
   };
 
   return (
@@ -121,13 +124,13 @@ function Verse({ argument, children }: USFMNodeComponentProps) {
         id={argument ? `verse-${verseId}` : undefined}
         data-verse-id={verseId}
         data-selected={selected || undefined}
-        data-annotated={annotated || undefined}
+        data-annotated={includedInOpenAnnotation || undefined}
         data-highlighted={highlightColor || undefined}
-        role={interaction ? 'button' : undefined}
-        tabIndex={interaction ? 0 : undefined}
-        aria-pressed={interaction ? selected : undefined}
-        onClick={interaction ? handleClick : undefined}
-        onKeyDown={interaction ? handleKeyDown : undefined}
+        role="button"
+        tabIndex={0}
+        aria-pressed={selected}
+        onClick={handleClick}
+        onKeyDown={handleKeyDown}
         style={{
           anchorName: formatVerseAnchorName(verseId),
         }}
