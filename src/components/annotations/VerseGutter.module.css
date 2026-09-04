@@ -1,12 +1,14 @@
 .gutter {
   width: --fn-literal(32px);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .controls,
 .indicators {
   position: fixed;
   top: anchor(top);
+  position-visibility: anchors-visible;
   z-index: 1;
   display: flex;
   flex-direction: column;

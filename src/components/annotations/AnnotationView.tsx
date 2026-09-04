@@ -7,6 +7,7 @@ import cls from './AnnotationView.module.css';
 export interface AnnotationViewProps {
   annotation: LocalAnnotation;
   onClose: () => void;
+  onAdd: () => void;
   onPrevious?: () => void;
   onNext?: () => void;
 }
@@ -14,6 +15,7 @@ export interface AnnotationViewProps {
 export function AnnotationView({
   annotation,
   onClose,
+  onAdd,
   onPrevious,
   onNext,
 }: AnnotationViewProps) {
@@ -31,6 +33,9 @@ export function AnnotationView({
         {annotation.comment ?? m.annotation_highlight_only()}
       </span>
       <div className={cls.actions}>
+        <Button aria-label={m.annotation_add()} onClick={onAdd}>
+          <Icon name="add_note" />
+        </Button>
         {onPrevious && onNext && (
           <div className={cls.navigation}>
             <Button aria-label={m.annotation_previous()} onClick={onPrevious}>

@@ -1,4 +1,4 @@
-import { Box, ScrollArea } from '@a-type/ui';
+import { Box, Button, Icon, ScrollArea } from '@a-type/ui';
 import {
   useQuery,
   useQueryClient,
@@ -7,7 +7,7 @@ import {
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
-import { AnnotationDialog } from '#/components/annotations/AnnotationDialog';
+import { AnnotationEditor } from '#/components/annotations/AnnotationEditor';
 import { AnnotationView } from '#/components/annotations/AnnotationView';
 import { VerseGutter } from '#/components/annotations/VerseGutter';
 import { UserMenu } from '#/components/auth/UserMenu';
@@ -34,14 +34,16 @@ import {
   isTranslationId,
   storeTranslationId,
 } from '#/lib/bible/source';
-import type { BookId } from '#/lib/bible/verse';
+import type { BookId, VerseId } from '#/lib/bible/verse';
 import { formatVerseId, parseVerseId } from '#/lib/bible/verse';
+import { m } from '#/paraglide/messages';
 import { userAccountQueryOptions } from '#/queries/user';
 import cls from './$translation.$book.$chapter.module.css';
 
 export const Route = createFileRoute('/$translation/$book/$chapter')({
   validateSearch: (search: Record<string, unknown>) => {
-    const verses = formatVerseSelection(parseVerseSelection(search.verses));
+    const verse = parseVerseSelection(search.verses).at(0);
+    const verses = verse ? formatVerseSelection([verse]) : undefined;
     const annotation =
       typeof search.annotation === 'string' && search.annotation
         ? search.annotation
@@ -81,12 +83,16 @@ function BibleReader() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const queryClient = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [addingVerses, setAddingVerses] = useState(false);
+  const [draftVerses, setDraftVerses] = useState<readonly VerseId[]>([]);
   const selectedNumbers = parseVerseSelection(search.verses);
-  const selectedVerses = selectedNumbers.map((verse) =>
-    formatVerseId(location.bookId, location.chapter, verse),
-  );
-  const selectedSet = new Set(selectedVerses);
+  const selectedNumber = selectedNumbers.at(0);
+  const selectedVerse = selectedNumber
+    ? formatVerseId(location.bookId, location.chapter, selectedNumber)
+    : undefined;
+  const selectedVerses = selectedVerse ? [selectedVerse] : [];
+  const selectedSet = new Set(editorOpen ? draftVerses : selectedVerses);
   const { data: account } = useSuspenseQuery(userAccountQueryOptions);
   const annotations = useQuery({
     queryKey: ['annotations', account?.did ?? null],
@@ -111,7 +117,14 @@ function BibleReader() {
     return () => window.removeEventListener('online', synchronize);
   }, [account, queryClient]);
 
-  const navigateTo = (bookId: BookId, chapter: number) =>
+  const closeEditor = () => {
+    setEditorOpen(false);
+    setAddingVerses(false);
+    setDraftVerses([]);
+  };
+
+  const navigateTo = (bookId: BookId, chapter: number) => {
+    closeEditor();
     navigate({
       to: '/$translation/$book/$chapter',
       params: {
@@ -121,11 +134,12 @@ function BibleReader() {
       },
       search: {},
     });
+  };
 
-  const setSelectedNumbers = (verses: readonly number[]) =>
+  const setSelectedNumber = (verse?: number) =>
     navigate({
       search: {
-        ...(verses.length ? { verses: formatVerseSelection(verses) } : {}),
+        ...(verse ? { verses: formatVerseSelection([verse]) } : {}),
       },
       replace: true,
       resetScroll: false,
@@ -144,12 +158,22 @@ function BibleReader() {
   const interaction: VerseInteraction = {
     isSelected: (verseId) => selectedSet.has(verseId),
     toggle: (verseId) => {
+      if (editorOpen) {
+        if (!addingVerses) return;
+        setDraftVerses((current) =>
+          verseId === selectedVerse
+            ? current
+            : current.includes(verseId)
+              ? current.length > 1
+                ? current.filter((selected) => selected !== verseId)
+                : current
+              : [...current, verseId],
+        );
+        return;
+      }
+
       const verse = parseVerseId(verseId).verse;
-      setSelectedNumbers(
-        selectedNumbers.includes(verse)
-          ? selectedNumbers.filter((selected) => selected !== verse)
-          : [...selectedNumbers, verse],
-      );
+      void setSelectedNumber(selectedNumber === verse ? undefined : verse);
     },
   };
 
@@ -160,11 +184,10 @@ function BibleReader() {
       firstVerse.chapter === location.chapter
     );
   });
-  const selectedVerse =
-    selectedVerses.length === 1 ? selectedVerses.at(0) : undefined;
   const relatedAnnotations = selectedVerse
-    ? chapterAnnotations.filter((annotation) =>
-        annotation.verses.includes(selectedVerse),
+    ? chapterAnnotations.filter(
+        (annotation) =>
+          annotation.comment && annotation.verses.includes(selectedVerse),
       )
     : [];
   const openAnnotation =
@@ -174,6 +197,13 @@ function BibleReader() {
   const openAnnotationIndex = openAnnotation
     ? relatedAnnotations.indexOf(openAnnotation)
     : -1;
+
+  const openEditor = () => {
+    if (!selectedVerse) return;
+    setDraftVerses([selectedVerse]);
+    setAddingVerses(false);
+    setEditorOpen(true);
+  };
 
   useEffect(() => {
     const firstVerse = openAnnotation?.verses[0];
@@ -205,9 +235,9 @@ function BibleReader() {
       : [],
   );
   const presentation: VersePresentation = {
-    active: Boolean(openAnnotation),
+    active: Boolean(openAnnotation) && !editorOpen,
     isAnnotated: (verseId) =>
-      annotatedNumberSet.has(parseVerseId(verseId).verse),
+      !editorOpen && annotatedNumberSet.has(parseVerseId(verseId).verse),
     getHighlightColor: (verseId) => ownedHighlightColors.get(verseId),
   };
 
@@ -237,37 +267,37 @@ function BibleReader() {
                 </VerseInteractionProvider>
               </BookIdProvider>
             </Box>
-            <VerseGutter
-              selectedVerses={selectedVerses}
-              annotations={chapterAnnotations}
-              onAdd={() => setDialogOpen(true)}
-              onClear={() => void setSelectedNumbers([])}
-            />
-            <AnnotationDialog
-              open={dialogOpen}
-              verses={selectedVerses}
-              onOpenChange={setDialogOpen}
-              onSaved={async () => {
-                await queryClient.invalidateQueries({
-                  queryKey: ['annotations'],
-                });
-                if (account) void requestAnnotationSync(account.did);
-                await setSelectedNumbers([]);
-              }}
-            />
+            <VerseGutter annotations={chapterAnnotations} />
           </Box>
         </ScrollArea>
       </Box>
       <aside
         className={cls.annotationPane}
-        data-open={openAnnotation ? '' : undefined}
-        aria-hidden={!openAnnotation}
+        data-open={selectedVerse ? '' : undefined}
+        data-editing={editorOpen ? '' : undefined}
+        aria-hidden={!selectedVerse}
       >
-        {openAnnotation && (
+        {editorOpen ? (
+          <AnnotationEditor
+            verses={draftVerses}
+            addingVerses={addingVerses}
+            onAddingVersesChange={setAddingVerses}
+            onCancel={closeEditor}
+            onSaved={async () => {
+              await queryClient.invalidateQueries({
+                queryKey: ['annotations'],
+              });
+              if (account) void requestAnnotationSync(account.did);
+              closeEditor();
+              await setSelectedNumber();
+            }}
+          />
+        ) : openAnnotation ? (
           <AnnotationView
             key={openAnnotation.id}
             annotation={openAnnotation}
-            onClose={() => void setSelectedNumbers([])}
+            onAdd={openEditor}
+            onClose={() => void setSelectedNumber()}
             onPrevious={
               relatedAnnotations.length > 1
                 ? () =>
@@ -290,7 +320,17 @@ function BibleReader() {
                 : undefined
             }
           />
-        )}
+        ) : selectedVerse ? (
+          <Box className={cls.emptyAnnotation} p gap items="center">
+            <Button onClick={openEditor}>{m.annotation_add()}</Button>
+            <Button
+              aria-label={m.annotation_close()}
+              onClick={() => void setSelectedNumber()}
+            >
+              <Icon name="x" />
+            </Button>
+          </Box>
+        ) : null}
       </aside>
     </main>
   );

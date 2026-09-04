@@ -6,7 +6,12 @@
 }
 
 .form {
+  width: min(100%, --fn-literal(800px));
+  height: 100%;
+  margin-inline: auto;
+  padding: var(--m-sp-md);
   gap: var(--m-sp-md);
+  overflow-y: auto;
 }
 
 .fieldset {
@@ -25,4 +30,25 @@
   height: var(--m-sp-md);
   border-radius: 50%;
   background: var(--m-tint-heavy);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--m-sp-sm);
+}
+
+.spacer {
+  flex: 1;
+}
+
+@media (max-width: 600px) {
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  .spacer {
+    flex-basis: 100%;
+    height: 0;
+  }
 }
