@@ -60,6 +60,12 @@
   opacity: 0.3;
 }
 
+.usfm-verse[data-highlighted] {
+  background: color-mix(in oklch, var(--m-tint-heavy) 14%, transparent);
+  box-shadow: 0 0 0 var(--m-sp-xs)
+    color-mix(in oklch, var(--m-tint-heavy) 14%, transparent);
+}
+
 .usfm-verse[data-annotated] {
   position: relative;
   z-index: 1;

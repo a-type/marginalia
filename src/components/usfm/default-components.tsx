@@ -94,6 +94,7 @@ function Verse({ argument, children }: USFMNodeComponentProps) {
   const presentation = useOptionalVersePresentation();
   const selected = interaction?.isSelected(verseId) ?? false;
   const annotated = presentation?.isAnnotated(verseId) ?? false;
+  const highlightColor = presentation?.getHighlightColor(verseId);
 
   const handleClick = (event: React.MouseEvent<HTMLSpanElement>) => {
     const target = event.target;
@@ -116,11 +117,12 @@ function Verse({ argument, children }: USFMNodeComponentProps) {
   return (
     <VerseIdProvider verseId={verseId}>
       <span
-        className="usfm-verse"
+        className={`usfm-verse${highlightColor ? ` @mode-${highlightColor}` : ''}`}
         id={argument ? `verse-${verseId}` : undefined}
         data-verse-id={verseId}
         data-selected={selected || undefined}
         data-annotated={annotated || undefined}
+        data-highlighted={highlightColor || undefined}
         role={interaction ? 'button' : undefined}
         tabIndex={interaction ? 0 : undefined}
         aria-pressed={interaction ? selected : undefined}

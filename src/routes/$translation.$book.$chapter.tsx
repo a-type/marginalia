@@ -182,10 +182,24 @@ function BibleReader() {
       ].sort((left, right) => left - right)
     : [];
   const annotatedNumberSet = new Set(annotatedNumbers);
+  const ownedHighlightColors = new Map(
+    account
+      ? chapterAnnotations.flatMap((annotation) =>
+          !annotation.comment &&
+          annotation.color &&
+          annotation.ownerDid === account.did
+            ? annotation.verses.map(
+                (verseId) => [verseId, annotation.color] as const,
+              )
+            : [],
+        )
+      : [],
+  );
   const presentation: VersePresentation = {
     active: Boolean(openAnnotation),
     isAnnotated: (verseId) =>
       annotatedNumberSet.has(parseVerseId(verseId).verse),
+    getHighlightColor: (verseId) => ownedHighlightColors.get(verseId),
   };
 
   return (

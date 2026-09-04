@@ -49,6 +49,8 @@ export function VerseGutter({
   }
 
   const annotationsByVerse = annotations.reduce((groups, annotation) => {
+    if (!annotation.comment) return groups;
+
     const verseId = annotation.verses[0];
     const group = groups.get(verseId) ?? [];
     group.push(annotation);
