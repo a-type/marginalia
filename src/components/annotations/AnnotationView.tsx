@@ -1,11 +1,11 @@
 import { Box, Button, Icon } from '@a-type/ui';
 
-import type { LocalAnnotation } from '#/lib/annotations/types';
+import type { AnnotationRecord } from '#/lib/annotations/collections';
 import { m } from '#/paraglide/messages';
 import cls from './AnnotationView.module.css';
 
 export interface AnnotationViewProps {
-  annotation: LocalAnnotation;
+  annotation: AnnotationRecord;
   onClose: () => void;
   onAdd: () => void;
   onPrevious?: () => void;

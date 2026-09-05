@@ -1,10 +1,10 @@
-import type { LocalAnnotation } from '#/lib/annotations/types';
 import type { VerseId } from '#/lib/bible/verse';
 import { formatVerseAnchorName } from '#/lib/bible/verse';
+import type { AnnotationWithVerses } from './useChapterAnnotations';
 import cls from './VerseGutter.module.css';
 
 export interface VerseGutterProps {
-  annotations: readonly LocalAnnotation[];
+  annotations: readonly AnnotationWithVerses[];
 }
 
 export function VerseGutter({ annotations }: VerseGutterProps) {
@@ -16,7 +16,7 @@ export function VerseGutter({ annotations }: VerseGutterProps) {
     group.push(annotation);
     groups.set(verseId, group);
     return groups;
-  }, new Map<VerseId, LocalAnnotation[]>());
+  }, new Map<VerseId, AnnotationWithVerses[]>());
 
   return (
     <div className={cls.gutter}>

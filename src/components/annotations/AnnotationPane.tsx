@@ -1,17 +1,16 @@
 import { Box, Button, clsx, Icon } from '@a-type/ui';
-import { useQueryClient } from '@tanstack/react-query';
+import { useDbClient } from '@tanstack/react-db';
 import { getRouteApi } from '@tanstack/react-router';
-import { useSelector } from '@tanstack/react-store';
 import { useEffect } from 'react';
 
 import { requestAnnotationSync } from '#/lib/annotations/sync';
-import type { LocalAnnotation } from '#/lib/annotations/types';
-import type { BookId } from '#/lib/bible/verse';
 import { m } from '#/paraglide/messages';
 import { AnnotationEditor } from './AnnotationEditor';
 import cls from './AnnotationPane.module.css';
 import {
-  annotationPaneStore,
+  useAnnotationPaneActions,
+  useAnnotationPaneState,
+  useAnnotationVerseIds,
   useOpenAnnotation,
   usePrimarySelectedVerseAnnotations,
   usePrimarySelectedVerseId,
@@ -22,32 +21,18 @@ import { AnnotationView } from './AnnotationView';
 
 export const readerRoute = getRouteApi('/$translation/$book/$chapter');
 
-export interface UseAnnotationPaneOptions {
-  accountDid: string | null;
-  annotations: readonly LocalAnnotation[];
-  bookId: BookId;
-  chapter: number;
-}
-
 export interface AnnotationPaneProps {
   accountDid: string | null;
   className?: string;
 }
 
 export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
-  const queryClient = useQueryClient();
-  const addingVerses = useSelector(
-    annotationPaneStore,
-    (state) => state.addingVerses,
-  );
-  const draftVerses = useSelector(
-    annotationPaneStore,
-    (state) => state.draftVerses,
-  );
-  const editing = useSelector(annotationPaneStore, (state) => state.editing);
+  const dbClient = useDbClient();
+  const { addingVerses, draftVerses, editing } = useAnnotationPaneState();
+  const actions = useAnnotationPaneActions();
   const selectedVerse = usePrimarySelectedVerseId();
   const openEditor = () => {
-    if (selectedVerse) annotationPaneStore.actions.openEditor(selectedVerse);
+    if (selectedVerse) actions.openEditor(selectedVerse);
   };
 
   const setOpenAnnotation = useSetOpenAnnotation();
@@ -57,7 +42,7 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
 
   const setSelectedNumber = useSetSelectedVerseNumber();
   const handleClose = () => {
-    annotationPaneStore.actions.reset();
+    actions.reset();
     setSelectedNumber();
   };
 
@@ -75,15 +60,18 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
     next: nextAnnotation,
     previous: previousAnnotation,
   } = useOpenAnnotation();
+  const openAnnotationVerses = useAnnotationVerseIds(
+    openAnnotation?.id ?? null,
+  );
 
   // TODO: find a better place for this?
   useEffect(() => {
-    const firstVerse = openAnnotation?.verses[0];
+    const firstVerse = openAnnotationVerses.at(0);
     if (!firstVerse) return;
     document.getElementById(`verse-${firstVerse}`)?.scrollIntoView({
       block: 'center',
     });
-  }, [openAnnotation]);
+  }, [openAnnotationVerses]);
 
   return (
     <aside
@@ -96,11 +84,10 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
         <AnnotationEditor
           verses={draftVerses}
           addingVerses={addingVerses}
-          onAddingVersesChange={annotationPaneStore.actions.setAddingVerses}
-          onCancel={annotationPaneStore.actions.reset}
-          onSaved={async () => {
-            await queryClient.invalidateQueries({ queryKey: ['annotations'] });
-            if (accountDid) void requestAnnotationSync(accountDid);
+          onAddingVersesChange={actions.setAddingVerses}
+          onCancel={actions.reset}
+          onSaved={() => {
+            if (accountDid) void requestAnnotationSync(dbClient, accountDid);
             handleClose();
           }}
         />

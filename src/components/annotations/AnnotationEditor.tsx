@@ -1,4 +1,5 @@
 import { Button, Text, TextArea, ToggleGroup } from '@a-type/ui';
+import { useDbClient } from '@tanstack/react-db';
 import { useState } from 'react';
 
 import { createAnnotation } from '#/lib/annotations/create';
@@ -23,6 +24,7 @@ export function AnnotationEditor({
   onCancel,
   onSaved,
 }: AnnotationEditorProps) {
+  const dbClient = useDbClient();
   const [color, setColor] = useState<AnnotationColor | null>(null);
   const [comment, setComment] = useState('');
   const [error, setError] = useState(false);
@@ -37,7 +39,7 @@ export function AnnotationEditor({
 
     setSaving(true);
     try {
-      await createAnnotation({
+      await createAnnotation(dbClient, {
         verses,
         comment,
         ...(color ? { color } : {}),

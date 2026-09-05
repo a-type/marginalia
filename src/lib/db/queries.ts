@@ -93,7 +93,10 @@ export async function upsertAnnotation(input: UpsertAnnotationInput) {
   });
 }
 
-export async function getAnnotationsForVerse(verseId: string) {
+export async function getAnnotationsForChapter(
+  bookId: string,
+  chapter: number,
+) {
   const db = await getRequiredClient();
   return db
     .selectFrom('com_marginalia_annotation as annotation')
@@ -103,8 +106,11 @@ export async function getAnnotationsForVerse(verseId: string) {
       'annotation.uri',
     )
     .selectAll('annotation')
-    .where('verse.verseId', '=', verseId)
+    .select(['verse.verseId', 'verse.bookId', 'verse.chapter', 'verse.verse'])
+    .where('verse.bookId', '=', bookId)
+    .where('verse.chapter', '=', chapter)
     .orderBy('annotation.createdAt', 'desc')
+    .orderBy('verse.verse', 'asc')
     .execute();
 }
 

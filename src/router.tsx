@@ -1,4 +1,5 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
+import { routerWithDbClient } from '@tanstack/react-router-with-db';
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query';
 import { getContext } from './integrations/tanstack-query/root-provider';
 import { routeTree } from './routeTree.gen';
@@ -16,7 +17,7 @@ export function getRouter() {
 
   setupRouterSsrQueryIntegration({ router, queryClient: context.queryClient });
 
-  return router;
+  return routerWithDbClient(router, context.dbClient);
 }
 
 declare module '@tanstack/react-router' {

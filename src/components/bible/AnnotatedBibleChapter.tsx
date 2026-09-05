@@ -1,15 +1,15 @@
 import { Box, ScrollArea } from '@a-type/ui';
 
 import { AnnotationPane } from '#/components/annotations/AnnotationPane';
+import type { AnnotationWithVerses } from '#/components/annotations/useChapterAnnotations';
 import { VerseGutter } from '#/components/annotations/VerseGutter';
 import { BookIdProvider, USFMRenderer } from '#/components/usfm';
-import type { LocalAnnotation } from '#/lib/annotations/types';
 import type { BibleLocation } from '#/lib/bible/location';
 import cls from './BibleReader.module.css';
 
 export interface AnnotatedBibleChapterProps {
   accountDid: string | null;
-  annotations: readonly LocalAnnotation[];
+  annotations: readonly AnnotationWithVerses[];
   location: BibleLocation;
   source: string;
 }

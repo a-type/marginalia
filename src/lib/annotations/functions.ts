@@ -1,20 +1,24 @@
 import { TID } from '@atproto/common-web';
 import { Client } from '@atproto/lex';
-import { AtUri, isValidDid } from '@atproto/syntax';
+import { isValidDid } from '@atproto/syntax';
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 
 import * as Annotation from '#/lexicons/com/marginalia/annotation';
-import type {
-  AnnotationColor,
-  RemoteAnnotation,
-} from '#/lib/annotations/types';
+import type { AnnotationColor } from '#/lib/annotations/types';
 import { annotationColors } from '#/lib/annotations/types';
 import { oauth } from '#/lib/atproto/server';
 import { getAppSession } from '#/lib/auth/server';
-import { isValidVerseId } from '#/lib/bible/verse';
+import { getAnnotationsForChapter } from '#/lib/db/queries';
+import { isBookId, isValidVerseId } from '#/lib/bible/verse';
 import { AppError } from '#/lib/error';
 import { logger } from '#/logger';
+import { formatAnnotationVerseRecordId } from './collections';
+import type {
+  AnnotationRecord,
+  AnnotationVerseRecord,
+  ChapterAnnotationSnapshot,
+} from './collections';
 
 const uploadAnnotationSchema = z
   .object({
@@ -44,6 +48,11 @@ const uploadAnnotationSchema = z
   }));
 
 export type UploadAnnotationInput = z.input<typeof uploadAnnotationSchema>;
+
+const listChapterAnnotationsSchema = z.object({
+  bookId: z.string().refine(isBookId, 'Invalid book ID'),
+  chapter: z.number().int().positive(),
+});
 
 async function getAuthenticatedClient() {
   const session = await getAppSession();
@@ -75,51 +84,60 @@ export const uploadAnnotationFn = createServerFn({ method: 'POST' })
     };
   });
 
-export const listOwnAnnotationsFn = createServerFn({ method: 'GET' }).handler(
-  async () => {
-    const { client, did } = await getAuthenticatedClient();
-    const annotations: RemoteAnnotation[] = [];
-    let cursor: string | undefined;
+export const listChapterAnnotationsFn = createServerFn({ method: 'GET' })
+  .validator(listChapterAnnotationsSchema)
+  .handler(async ({ data }): Promise<ChapterAnnotationSnapshot> => {
+    const rows = await getAnnotationsForChapter(data.bookId, data.chapter);
+    const annotations = new Map<string, AnnotationRecord>();
+    const annotationVerses: AnnotationVerseRecord[] = [];
+    const ordinals = new Map<string, number>();
 
-    do {
-      const response = await client.listRecords(Annotation.$nsid, {
-        repo: did,
-        limit: 100,
-        ...(cursor ? { cursor } : {}),
-      });
-      cursor = response.body.cursor;
-
-      for (const item of response.body.records) {
-        try {
-          const record = Annotation.$parse(item.value);
-          const verses = record.verses.map(({ id }) => {
-            if (!isValidVerseId(id)) throw new Error(`Invalid verse ID: ${id}`);
-            return id;
-          });
-          if (verses.length === 0) throw new Error('Annotation has no verses');
-          const color = annotationColors.includes(
-            record.color as AnnotationColor,
-          )
-            ? (record.color as AnnotationColor)
-            : undefined;
-          if (!record.comment?.trim() && !color) {
-            throw new Error('Annotation has no content');
-          }
-          annotations.push({
-            rkey: new AtUri(item.uri).rkey,
-            uri: item.uri,
-            cid: item.cid,
-            verses,
-            ...(record.comment ? { comment: record.comment } : {}),
-            ...(color ? { color } : {}),
-            createdAt: record.createdAt,
-          });
-        } catch (error) {
-          logger.warn('Skipping invalid remote annotation', item.uri, error);
-        }
+    for (const row of rows) {
+      if (!isValidVerseId(row.verseId)) {
+        logger.warn('Skipping invalid projected annotation verse', row.uri);
+        continue;
       }
-    } while (cursor);
+      const color = annotationColors.includes(row.color as AnnotationColor)
+        ? (row.color as AnnotationColor)
+        : undefined;
+      const comment = row.comment?.trim() || undefined;
+      if (!comment && !color) {
+        logger.warn('Skipping projected annotation without content', row.uri);
+        continue;
+      }
 
-    return annotations;
-  },
-);
+      if (!annotations.has(row.uri)) {
+        annotations.set(row.uri, {
+          id: row.uri,
+          rkey: row.tid,
+          uri: row.uri,
+          cid: row.cid,
+          authorDid: row.authorDid,
+          bookId: row.bookId,
+          chapter: row.chapter,
+          ...(comment ? { comment } : {}),
+          ...(color ? { color } : {}),
+          createdAt: row.createdAt,
+          status: 'synced',
+          syncError: null,
+        });
+      }
+
+      const ordinal = ordinals.get(row.uri) ?? 0;
+      annotationVerses.push({
+        id: formatAnnotationVerseRecordId(row.uri, row.verseId),
+        annotationId: row.uri,
+        verseId: row.verseId,
+        bookId: row.bookId,
+        chapter: row.chapter,
+        verse: row.verse,
+        ordinal,
+      });
+      ordinals.set(row.uri, ordinal + 1);
+    }
+
+    return {
+      annotations: [...annotations.values()],
+      annotationVerses,
+    };
+  });

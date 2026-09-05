@@ -3,8 +3,8 @@ import { Divider, Popover, Heading as UIHeading } from '@a-type/ui';
 import {
   useIsAnnotationPaneActive,
   useIsSelectedVerse,
-  useOpenAnnotation,
   useToggleVerseSelected,
+  useVerseIncludedInOpenAnnotation,
   useVerseAnnotations,
 } from '../annotations/annotationPaneStore';
 import {
@@ -94,8 +94,7 @@ function Verse({ argument, children }: USFMNodeComponentProps) {
   const verseId = formatVerseId(bookId, chapterNumber, verseNumber);
   const selected = useIsSelectedVerse(verseId);
   const annotations = useVerseAnnotations(verseId);
-  const { current: openAnnotation } = useOpenAnnotation();
-  const includedInOpenAnnotation = openAnnotation?.verses.includes(verseId);
+  const includedInOpenAnnotation = useVerseIncludedInOpenAnnotation(verseId);
   const highlightColor = annotations.find((a) => a.color)?.color;
   const toggle = useToggleVerseSelected(verseId);
 

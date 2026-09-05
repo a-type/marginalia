@@ -1,64 +1,110 @@
-import { createStore } from '@tanstack/store';
+import { eq, useDbClient, useLiveQuery } from '@tanstack/react-db';
+import { getRouteApi } from '@tanstack/react-router';
+import { useEffect } from 'react';
 
+import {
+  annotationCollectionOptions,
+  annotationPaneCollectionOptions,
+  annotationVerseCollectionOptions,
+  getAnnotationCollections,
+} from '#/lib/annotations/collections';
+import type { AnnotationPaneRecord } from '#/lib/annotations/collections';
 import {
   formatVerseSelection,
   parseVerseSelection,
 } from '#/lib/bible/selection';
 import type { VerseId } from '#/lib/bible/verse';
 import { formatVerseId, parseVerseId } from '#/lib/bible/verse';
-import { verseAnnotationsQueryOptions } from '#/queries/annotations';
-import { userAccountQueryOptions } from '#/queries/user';
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
-import { useSelector } from '@tanstack/react-store';
 
-export interface AnnotationPaneState {
-  addingVerses: boolean;
-  draftVerses: readonly VerseId[];
-  editing: boolean;
-}
-
-const initialState: AnnotationPaneState = {
+const PANE_ID = 'annotation-pane';
+const initialPaneState: AnnotationPaneRecord = {
+  id: PANE_ID,
   addingVerses: false,
   draftVerses: [],
   editing: false,
 };
 
-export function createAnnotationPaneStore() {
-  return createStore(initialState, ({ setState }) => ({
-    reset: () => setState(() => initialState),
-    openEditor: (selectedVerse: VerseId) =>
-      setState(() => ({
-        addingVerses: false,
-        draftVerses: [selectedVerse],
-        editing: true,
-      })),
-    setAddingVerses: (addingVerses: boolean) =>
-      setState((state) => ({ ...state, addingVerses })),
-    toggleDraftVerse: (verseId: VerseId, selectedVerse: VerseId) =>
-      setState((state) => {
-        if (!state.editing || !state.addingVerses) return state;
-        if (verseId === selectedVerse) return state;
-        if (!state.draftVerses.includes(verseId)) {
-          return {
-            ...state,
-            draftVerses: [...state.draftVerses, verseId],
-          };
-        }
-        if (state.draftVerses.length === 1) return state;
-        return {
-          ...state,
-          draftVerses: state.draftVerses.filter(
-            (selected) => selected !== verseId,
-          ),
-        };
-      }),
-  }));
+const readerRoute = getRouteApi('/$translation/$book/$chapter');
+
+export function useAnnotationPaneState() {
+  const { data } = useLiveQuery({
+    query: (query) =>
+      query
+        .from({ pane: annotationPaneCollectionOptions })
+        .where(({ pane }) => eq(pane.id, PANE_ID))
+        .findOne(),
+  });
+  return data ?? initialPaneState;
 }
 
-export const annotationPaneStore = createAnnotationPaneStore();
+export function useAnnotationPaneActions() {
+  const dbClient = useDbClient();
+  const pane = dbClient.collection(annotationPaneCollectionOptions);
 
-const readerRoute = getRouteApi('/$translation/$book/$chapter');
+  return {
+    reset: () =>
+      pane.update(PANE_ID, (draft) => {
+        draft.addingVerses = false;
+        draft.draftVerses = [];
+        draft.editing = false;
+      }),
+    openEditor: (selectedVerse: VerseId) =>
+      pane.update(PANE_ID, (draft) => {
+        draft.addingVerses = false;
+        draft.draftVerses = [selectedVerse];
+        draft.editing = true;
+      }),
+    setAddingVerses: (addingVerses: boolean) =>
+      pane.update(PANE_ID, (draft) => {
+        draft.addingVerses = addingVerses;
+      }),
+    toggleDraftVerse: (verseId: VerseId, selectedVerse: VerseId) => {
+      const state = pane.get(PANE_ID);
+      if (!state?.editing || !state.addingVerses || verseId === selectedVerse) {
+        return;
+      }
+      pane.update(PANE_ID, (draft) => {
+        if (draft.draftVerses.includes(verseId)) {
+          if (draft.draftVerses.length > 1) {
+            draft.draftVerses = draft.draftVerses.filter(
+              (selected) => selected !== verseId,
+            );
+          }
+        } else {
+          draft.draftVerses.push(verseId);
+        }
+      });
+    },
+  };
+}
+
+export function useResetAnnotationPaneOnRouteChange() {
+  const dbClient = useDbClient();
+  const search = readerRoute.useSearch();
+  const { location } = readerRoute.useLoaderData();
+
+  useEffect(() => {
+    const pane = dbClient.collection(annotationPaneCollectionOptions);
+    let cancelled = false;
+    void pane.preload().then(() => {
+      if (cancelled) return;
+      pane.update(PANE_ID, (draft) => {
+        draft.addingVerses = false;
+        draft.draftVerses = [];
+        draft.editing = false;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    dbClient,
+    location.bookId,
+    location.chapter,
+    search.annotation,
+    search.verses,
+  ]);
+}
 
 export function useSetOpenAnnotation() {
   const navigate = readerRoute.useNavigate();
@@ -82,21 +128,17 @@ export function useOpenAnnotation() {
   let openAnnotationIndex = selectedVerseAnnotations.findIndex(
     (annotation) => annotation.id === search.annotation,
   );
-  if (openAnnotationIndex === -1) {
-    openAnnotationIndex = 0;
-  }
-  const openAnnotation = selectedVerseAnnotations.at(openAnnotationIndex);
-  const nextAnnotation = selectedVerseAnnotations.at(
-    (openAnnotationIndex + 1) % selectedVerseAnnotations.length,
-  );
-  const previousAnnotation = selectedVerseAnnotations.at(
-    (openAnnotationIndex - 1 + selectedVerseAnnotations.length) %
-      selectedVerseAnnotations.length,
-  );
+  if (openAnnotationIndex === -1) openAnnotationIndex = 0;
+
   return {
-    current: openAnnotation,
-    next: nextAnnotation,
-    previous: previousAnnotation,
+    current: selectedVerseAnnotations.at(openAnnotationIndex),
+    next: selectedVerseAnnotations.at(
+      (openAnnotationIndex + 1) % selectedVerseAnnotations.length,
+    ),
+    previous: selectedVerseAnnotations.at(
+      (openAnnotationIndex - 1 + selectedVerseAnnotations.length) %
+        selectedVerseAnnotations.length,
+    ),
     index: openAnnotationIndex,
     total: selectedVerseAnnotations.length,
   };
@@ -104,9 +146,9 @@ export function useOpenAnnotation() {
 
 export function useIsAnnotationPaneActive() {
   const search = readerRoute.useSearch();
-  const editing = useSelector(annotationPaneStore, (state) => state.editing);
+  const pane = useAnnotationPaneState();
   const selectedAnnotations = usePrimarySelectedVerseAnnotations();
-  return !!search.annotation || editing || selectedAnnotations.length > 0;
+  return !!search.annotation || pane.editing || selectedAnnotations.length > 0;
 }
 
 export function useSetSelectedVerseNumber() {
@@ -131,27 +173,21 @@ export function usePrimarySelectedVerseId() {
 }
 
 export function useIsSelectedVerse(verseId: VerseId) {
-  const draftVerses = useSelector(
-    annotationPaneStore,
-    (state) => state.draftVerses,
-  );
-  const editing = useSelector(annotationPaneStore, (state) => state.editing);
+  const pane = useAnnotationPaneState();
   const selectedVerse = usePrimarySelectedVerseId();
-  const selectedSet = new Set(
-    editing ? draftVerses : selectedVerse ? [selectedVerse] : [],
-  );
-  return selectedSet.has(verseId);
+  return pane.editing
+    ? pane.draftVerses.includes(verseId)
+    : selectedVerse === verseId;
 }
 
 export function useToggleVerseSelected(verseId: VerseId) {
-  const editing = useSelector(annotationPaneStore, (state) => state.editing);
+  const pane = useAnnotationPaneState();
+  const actions = useAnnotationPaneActions();
   const selectedVerse = usePrimarySelectedVerseId();
   const setSelectedNumber = useSetSelectedVerseNumber();
   return () => {
-    if (editing) {
-      if (selectedVerse) {
-        annotationPaneStore.actions.toggleDraftVerse(verseId, selectedVerse);
-      }
+    if (pane.editing) {
+      if (selectedVerse) actions.toggleDraftVerse(verseId, selectedVerse);
       return;
     }
 
@@ -162,11 +198,22 @@ export function useToggleVerseSelected(verseId: VerseId) {
 }
 
 export function useVerseAnnotations(verseId: VerseId | null) {
-  const { data: account } = useSuspenseQuery(userAccountQueryOptions);
-  const { data: annotations } = useQuery(
-    verseAnnotationsQueryOptions(account?.did ?? null, verseId),
-  );
-  return annotations ?? [];
+  const { data } = useLiveQuery({
+    query: (query) => {
+      if (!verseId) return undefined;
+      return query
+        .from({ annotationVerse: annotationVerseCollectionOptions })
+        .innerJoin(
+          { annotation: annotationCollectionOptions },
+          ({ annotation, annotationVerse }) =>
+            eq(annotation.id, annotationVerse.annotationId),
+        )
+        .where(({ annotationVerse }) => eq(annotationVerse.verseId, verseId))
+        .orderBy(({ annotation }) => annotation.createdAt, 'desc')
+        .select(({ annotation }) => ({ ...annotation }));
+    },
+  });
+  return data ?? [];
 }
 
 export function usePrimarySelectedVerseAnnotations() {
@@ -174,12 +221,42 @@ export function usePrimarySelectedVerseAnnotations() {
   return useVerseAnnotations(selectedVerse ?? null);
 }
 
+export function useAnnotationVerseIds(annotationId: string | null) {
+  const { data } = useLiveQuery({
+    query: (query) => {
+      if (!annotationId) return undefined;
+      return query
+        .from({ annotationVerse: annotationVerseCollectionOptions })
+        .where(({ annotationVerse }) =>
+          eq(annotationVerse.annotationId, annotationId),
+        )
+        .orderBy(({ annotationVerse }) => annotationVerse.ordinal)
+        .select(({ annotationVerse }) => ({
+          id: annotationVerse.id,
+          verseId: annotationVerse.verseId,
+        }));
+    },
+  });
+  return (data ?? []).map((annotationVerse) => annotationVerse.verseId);
+}
+
 export function useVerseIncludedInOpenAnnotation(verseId: VerseId) {
-  const search = readerRoute.useSearch();
-  const annotations = usePrimarySelectedVerseAnnotations();
-  const openAnnotationId = search.annotation;
-  return annotations.some(
-    (annotation) =>
-      annotation.id === openAnnotationId && annotation.verses.includes(verseId),
-  );
+  const { current: openAnnotation } = useOpenAnnotation();
+  const { data } = useLiveQuery({
+    query: (query) => {
+      if (!openAnnotation) return undefined;
+      return query
+        .from({ annotationVerse: annotationVerseCollectionOptions })
+        .where(({ annotationVerse }) =>
+          eq(annotationVerse.annotationId, openAnnotation.id),
+        )
+        .where(({ annotationVerse }) => eq(annotationVerse.verseId, verseId))
+        .findOne();
+    },
+  });
+  return !!data;
+}
+
+export function useAnnotationCollections() {
+  return getAnnotationCollections(useDbClient());
 }
