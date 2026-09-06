@@ -20,7 +20,7 @@
     "lexicons": "lex build --lexicons ./lexicons --out ./src/lexicons --clear"
   },
   "dependencies": {
-    "@a-type/ui": "^6.1.41",
+    "@a-type/ui": "^6.1.45",
     "@arbor-css/core": "^0.0.147",
     "@arbor-css/postcss": "^0.0.147",
     "@atproto/common-web": "^0.5.10",

@@ -5,6 +5,10 @@
   gap: var(--m-sp-sm);
 }
 
+.commentField {
+  flex: 1;
+}
+
 .form {
   width: min(100%, --fn-literal(800px));
   height: 100%;
