@@ -14,8 +14,8 @@ import uiCss from '@a-type/ui/main.css?url';
 import appCss from '../styles.css?url';
 
 import { Provider } from '@a-type/ui';
-import type { QueryClient } from '@tanstack/react-query';
 import type { DbClient } from '@tanstack/react-db';
+import type { QueryClient } from '@tanstack/react-query';
 
 interface MyRouterContext {
   dbClient: DbClient;

@@ -1,9 +1,9 @@
+import type { DbClient } from '@tanstack/react-db';
 import {
+  BasicIndex,
   collectionOptions,
-  localOnlyCollectionOptions,
   localStorageCollectionOptions,
 } from '@tanstack/react-db';
-import type { DbClient } from '@tanstack/react-db';
 
 import type { BookId, VerseId } from '#/lib/bible/verse';
 import type { AnnotationColor } from './types';
@@ -35,13 +35,6 @@ export interface AnnotationVerseRecord {
   ordinal: number;
 }
 
-export interface AnnotationPaneRecord {
-  id: 'annotation-pane';
-  addingVerses: boolean;
-  draftVerses: VerseId[];
-  editing: boolean;
-}
-
 export interface ChapterAnnotationSnapshot {
   annotations: AnnotationRecord[];
   annotationVerses: AnnotationVerseRecord[];
@@ -60,21 +53,8 @@ export const annotationVerseCollectionOptions = collectionOptions(
     id: 'annotation-verses-v2',
     storageKey: 'marginalia.annotation-verses.v2',
     getKey: (annotationVerse) => annotationVerse.id,
-  }),
-);
-
-export const annotationPaneCollectionOptions = collectionOptions(
-  localOnlyCollectionOptions<AnnotationPaneRecord>({
-    id: 'annotation-pane',
-    getKey: (pane) => pane.id,
-    initialData: [
-      {
-        id: 'annotation-pane',
-        addingVerses: false,
-        draftVerses: [],
-        editing: false,
-      },
-    ],
+    defaultIndexType: BasicIndex,
+    autoIndex: 'eager',
   }),
 );
 
@@ -82,7 +62,6 @@ export function getAnnotationCollections(dbClient: DbClient) {
   return {
     annotations: dbClient.collection(annotationCollectionOptions),
     annotationVerses: dbClient.collection(annotationVerseCollectionOptions),
-    pane: dbClient.collection(annotationPaneCollectionOptions),
   };
 }
 

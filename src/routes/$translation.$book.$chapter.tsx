@@ -31,7 +31,7 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
         : undefined;
     return {
       ...(verses ? { verses } : {}),
-      ...(annotation ? { annotation } : {}),
+      ...(verses && annotation ? { annotation } : {}),
     };
   },
   loader: async ({ params, context }) => {

@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@a-type/ui':
-        specifier: ^6.1.39
-        version: 6.1.39(@arbor-css/core@0.0.147)(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: ^6.1.41
+        version: 6.1.41(@arbor-css/core@0.0.147)(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@arbor-css/core':
         specifier: ^0.0.147
         version: 0.0.147
@@ -59,6 +59,9 @@ importers:
       '@tanstack/react-start':
         specifier: latest
         version: 1.168.49(crossws@0.4.12(srvx@0.11.22))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.5)(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0))
+      '@tanstack/react-store':
+        specifier: ^0.9.3
+        version: 0.9.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       better-sqlite3:
         specifier: ^13.0.3
         version: 13.0.3
@@ -126,6 +129,9 @@ importers:
       prettier:
         specifier: ^3.9.6
         version: 3.9.6
+      profano:
+        specifier: ^0.3.0
+        version: 0.3.0
       typescript:
         specifier: ^6.0.2
         version: 6.0.3
@@ -138,8 +144,8 @@ importers:
 
 packages:
 
-  '@a-type/ui@6.1.39':
-    resolution: {integrity: sha512-rr6PPxxz03dPeA/95nbnAnA6OD2DF+t5l4nwV3WXjk5kTPLKijp3/chsJmySHbp+0PORmCRdxNbJldRCK7/p8g==}
+  '@a-type/ui@6.1.41':
+    resolution: {integrity: sha512-toKsSGpkJrflQjKVDTn/K/TveiapWVTdNXcqlsYIcnPl6mrNNDR0LRjegCQ2wNf6B0ZntKodhwfJUnCSVyAFrA==}
     engines: {node: '>=24'}
     peerDependencies:
       '@arbor-css/core': ^0.0.144
@@ -1987,6 +1993,10 @@ packages:
   globrex@0.1.2:
     resolution: {integrity: sha512-uHJgbwAMwNFf5mLst7IWLNg14x1CkeqglJb/K3doi4dw6q2IvAAmM/Y81kevy83wP+Sst+nutFTYOGg3d1lsxg==}
 
+  goke@6.15.1:
+    resolution: {integrity: sha512-jt/g3938xzRKRKcXWgULiEzFgs/jgnCZJWTEB/yBMm6JAlsCGBMs56eoIKAzsoFXBVF6IhGQzN5Q/uXNDra5Vw==}
+    engines: {node: '>=18'}
+
   goober@2.1.19:
     resolution: {integrity: sha512-U7veizMqxyKlM58+Z5j2ngJBH/r9siDmxpvNxSw0PylF6WQvrASJEZrxh1hidRBJc2jqoBVSyOban5u8m+6Rxg==}
     peerDependencies:
@@ -2402,6 +2412,10 @@ packages:
 
   process-warning@5.1.0:
     resolution: {integrity: sha512-jQSaVHsPgtyw60e1rQ/A+/ArPEj/S8pS/vFnyGa/gYFXrKk/6RuDkoqVDQ5NI5MmS01698ltlAk0NoDBNLujRw==}
+
+  profano@0.3.0:
+    resolution: {integrity: sha512-n38X0UYR0hmGReXycFXPDtjGGOs8y/mMFl+zSYqYB8b6M5wBwa3m1k+4AlzsHyaoTWHxbMXCsL+QeE+o0PI8aA==}
+    hasBin: true
 
   proxy-compare@3.0.1:
     resolution: {integrity: sha512-V9plBAt3qjMlS1+nC8771KNf6oJ12gExvaxnNzN/9yVRLdTv/lc+oJlnSzrdYDAvBfTStPCoiaCOTmTs0adv7Q==}
@@ -3007,7 +3021,7 @@ packages:
 
 snapshots:
 
-  '@a-type/ui@6.1.39(@arbor-css/core@0.0.147)(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@a-type/ui@6.1.41(@arbor-css/core@0.0.147)(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@a-type/utils': 1.1.9
       '@arbor-css/core': 0.0.147
@@ -4993,6 +5007,8 @@ snapshots:
 
   globrex@0.1.2: {}
 
+  goke@6.15.1: {}
+
   goober@2.1.19(csstype@3.2.3):
     dependencies:
       csstype: 3.2.3
@@ -5365,6 +5381,11 @@ snapshots:
   prettier@3.9.6: {}
 
   process-warning@5.1.0: {}
+
+  profano@0.3.0:
+    dependencies:
+      goke: 6.15.1
+      zod: 4.5.4
 
   proxy-compare@3.0.1: {}
 

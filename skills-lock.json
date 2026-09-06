@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "profano": {
+      "source": "remorses/profano",
+      "sourceType": "github",
+      "skillPath": "skills/profano/SKILL.md",
+      "computedHash": "0de921002ca44e9f882170b8573c31533e8e652f5dfeb4c6abd4e2befc40d9e6"
+    }
+  }
+}

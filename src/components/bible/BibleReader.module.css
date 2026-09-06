@@ -31,9 +31,8 @@
   position: relative;
   min-width: 0;
   gap: var(--m-sp-md);
-  overflow-y: auto;
-  overflow-x: clip;
   min-height: 0;
+  contain: content;
 }
 
 .location {

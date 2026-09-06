@@ -7,8 +7,8 @@ import { requestAnnotationSync } from '#/lib/annotations/sync';
 import { m } from '#/paraglide/messages';
 import { AnnotationEditor } from './AnnotationEditor';
 import cls from './AnnotationPane.module.css';
+import { annotationPaneActions } from './annotationPaneState';
 import {
-  useAnnotationPaneActions,
   useAnnotationPaneState,
   useAnnotationVerseIds,
   useOpenAnnotation,
@@ -29,10 +29,9 @@ export interface AnnotationPaneProps {
 export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
   const dbClient = useDbClient();
   const { addingVerses, draftVerses, editing } = useAnnotationPaneState();
-  const actions = useAnnotationPaneActions();
   const selectedVerse = usePrimarySelectedVerseId();
   const openEditor = () => {
-    if (selectedVerse) actions.openEditor(selectedVerse);
+    if (selectedVerse) annotationPaneActions.openEditor(selectedVerse);
   };
 
   const setOpenAnnotation = useSetOpenAnnotation();
@@ -42,19 +41,11 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
 
   const setSelectedNumber = useSetSelectedVerseNumber();
   const handleClose = () => {
-    actions.reset();
+    annotationPaneActions.reset();
     setSelectedNumber();
   };
 
-  const search = readerRoute.useSearch();
   const selectedVerseAnnotations = usePrimarySelectedVerseAnnotations();
-
-  let openAnnotationIndex = selectedVerseAnnotations.findIndex(
-    (annotation) => annotation.id === search.annotation,
-  );
-  if (openAnnotationIndex === -1) {
-    openAnnotationIndex = 0;
-  }
   const {
     current: openAnnotation,
     next: nextAnnotation,
@@ -63,15 +54,24 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
   const openAnnotationVerses = useAnnotationVerseIds(
     openAnnotation?.id ?? null,
   );
+  const firstOpenAnnotationVerse = openAnnotationVerses.at(0);
+
+  useEffect(() => {
+    if (editing || openAnnotation || selectedVerseAnnotations.length === 0) {
+      return;
+    }
+    setOpenAnnotation(selectedVerseAnnotations[0]?.id);
+  }, [editing, openAnnotation, selectedVerseAnnotations, setOpenAnnotation]);
 
   // TODO: find a better place for this?
   useEffect(() => {
-    const firstVerse = openAnnotationVerses.at(0);
-    if (!firstVerse) return;
-    document.getElementById(`verse-${firstVerse}`)?.scrollIntoView({
-      block: 'center',
-    });
-  }, [openAnnotationVerses]);
+    if (!firstOpenAnnotationVerse) return;
+    document
+      .getElementById(`verse-${firstOpenAnnotationVerse}`)
+      ?.scrollIntoView({
+        block: 'center',
+      });
+  }, [firstOpenAnnotationVerse]);
 
   return (
     <aside
@@ -84,8 +84,8 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
         <AnnotationEditor
           verses={draftVerses}
           addingVerses={addingVerses}
-          onAddingVersesChange={actions.setAddingVerses}
-          onCancel={actions.reset}
+          onAddingVersesChange={annotationPaneActions.setAddingVerses}
+          onCancel={annotationPaneActions.reset}
           onSaved={() => {
             if (accountDid) void requestAnnotationSync(dbClient, accountDid);
             handleClose();

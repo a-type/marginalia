@@ -20,7 +20,7 @@
     "lexicons": "lex build --lexicons ./lexicons --out ./src/lexicons --clear"
   },
   "dependencies": {
-    "@a-type/ui": "^6.1.39",
+    "@a-type/ui": "^6.1.41",
     "@arbor-css/core": "^0.0.147",
     "@arbor-css/postcss": "^0.0.147",
     "@atproto/common-web": "^0.5.10",
@@ -37,6 +37,7 @@
     "@tanstack/react-router-ssr-query": "latest",
     "@tanstack/react-router-with-db": "^0.1.0",
     "@tanstack/react-start": "latest",
+    "@tanstack/react-store": "^0.9.3",
     "better-sqlite3": "^13.0.3",
     "kysely": "^0.29.5",
     "nitro": "3.0.260610-beta",
@@ -61,6 +62,7 @@
     "eslint": "^9.20.0",
     "playwright": "^1.62.1",
     "prettier": "^3.9.6",
+    "profano": "^0.3.0",
     "typescript": "^6.0.2",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"

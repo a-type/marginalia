@@ -1,11 +1,8 @@
 import { DbClient } from '@tanstack/react-db';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import {
-  annotationPaneCollectionOptions,
-  getAnnotationCollections,
-} from './collections';
 import type { AnnotationRecord } from './collections';
+import { getAnnotationCollections } from './collections';
 
 const clients: DbClient[] = [];
 
@@ -43,22 +40,5 @@ describe('annotation collections', () => {
     await second.annotations.preload();
 
     expect(second.annotations.get(annotation.id)).toMatchObject(annotation);
-  });
-
-  it('keeps LocalOnly pane state scoped to each DbClient', async () => {
-    const firstClient = new DbClient();
-    const secondClient = new DbClient();
-    clients.push(firstClient, secondClient);
-    const firstPane = firstClient.collection(annotationPaneCollectionOptions);
-    const secondPane = secondClient.collection(annotationPaneCollectionOptions);
-    await Promise.all([firstPane.preload(), secondPane.preload()]);
-
-    await firstPane.update('annotation-pane', (draft) => {
-      draft.editing = true;
-      draft.draftVerses = ['GEN/1:1'];
-    }).isPersisted.promise;
-
-    expect(firstPane.get('annotation-pane')?.editing).toBe(true);
-    expect(secondPane.get('annotation-pane')?.editing).toBe(false);
   });
 });
