@@ -5,4 +5,10 @@ export default presetAtype({
     mainColor: 'tomato',
     ranges: {},
   },
+  shape: {
+    roundness: 0.75,
+  },
+  shadow: {
+    globalBlur: 1,
+  },
 });

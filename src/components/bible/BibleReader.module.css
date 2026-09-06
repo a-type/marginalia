@@ -1,6 +1,6 @@
 .root {
   height: 100dvh;
-  background-color: var(--m-tint-wash);
+  @apply --mx-bg(var(--m-gray-wash));
 
   padding: var(--m-sp-lg);
   gap: var(--m-sp-md);

@@ -161,3 +161,9 @@
 .usfm-figure img {
   max-width: 100%;
 }
+
+.usfm-wj {
+  /* words of jesus */
+  @apply --mx-fg(var(--m-tint-heavy));
+  @apply --mx-fg-heavier(4);
+}

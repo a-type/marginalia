@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@a-type/ui':
-        specifier: ^6.1.45
-        version: 6.1.45(@arbor-css/core@0.0.147)(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: ^6.1.46
+        version: 6.1.46(@arbor-css/core@0.0.147)(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@arbor-css/core':
         specifier: ^0.0.147
         version: 0.0.147
@@ -144,8 +144,8 @@ importers:
 
 packages:
 
-  '@a-type/ui@6.1.45':
-    resolution: {integrity: sha512-GAN4lqjl2DyQnx2O/tOWY5E66xZNZDe46TQgQaY7qdIEhdB58T24ZYfiKJy0y70mmQwPrJW9/3u4vX+oUUCoTA==}
+  '@a-type/ui@6.1.46':
+    resolution: {integrity: sha512-549/aiD1OQyvIwybLGrxEoEiGaW+uhTRLerzef6pMVxKJy3slnzZJhHjMgxN9/vpwjVtYmyh2GvmBiRMXDPhuw==}
     engines: {node: '>=24'}
     peerDependencies:
       '@arbor-css/core': ^0.0.144
@@ -3021,7 +3021,7 @@ packages:
 
 snapshots:
 
-  '@a-type/ui@6.1.45(@arbor-css/core@0.0.147)(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@a-type/ui@6.1.46(@arbor-css/core@0.0.147)(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@a-type/utils': 1.1.9
       '@arbor-css/core': 0.0.147

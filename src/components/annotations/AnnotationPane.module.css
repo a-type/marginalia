@@ -2,7 +2,7 @@
   height: 0;
   overflow: clip;
   pointer-events: none;
-  background: var(--m-tint-wash);
+  @apply --mx-bg(inherit);
   transition: height var(--m-dur) var(--m-ease);
 }
 

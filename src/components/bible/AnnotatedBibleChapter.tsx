@@ -22,7 +22,7 @@ export function AnnotatedBibleChapter({
 }: AnnotatedBibleChapterProps) {
   return (
     <>
-      <Box surface elevated="md" className={cls.content}>
+      <Box surface="ambient" elevated="md" border className={cls.content}>
         <ScrollArea direction="vertical">
           <Box gap>
             <Box p className="min-w-0">
