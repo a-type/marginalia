@@ -58,8 +58,7 @@
 }
 
 .usfm-verse[data-highlighted] {
-  @apply --mx-bg(var(--m-tint));
-  @apply --mx-bg-faded(10%);
+  @apply --mx-bg(var(--m-tint-wash));
   box-shadow: 0 0 0 var(--m-sp-xs) var(--mx-bg-ref);
 }
 
