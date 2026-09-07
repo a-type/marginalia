@@ -78,6 +78,7 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
       className={clsx(cls.root, className)}
       data-open={selectedVerse ? '' : undefined}
       data-editing={editing ? '' : undefined}
+      data-empty={selectedVerse && !editing && !openAnnotation ? '' : undefined}
       aria-hidden={!selectedVerse}
     >
       {editing ? (

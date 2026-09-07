@@ -7,13 +7,14 @@
 
 .usfm-title {
   margin: 0 0 var(--m-sp-md);
-  color: var(--m-tint-heavy);
+  @apply --mx-fg(var(--m-gray-ink));
   text-align: center;
   @apply --mx-prose-primary;
 }
 
 .usfm-title-secondary {
   @apply --mx-prose-secondary;
+  @apply --mx-fg-lighter(3);
 }
 
 .usfm-chapter + .usfm-chapter {
@@ -22,7 +23,7 @@
 
 .usfm-chapter-number {
   margin: 0 0 var(--m-sp-lg);
-  color: var(--m-tint-heavy);
+  color: var(--m-gray-heavy);
   font-family: ui-sans-serif, system-ui, sans-serif;
   font-size: var(--m-fs-sm);
   font-weight: var(--m-fw-bold);
@@ -57,16 +58,16 @@
 }
 
 .usfm-verse[data-highlighted] {
-  background: color-mix(in oklch, var(--m-tint-heavy) 14%, transparent);
-  box-shadow: 0 0 0 var(--m-sp-xs)
-    color-mix(in oklch, var(--m-tint-heavy) 14%, transparent);
+  @apply --mx-bg(var(--m-tint));
+  @apply --mx-bg-faded(10%);
+  box-shadow: 0 0 0 var(--m-sp-xs) var(--mx-bg-ref);
 }
 
 .usfm[data-viewing-annotation] .usfm-verse[data-annotated] {
   position: relative;
   z-index: 1;
-  background: white;
-  box-shadow: 0 0 0 var(--m-sp-xs) white;
+  background: var(--m-tint-paper);
+  box-shadow: 0 0 0 var(--m-sp-xs) var(--m-tint-paper);
 }
 
 .usfm-verse[role='button'] {

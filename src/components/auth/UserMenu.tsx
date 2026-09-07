@@ -21,12 +21,12 @@ export function UserMenu({ className }: UserMenuProps) {
     <>
       <DropdownMenu>
         <DropdownMenu.Trigger
-          render={<Button emphasis="ghost" />}
+          render={<Button emphasis="ghost" size="small" />}
           aria-label="User menu"
           className={className}
         >
           <Button.Icon
-            render={<Avatar name={account?.handle ?? undefined} />}
+            render={<Avatar name={account?.handle ?? undefined} size="16px" />}
           />
         </DropdownMenu.Trigger>
         <DropdownMenu.Content>

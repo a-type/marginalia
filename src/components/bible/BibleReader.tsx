@@ -1,6 +1,6 @@
-import { Box } from '@a-type/ui';
-import { getRouteApi } from '@tanstack/react-router';
+import { Box, ColorModeToggle } from '@a-type/ui';
 import { useDbClient } from '@tanstack/react-db';
+import { getRouteApi } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
 import { useResetAnnotationPaneOnRouteChange } from '#/components/annotations/annotationPaneStore';
@@ -36,9 +36,10 @@ export function BibleReader() {
 
   return (
     <main className={cls.root}>
-      <Box className={cls.pane}></Box>
-      <Box className={cls.menubar}>
+      <Box className={cls.pane} items="center"></Box>
+      <Box className={cls.menubar} items="center">
         <UserMenu />
+        <ColorModeToggle />
       </Box>
       <BibleReaderLocation
         bookId={location.bookId}

@@ -33,6 +33,7 @@
   gap: var(--m-sp-md);
   min-height: 0;
   contain: content;
+  max-width: 65ch;
 }
 
 .location {

@@ -4,15 +4,19 @@
   pointer-events: none;
   @apply --mx-bg(inherit);
   transition: height var(--m-dur) var(--m-ease);
-}
 
-.root[data-open] {
-  height: min(--fn-literal(12rem), 35vh);
-  pointer-events: auto;
-}
+  &[data-open] {
+    height: min(--fn-literal(12rem), 35vh);
+    pointer-events: auto;
+  }
 
-.root[data-editing] {
-  height: min(--fn-literal(24rem), 50vh);
+  &[data-editing] {
+    height: min(--fn-literal(24rem), 50vh);
+  }
+
+  &[data-empty] {
+    height: --fn-literal(60px);
+  }
 }
 
 .empty {
