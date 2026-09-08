@@ -75,7 +75,6 @@
 }
 
 .usfm-verse[data-selected] {
-  background: var(--m-tint-wash);
   box-shadow: 0 0 0 var(--m-sp-xs) var(--m-tint-wash);
 }
 

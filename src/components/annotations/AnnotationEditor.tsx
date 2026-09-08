@@ -1,14 +1,7 @@
-import {
-  Button,
-  FormikForm,
-  TextAreaField,
-  ToggleGroupField,
-} from '@a-type/ui';
+import { Button, FormikForm, TextAreaField } from '@a-type/ui';
 import { useDbClient } from '@tanstack/react-db';
 
 import { createAnnotation } from '#/lib/annotations/create';
-import type { AnnotationColor } from '#/lib/annotations/types';
-import { annotationColors } from '#/lib/annotations/types';
 import type { VerseId } from '#/lib/bible/verse';
 import { m } from '#/paraglide/messages';
 import z from 'zod';
@@ -22,6 +15,17 @@ export interface AnnotationEditorProps {
   onSaved: () => void | Promise<void>;
 }
 
+const schema = z
+  .object({
+    comment: z.string().optional(),
+  })
+  .refine(({ comment }) => {
+    if (!comment?.trim()) {
+      return m.annotation_validation();
+    }
+    return true;
+  });
+
 export function AnnotationEditor({
   verses,
   addingVerses,
@@ -30,22 +34,10 @@ export function AnnotationEditor({
   onSaved,
 }: AnnotationEditorProps) {
   const dbClient = useDbClient();
-  const submit = async ({
-    color,
-    comment,
-  }: {
-    color: AnnotationColor | null;
-    comment: string;
-  }) => {
-    if (!color && !comment.trim()) {
-      return;
-    }
+  const submit = async ({ comment }: { comment: string }) => {
+    if (!comment.trim()) return;
 
-    await createAnnotation(dbClient, {
-      verses,
-      comment,
-      ...(color ? { color } : {}),
-    });
+    await createAnnotation(dbClient, { verses, comment });
     await onSaved();
   };
 
@@ -53,34 +45,15 @@ export function AnnotationEditor({
     <FormikForm
       className={cls.form}
       onSubmit={submit}
-      initialValues={{ color: null, comment: '' }}
-      validationSchema={z
-        .object({
-          color: z.string().optional(),
-          comment: z.string().optional(),
-        })
-        .refine(({ color, comment }) => {
-          if (!color && !comment?.trim()) {
-            return m.annotation_validation();
-          }
-          return true;
-        })}
+      initialValues={{ comment: '' }}
+      validate={(values) => {
+        const result = schema.safeParse(values);
+        if (!result.success) {
+          return result.error.flatten().fieldErrors;
+        }
+        return {};
+      }}
     >
-      <ToggleGroupField name="color" label={m.annotation_color_label()}>
-        <ToggleGroupField.Item value="none">
-          {m.annotation_color_none()}
-        </ToggleGroupField.Item>
-        {annotationColors.map((value) => (
-          <ToggleGroupField.Item
-            key={value}
-            value={value}
-            aria-label={value}
-            className={`@mode-${value}`}
-          >
-            <span className={cls.swatch} />
-          </ToggleGroupField.Item>
-        ))}
-      </ToggleGroupField>
       <TextAreaField
         name="comment"
         label={m.annotation_comment_label()}

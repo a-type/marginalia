@@ -39,7 +39,6 @@ interface DatabaseSchema {
     authorDid: string;
     commentaryId: string | null;
     comment: string | null;
-    color: string | null;
     recordJson: string;
     createdAt: Generated<string>;
     updatedAt: Generated<string>;
@@ -50,6 +49,20 @@ interface DatabaseSchema {
     bookId: string;
     chapter: number;
     verse: number;
+  };
+  com_marginalia_highlight: {
+    rkey: string;
+    uri: string;
+    cid: string | null;
+    authorDid: string;
+    verseId: string;
+    bookId: string;
+    chapter: number;
+    verse: number;
+    color: string;
+    recordJson: string;
+    createdAt: string;
+    updatedAt: Generated<string>;
   };
 }
 

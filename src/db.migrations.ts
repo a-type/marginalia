@@ -143,6 +143,49 @@ export const migrationProvider: MigrationProvider = {
           await db.schema.dropTable('com_marginalia_commentary').execute();
         },
       },
+      '003_highlights': {
+        async up(db) {
+          await db.schema
+            .alterTable('com_marginalia_annotation')
+            .dropColumn('color')
+            .execute();
+          await db.schema
+            .createTable('com_marginalia_highlight')
+            .addColumn('uri', 'text', (column) => column.primaryKey())
+            .addColumn('rkey', 'text', (column) => column.notNull())
+            .addColumn('cid', 'text')
+            .addColumn('authorDid', 'text', (column) => column.notNull())
+            .addColumn('verseId', 'text', (column) => column.notNull())
+            .addColumn('bookId', 'text', (column) => column.notNull())
+            .addColumn('chapter', 'integer', (column) => column.notNull())
+            .addColumn('verse', 'integer', (column) => column.notNull())
+            .addColumn('color', 'text', (column) => column.notNull())
+            .addColumn('recordJson', 'text', (column) => column.notNull())
+            .addColumn('createdAt', 'text', (column) =>
+              column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
+            )
+            .addColumn('updatedAt', 'text', (column) =>
+              column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
+            )
+            .addUniqueConstraint(
+              'com_marginalia_highlight_author_verse_unique',
+              ['authorDid', 'verseId'],
+            )
+            .execute();
+          await db.schema
+            .createIndex('com_marginalia_highlight_author_chapter_idx')
+            .on('com_marginalia_highlight')
+            .columns(['authorDid', 'bookId', 'chapter'])
+            .execute();
+        },
+        async down(db) {
+          await db.schema.dropTable('com_marginalia_highlight').execute();
+          await db.schema
+            .alterTable('com_marginalia_annotation')
+            .addColumn('color', 'text')
+            .execute();
+        },
+      },
     };
   },
 };

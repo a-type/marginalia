@@ -1,0 +1,27 @@
+.toolbar {
+  position: fixed;
+  top: calc(anchor(bottom) + var(--m-sp-sm));
+  left: anchor(left);
+  position-visibility: anchors-visible;
+  z-index: 2;
+  display: flex;
+  gap: var(--m-sp-xs);
+  padding: var(--m-sp-xs);
+  border: 1px solid var(--m-tint-wash);
+  border-radius: var(--m-rd-sm);
+  background: var(--m-bg);
+  box-shadow: var(--m-shadow-md);
+  transition:
+    opacity,
+    top,
+    left,
+    var(--m-dur-short) var(--m-ease-out);
+}
+
+.swatch {
+  display: block;
+  width: var(--m-sp-md);
+  height: var(--m-sp-md);
+  border-radius: 50%;
+  background: var(--m-tint-heavy);
+}

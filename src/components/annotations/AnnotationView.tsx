@@ -27,7 +27,6 @@ export function AnnotationView({
       items="stretch"
       full="width"
       className={cls.root}
-      data-color={annotation.color}
       role="note"
     >
       <Box gap="sm" justify="between">
@@ -50,9 +49,7 @@ export function AnnotationView({
           </Button>
         </Box>
       </Box>
-      <span className={cls.comment}>
-        {annotation.comment ?? m.annotation_highlight_only()}
-      </span>
+      <span className={cls.comment}>{annotation.comment}</span>
     </Box>
   );
 }

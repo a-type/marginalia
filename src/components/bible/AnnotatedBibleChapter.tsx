@@ -1,6 +1,7 @@
 import { Box, ScrollArea } from '@a-type/ui';
 
 import { AnnotationPane } from '#/components/annotations/AnnotationPane';
+import { AnnotationToolbar } from '#/components/annotations/AnnotationToolbar';
 import type { AnnotationWithVerses } from '#/components/annotations/useChapterAnnotations';
 import { VerseGutter } from '#/components/annotations/VerseGutter';
 import { BookIdProvider, USFMRenderer } from '#/components/usfm';
@@ -34,6 +35,7 @@ export function AnnotatedBibleChapter({
           </Box>
         </ScrollArea>
       </Box>
+      <AnnotationToolbar />
       <AnnotationPane accountDid={accountDid} className={cls.annotationPane} />
     </>
   );

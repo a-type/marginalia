@@ -5,47 +5,32 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 
 import * as Annotation from '#/lexicons/com/marginalia/annotation';
-import type { AnnotationColor } from '#/lib/annotations/types';
-import { annotationColors } from '#/lib/annotations/types';
 import { oauth } from '#/lib/atproto/server';
 import { getAppSession } from '#/lib/auth/server';
-import { getAnnotationsForChapter } from '#/lib/db/queries';
 import { isBookId, isValidVerseId } from '#/lib/bible/verse';
+import { getAnnotationsForChapter } from '#/lib/db/queries';
 import { AppError } from '#/lib/error';
 import { logger } from '#/logger';
-import { formatAnnotationVerseRecordId } from './collections';
 import type {
   AnnotationRecord,
   AnnotationVerseRecord,
   ChapterAnnotationSnapshot,
 } from './collections';
+import { formatAnnotationVerseRecordId } from './collections';
 
-const uploadAnnotationSchema = z
-  .object({
-    rkey: z.string().refine(TID.is, 'Invalid annotation key'),
-    verses: z
-      .array(z.string().refine(isValidVerseId, 'Invalid annotation verse'))
-      .min(1, 'Invalid annotation verses'),
-    comment: z.string().trim().optional(),
-    color: z.enum(annotationColors).optional(),
-    createdAt: z
-      .string()
-      .refine(
-        (value) => !Number.isNaN(Date.parse(value)),
-        'Invalid annotation date',
-      ),
-  })
-  .superRefine((value, context) => {
-    if (value.comment || value.color) return;
-    context.addIssue({
-      code: 'custom',
-      message: 'Annotation requires a comment or color',
-    });
-  })
-  .transform((value) => ({
-    ...value,
-    ...(value.comment ? { comment: value.comment } : { comment: undefined }),
-  }));
+const uploadAnnotationSchema = z.object({
+  rkey: z.string().refine(TID.is, 'Invalid annotation key'),
+  verses: z
+    .array(z.string().refine(isValidVerseId, 'Invalid annotation verse'))
+    .min(1, 'Invalid annotation verses'),
+  comment: z.string().trim().min(1, 'Annotation requires a comment'),
+  createdAt: z
+    .string()
+    .refine(
+      (value) => !Number.isNaN(Date.parse(value)),
+      'Invalid annotation date',
+    ),
+});
 
 export type UploadAnnotationInput = z.input<typeof uploadAnnotationSchema>;
 
@@ -73,8 +58,7 @@ export const uploadAnnotationFn = createServerFn({ method: 'POST' })
     const { client } = await getAuthenticatedClient();
     const record = Annotation.$build({
       verses: data.verses.map((id) => ({ id })),
-      ...(data.comment ? { comment: data.comment } : {}),
-      ...(data.color ? { color: data.color } : {}),
+      comment: data.comment,
       createdAt: data.createdAt as Annotation.Main['createdAt'],
     });
     const response = await client.putRecord(record, data.rkey);
@@ -97,14 +81,7 @@ export const listChapterAnnotationsFn = createServerFn({ method: 'GET' })
         logger.warn('Skipping invalid projected annotation verse', row.uri);
         continue;
       }
-      const color = annotationColors.includes(row.color as AnnotationColor)
-        ? (row.color as AnnotationColor)
-        : undefined;
-      const comment = row.comment?.trim() || undefined;
-      if (!comment && !color) {
-        logger.warn('Skipping projected annotation without content', row.uri);
-        continue;
-      }
+      const comment = row.comment.trim();
 
       if (!annotations.has(row.uri)) {
         annotations.set(row.uri, {
@@ -115,8 +92,7 @@ export const listChapterAnnotationsFn = createServerFn({ method: 'GET' })
           authorDid: row.authorDid,
           bookId: row.bookId,
           chapter: row.chapter,
-          ...(comment ? { comment } : {}),
-          ...(color ? { color } : {}),
+          comment,
           createdAt: row.createdAt,
           status: 'synced',
           syncError: null,

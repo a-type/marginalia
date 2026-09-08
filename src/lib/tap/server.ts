@@ -3,18 +3,22 @@ import { assureAdminAuth, parseTapEvent } from '@atproto/tap';
 
 import * as Annotation from '#/lexicons/com/marginalia/annotation';
 import * as Commentary from '#/lexicons/com/marginalia/commentary';
+import * as Highlight from '#/lexicons/com/marginalia/highlight';
 import { isValidVerseId, parseVerseId } from '#/lib/bible/verse';
 import {
   deleteAnnotation,
   deleteCommentary,
+  deleteHighlight,
   upsertAnnotation,
   upsertCommentary,
+  upsertHighlight,
 } from '#/lib/db/queries';
 import { AppError } from '#/lib/error';
 
 const supportedCollections = new Set<string>([
   Commentary.$nsid,
   Annotation.$nsid,
+  Highlight.$nsid,
 ]);
 
 export function authorizeTapWebhook(request: Request) {
@@ -67,6 +71,11 @@ async function ingestRecordEvent(event: RecordEvent) {
 
   if (event.collection === Annotation.$nsid) {
     await persistAnnotationEvent(event);
+    return;
+  }
+
+  if (event.collection === Highlight.$nsid) {
+    await persistHighlightEvent(event);
   }
 }
 
@@ -99,8 +108,27 @@ async function persistAnnotationEvent(event: RecordEvent) {
       }
       return { verseId: verse.id, ...parseVerseId(verse.id) };
     }),
-    comment: record.comment ?? null,
-    color: record.color ?? null,
+    comment: record.comment,
+    recordJson: JSON.stringify(record),
+    createdAt: record.createdAt,
+  });
+}
+
+async function persistHighlightEvent(event: RecordEvent) {
+  const record = Highlight.$parse(event.record);
+  if (!isValidVerseId(record.verse.id)) {
+    throw new AppError(
+      AppError.Code.BadRequest,
+      `Invalid verse ID: ${record.verse.id}`,
+    );
+  }
+  await upsertHighlight({
+    uri: recordUri(event),
+    tid: event.rkey,
+    cid: event.cid ?? null,
+    authorDid: event.did,
+    verse: { verseId: record.verse.id, ...parseVerseId(record.verse.id) },
+    color: record.color,
     recordJson: JSON.stringify(record),
     createdAt: record.createdAt,
   });
@@ -110,8 +138,10 @@ async function deleteRecord(event: RecordEvent) {
   const uri = recordUri(event);
   if (event.collection === Commentary.$nsid) {
     await deleteCommentary(uri);
-  } else {
+  } else if (event.collection === Annotation.$nsid) {
     await deleteAnnotation(uri);
+  } else {
+    await deleteHighlight(uri);
   }
 }
 

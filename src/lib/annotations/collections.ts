@@ -6,7 +6,6 @@ import {
 } from '@tanstack/react-db';
 
 import type { BookId, VerseId } from '#/lib/bible/verse';
-import type { AnnotationColor } from './types';
 
 export type AnnotationStatus = 'pending' | 'uploaded' | 'synced';
 
@@ -18,8 +17,7 @@ export interface AnnotationRecord {
   authorDid: string | null;
   bookId: BookId;
   chapter: number;
-  comment?: string;
-  color?: AnnotationColor;
+  comment: string;
   createdAt: string;
   status: AnnotationStatus;
   syncError: string | null;

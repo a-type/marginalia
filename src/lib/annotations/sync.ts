@@ -28,7 +28,7 @@ async function synchronizeAnnotations(dbClient: DbClient, ownerDid: string) {
       (annotationVerse) => annotationVerse.annotationId === annotation.id,
     );
     const transaction = dbClient.createTransaction({
-      mutationFn: ({ transaction: pendingTransaction }) => {
+      mutationFn: async ({ transaction: pendingTransaction }) => {
         collections.annotations.utils.acceptMutations(pendingTransaction);
         collections.annotationVerses.utils.acceptMutations(pendingTransaction);
       },
@@ -70,8 +70,7 @@ async function synchronizeAnnotations(dbClient: DbClient, ownerDid: string) {
         data: {
           rkey: annotation.rkey,
           verses,
-          ...(annotation.comment ? { comment: annotation.comment } : {}),
-          ...(annotation.color ? { color: annotation.color } : {}),
+          comment: annotation.comment,
           createdAt: annotation.createdAt,
         },
       });

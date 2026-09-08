@@ -19,6 +19,8 @@ import {
   hasTranslationChapter,
   isTranslationId,
 } from '#/lib/bible/source';
+import { highlightCollectionOptions } from '#/lib/highlights/collections';
+import { listChapterHighlightsFn } from '#/lib/highlights/functions';
 import { userAccountQueryOptions } from '#/queries/user';
 
 export const Route = createFileRoute('/$translation/$book/$chapter')({
@@ -42,9 +44,10 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
     const book = getTranslationBook(manifest, location.bookId);
     if (!hasTranslationChapter(book, location.chapter)) throw notFound();
 
-    const [source, chapterAnnotations] = await Promise.all([
+    const [source, chapterAnnotations, chapterHighlights] = await Promise.all([
       fetchTranslationSource(params.translation, book),
       listChapterAnnotationsFn({ data: location }),
+      listChapterHighlightsFn({ data: location }),
       context.queryClient.query({
         ...userAccountQueryOptions,
         staleTime: 'static',
@@ -66,9 +69,17 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
         value: annotationVerse,
       })),
     });
+    context.dbClient.applyCollectionChunk({
+      collectionId: highlightCollectionOptions.id,
+      rows: chapterHighlights.highlights.map((highlight) => ({
+        key: highlight.id,
+        value: highlight,
+      })),
+    });
 
     return {
       chapterAnnotations,
+      chapterHighlights,
       location,
       manifest,
       source,

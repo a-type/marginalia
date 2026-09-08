@@ -1,10 +1,10 @@
-import { Box, Button, clsx, Icon } from '@a-type/ui';
+import { clsx } from '@a-type/ui';
 import { useDbClient } from '@tanstack/react-db';
 import { getRouteApi } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
 import { requestAnnotationSync } from '#/lib/annotations/sync';
-import { m } from '#/paraglide/messages';
+import { requestHighlightSync } from '#/lib/highlights/sync';
 import { AnnotationEditor } from './AnnotationEditor';
 import cls from './AnnotationPane.module.css';
 import { annotationPaneActions } from './annotationPaneState';
@@ -56,13 +56,6 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
   );
   const firstOpenAnnotationVerse = openAnnotationVerses.at(0);
 
-  useEffect(() => {
-    if (editing || openAnnotation || selectedVerseAnnotations.length === 0) {
-      return;
-    }
-    setOpenAnnotation(selectedVerseAnnotations[0]?.id);
-  }, [editing, openAnnotation, selectedVerseAnnotations, setOpenAnnotation]);
-
   // TODO: find a better place for this?
   useEffect(() => {
     if (!firstOpenAnnotationVerse) return;
@@ -72,6 +65,8 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
         block: 'center',
       });
   }, [firstOpenAnnotationVerse]);
+
+  if (!editing && !openAnnotation) return null;
 
   return (
     <aside
@@ -89,6 +84,7 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
           onCancel={annotationPaneActions.reset}
           onSaved={() => {
             if (accountDid) void requestAnnotationSync(dbClient, accountDid);
+            if (accountDid) void requestHighlightSync(dbClient, accountDid);
             handleClose();
           }}
         />
@@ -109,13 +105,6 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
               : undefined
           }
         />
-      ) : selectedVerse ? (
-        <Box className={cls.empty} p gap items="center">
-          <Button onClick={openEditor}>{m.annotation_add()}</Button>
-          <Button aria-label={m.annotation_close()} onClick={handleClose}>
-            <Icon name="x" />
-          </Button>
-        </Box>
       ) : null}
     </aside>
   );

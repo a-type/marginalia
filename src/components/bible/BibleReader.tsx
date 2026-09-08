@@ -5,10 +5,12 @@ import { useEffect } from 'react';
 
 import { useResetAnnotationPaneOnRouteChange } from '#/components/annotations/annotationPaneStore';
 import { useChapterAnnotations } from '#/components/annotations/useChapterAnnotations';
+import { useHighlightSync } from '#/components/annotations/useChapterHighlights';
 import { UserMenu } from '#/components/auth/UserMenu';
 import { reconcileChapterAnnotations } from '#/lib/annotations/reconcile';
 import { storeBibleLocation } from '#/lib/bible/location';
 import { storeTranslationId } from '#/lib/bible/source';
+import { reconcileChapterHighlights } from '#/lib/highlights/reconcile';
 import { userAccountQueryOptions } from '#/queries/user';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { AnnotatedBibleChapter } from './AnnotatedBibleChapter';
@@ -18,11 +20,18 @@ import { BibleReaderLocation } from './BibleReaderLocation';
 const readerRoute = getRouteApi('/$translation/$book/$chapter');
 
 export function BibleReader() {
-  const { chapterAnnotations, location, manifest, source, translationId } =
-    readerRoute.useLoaderData();
+  const {
+    chapterAnnotations,
+    chapterHighlights,
+    location,
+    manifest,
+    source,
+    translationId,
+  } = readerRoute.useLoaderData();
   const dbClient = useDbClient();
   const { data: account } = useSuspenseQuery(userAccountQueryOptions);
   const annotations = useChapterAnnotations(account?.did ?? null, location);
+  useHighlightSync(account?.did ?? null);
   useResetAnnotationPaneOnRouteChange();
 
   useEffect(() => {
@@ -33,6 +42,10 @@ export function BibleReader() {
   useEffect(() => {
     void reconcileChapterAnnotations(dbClient, location, chapterAnnotations);
   }, [chapterAnnotations, dbClient, location]);
+
+  useEffect(() => {
+    void reconcileChapterHighlights(dbClient, location, chapterHighlights);
+  }, [chapterHighlights, dbClient, location]);
 
   return (
     <main className={cls.root}>

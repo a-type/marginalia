@@ -1,8 +1,10 @@
+import { eq, useLiveQuery } from '@tanstack/react-db';
+
 import { formatVerseAnchorName, formatVerseId } from '#/lib/bible/verse';
+import { highlightCollectionOptions } from '#/lib/highlights/collections';
 import {
   useIsSelectedVerse,
   useToggleVerseSelected,
-  useVerseAnnotations,
   useVerseIncludedInOpenAnnotation,
 } from '../annotations/annotationPaneStore';
 import { useBookId, useChapterNumber, VerseIdProvider } from './contexts';
@@ -14,12 +16,17 @@ export function Verse({ argument, children }: USFMNodeComponentProps) {
   const verseNumber = argument ? Number(argument) : 0;
   const verseId = formatVerseId(bookId, chapterNumber, verseNumber);
   const selected = useIsSelectedVerse(verseId);
-  const annotations = useVerseAnnotations(verseId);
   const includedInOpenAnnotation = useVerseIncludedInOpenAnnotation(verseId);
-  const highlightColor = annotations.find(
-    (annotation) => annotation.color,
-  )?.color;
-  const toggle = useToggleVerseSelected(verseId, annotations.at(0)?.id);
+  const { data: appliedHighlight } = useLiveQuery({
+    query: (query) =>
+      query
+        .from({ highlight: highlightCollectionOptions })
+        .where(({ highlight }) => eq(highlight.verseId, verseId))
+        .select(({ highlight }) => ({ color: highlight.color }))
+        .findOne(),
+  });
+  const highlightColor = appliedHighlight?.color;
+  const toggle = useToggleVerseSelected(verseId);
 
   const handleClick = (event: React.MouseEvent<HTMLSpanElement>) => {
     const target = event.target;

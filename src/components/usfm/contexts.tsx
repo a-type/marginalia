@@ -1,4 +1,3 @@
-import type { AnnotationColor } from '#/lib/annotations/types';
 import type { BookId, VerseId } from '#/lib/bible/verse';
 import { createContext, useContext } from 'react';
 
@@ -91,30 +90,4 @@ export function VerseInteractionProvider({
 
 export function useOptionalVerseInteraction() {
   return useContext(VerseInteractionContext);
-}
-
-export interface VersePresentation {
-  active: boolean;
-  isAnnotated: (verseId: VerseId) => boolean;
-  getHighlightColor: (verseId: VerseId) => AnnotationColor | undefined;
-}
-
-const VersePresentationContext = createContext<VersePresentation | null>(null);
-
-export function VersePresentationProvider({
-  value,
-  children,
-}: {
-  value: VersePresentation;
-  children: React.ReactNode;
-}) {
-  return (
-    <VersePresentationContext.Provider value={value}>
-      {children}
-    </VersePresentationContext.Provider>
-  );
-}
-
-export function useOptionalVersePresentation() {
-  return useContext(VersePresentationContext);
 }

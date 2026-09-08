@@ -97,8 +97,7 @@ export function useIsAnnotationPaneActive() {
     annotationPaneStore,
     (state) => state.phase !== 'closed',
   );
-  const selectedAnnotations = usePrimarySelectedVerseAnnotations();
-  return !!explicitAnnotation || editing || selectedAnnotations.length > 0;
+  return !!explicitAnnotation || editing;
 }
 
 export function useSetSelectedVerseNumber() {
@@ -139,10 +138,7 @@ export function useIsSelectedVerse(verseId: VerseId) {
   return editing ? includedInDraft : primarySelected;
 }
 
-export function useToggleVerseSelected(
-  verseId: VerseId,
-  firstAnnotationId?: string,
-) {
+export function useToggleVerseSelected(verseId: VerseId) {
   const primarySelected = readerRoute.useSearch({
     select: (search) =>
       parseVerseSelection(search.verses).at(0) === parseVerseId(verseId).verse,
@@ -156,7 +152,6 @@ export function useToggleVerseSelected(
 
     void setSelectedNumber(
       primarySelected ? undefined : parseVerseId(verseId).verse,
-      primarySelected ? undefined : firstAnnotationId,
     );
   };
 }

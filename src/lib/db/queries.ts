@@ -25,7 +25,12 @@ export interface UpsertAnnotationInput extends RecordMetadata {
   commentaryId: string | null;
   verses: readonly AnnotationVerseInput[];
   comment: string | null;
-  color: string | null;
+  createdAt: string;
+}
+
+export interface UpsertHighlightInput extends RecordMetadata {
+  verse: AnnotationVerseInput;
+  color: string;
   createdAt: string;
 }
 
@@ -63,7 +68,6 @@ export async function upsertAnnotation(input: UpsertAnnotationInput) {
           authorDid: sql`excluded.authorDid`,
           commentaryId: sql`excluded.commentaryId`,
           comment: sql`excluded.comment`,
-          color: sql`excluded.color`,
           recordJson: sql`excluded.recordJson`,
           createdAt: sql`excluded.createdAt`,
           updatedAt: sql`CURRENT_TIMESTAMP`,
@@ -93,6 +97,30 @@ export async function upsertAnnotation(input: UpsertAnnotationInput) {
   });
 }
 
+export async function upsertHighlight(input: UpsertHighlightInput) {
+  const db = await getRequiredClient();
+  const { verse, ...highlight } = input;
+  await db
+    .insertInto('com_marginalia_highlight')
+    .values({ ...highlight, ...verse, rkey: input.tid })
+    .onConflict((conflict) =>
+      conflict.column('uri').doUpdateSet({
+        rkey: sql`excluded.rkey`,
+        cid: sql`excluded.cid`,
+        authorDid: sql`excluded.authorDid`,
+        verseId: sql`excluded.verseId`,
+        bookId: sql`excluded.bookId`,
+        chapter: sql`excluded.chapter`,
+        verse: sql`excluded.verse`,
+        color: sql`excluded.color`,
+        recordJson: sql`excluded.recordJson`,
+        createdAt: sql`excluded.createdAt`,
+        updatedAt: sql`CURRENT_TIMESTAMP`,
+      }),
+    )
+    .execute();
+}
+
 export async function getAnnotationsForChapter(
   bookId: string,
   chapter: number,
@@ -114,6 +142,21 @@ export async function getAnnotationsForChapter(
     .execute();
 }
 
+export async function getHighlightsForChapter(
+  authorDid: string,
+  bookId: string,
+  chapter: number,
+) {
+  const db = await getRequiredClient();
+  return db
+    .selectFrom('com_marginalia_highlight')
+    .selectAll()
+    .where('authorDid', '=', authorDid)
+    .where('bookId', '=', bookId)
+    .where('chapter', '=', chapter)
+    .execute();
+}
+
 export async function deleteCommentary(uri: string) {
   const db = await getRequiredClient();
   await db
@@ -126,6 +169,14 @@ export async function deleteAnnotation(uri: string) {
   const db = await getRequiredClient();
   await db
     .deleteFrom('com_marginalia_annotation')
+    .where('uri', '=', uri)
+    .execute();
+}
+
+export async function deleteHighlight(uri: string) {
+  const db = await getRequiredClient();
+  await db
+    .deleteFrom('com_marginalia_highlight')
     .where('uri', '=', uri)
     .execute();
 }

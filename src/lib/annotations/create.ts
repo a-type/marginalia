@@ -1,18 +1,18 @@
-import { getCurrentAccountFn } from '#/lib/auth/functions';
 import * as Annotation from '#/lexicons/com/marginalia/annotation';
+import { getCurrentAccountFn } from '#/lib/auth/functions';
+import type { VerseId } from '#/lib/bible/verse';
 import { parseVerseId } from '#/lib/bible/verse';
-import type { DbClient } from '@tanstack/react-db';
 import { TID } from '@atproto/common-web';
+import type { DbClient } from '@tanstack/react-db';
+import type { AnnotationRecord, AnnotationVerseRecord } from './collections';
 import {
   formatAnnotationVerseRecordId,
   getAnnotationCollections,
 } from './collections';
-import type { AnnotationRecord, AnnotationVerseRecord } from './collections';
-import type { CreateAnnotationInput } from './types';
 
 export async function createAnnotation(
   dbClient: DbClient,
-  input: CreateAnnotationInput,
+  input: { verses: readonly VerseId[]; comment: string; createdAt?: string },
 ): Promise<AnnotationRecord> {
   const verses = [...new Set(input.verses)];
   if (verses.length === 0) throw new Error('An annotation requires verses');
@@ -30,10 +30,8 @@ export async function createAnnotation(
     throw new Error('Annotation verses must belong to one chapter');
   }
 
-  const comment = input.comment?.trim() || undefined;
-  if (!comment && !input.color) {
-    throw new Error('An annotation requires a comment or color');
-  }
+  const comment = input.comment.trim();
+  if (!comment) throw new Error('An annotation requires a comment');
 
   let authorDid: string | null = null;
   try {
@@ -54,8 +52,7 @@ export async function createAnnotation(
     authorDid,
     bookId: firstVerse.bookId,
     chapter: firstVerse.chapter,
-    ...(comment ? { comment } : {}),
-    ...(input.color ? { color: input.color } : {}),
+    comment,
     createdAt: input.createdAt ?? new Date().toISOString(),
     status: 'pending',
     syncError: null,
@@ -79,7 +76,7 @@ export async function createAnnotation(
     collections.annotationVerses.preload(),
   ]);
   const transaction = dbClient.createTransaction({
-    mutationFn: ({ transaction: pendingTransaction }) => {
+    mutationFn: async ({ transaction: pendingTransaction }) => {
       collections.annotations.utils.acceptMutations(pendingTransaction);
       collections.annotationVerses.utils.acceptMutations(pendingTransaction);
     },
