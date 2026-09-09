@@ -17,7 +17,8 @@
     "format": "prettier --write . && eslint --fix",
     "check": "prettier --check .",
     "start": "node .output/server/index.mjs",
-    "lexicons": "lex build --lexicons ./lexicons --out ./src/lexicons --clear"
+    "lexicons": "lex build --lexicons ./lexicons --out ./src/lexicons --clear",
+    "free-ports": "pnpx kill-port 7654 2480"
   },
   "dependencies": {
     "@a-type/ui": "^6.1.46",
