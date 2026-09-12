@@ -186,6 +186,61 @@ export const migrationProvider: MigrationProvider = {
             .execute();
         },
       },
+      '004_social_records': {
+        async up(db) {
+          await db.schema
+            .createTable('com_marginalia_profile')
+            .addColumn('uri', 'text', (column) => column.primaryKey())
+            .addColumn('cid', 'text')
+            .addColumn('authorDid', 'text', (column) => column.notNull())
+            .addColumn('handle', 'text', (column) => column.notNull())
+            .addColumn('displayName', 'text')
+            .addColumn('avatar', 'text')
+            .addColumn('description', 'text')
+            .addColumn('recordJson', 'text', (column) => column.notNull())
+            .addColumn('createdAt', 'text', (column) => column.notNull())
+            .addColumn('updatedAt', 'text', (column) =>
+              column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
+            )
+            .addUniqueConstraint('com_marginalia_profile_author_unique', [
+              'authorDid',
+            ])
+            .execute();
+
+          await db.schema
+            .createTable('com_marginalia_follow')
+            .addColumn('uri', 'text', (column) => column.primaryKey())
+            .addColumn('tid', 'text', (column) => column.notNull())
+            .addColumn('cid', 'text')
+            .addColumn('authorDid', 'text', (column) => column.notNull())
+            .addColumn('subject', 'text', (column) => column.notNull())
+            .addColumn('recordJson', 'text', (column) => column.notNull())
+            .addColumn('createdAt', 'text', (column) => column.notNull())
+            .addColumn('updatedAt', 'text', (column) =>
+              column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
+            )
+            .addUniqueConstraint(
+              'com_marginalia_follow_author_subject_unique',
+              ['authorDid', 'subject'],
+            )
+            .execute();
+
+          await db.schema
+            .createIndex('com_marginalia_follow_authorDid_idx')
+            .on('com_marginalia_follow')
+            .column('authorDid')
+            .execute();
+          await db.schema
+            .createIndex('com_marginalia_follow_subject_idx')
+            .on('com_marginalia_follow')
+            .column('subject')
+            .execute();
+        },
+        async down(db) {
+          await db.schema.dropTable('com_marginalia_follow').execute();
+          await db.schema.dropTable('com_marginalia_profile').execute();
+        },
+      },
     };
   },
 };

@@ -22,6 +22,28 @@ interface DatabaseSchema {
     value: string;
     updated_at: Generated<string>;
   };
+  com_marginalia_profile: {
+    uri: string;
+    cid: string | null;
+    authorDid: string;
+    handle: string;
+    displayName: string | null;
+    avatar: string | null;
+    description: string | null;
+    recordJson: string;
+    createdAt: string;
+    updatedAt: Generated<string>;
+  };
+  com_marginalia_follow: {
+    uri: string;
+    tid: string;
+    cid: string | null;
+    authorDid: string;
+    subject: string;
+    recordJson: string;
+    createdAt: string;
+    updatedAt: Generated<string>;
+  };
   com_marginalia_commentary: {
     tid: string;
     uri: string;

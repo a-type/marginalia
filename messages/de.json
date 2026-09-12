@@ -27,5 +27,17 @@
   "annotation_close": "Anmerkung schließen",
   "annotation_previous": "Vorherige Anmerkung",
   "annotation_next": "Nächste Anmerkung",
-  "annotation_highlight_only": "Markierung"
+  "annotation_highlight_only": "Markierung",
+  "profile_setup_title": "Profil",
+  "profile_handle_label": "Handle",
+  "profile_display_name_label": "Anzeigename",
+  "profile_avatar_label": "Avatar-URL",
+  "profile_description_label": "Beschreibung",
+  "profile_save": "Profil speichern",
+  "social_people_title": "Personen",
+  "social_lookup_label": "ATProto-Handle",
+  "social_lookup_submit": "Konto finden",
+  "social_suggestions_title": "Von Bluesky",
+  "social_follow": "Folgen",
+  "social_following": "Folge ich"
 }

@@ -3,5 +3,7 @@
  */
 
 export * as annotation from './marginalia/annotation.js'
+export * as follow from './marginalia/follow.js'
 export * as highlight from './marginalia/highlight.js'
+export * as profile from './marginalia/profile.js'
 export * as commentary from './marginalia/commentary.js'

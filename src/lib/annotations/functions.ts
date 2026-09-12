@@ -1,15 +1,12 @@
 import { TID } from '@atproto/common-web';
-import { Client } from '@atproto/lex';
-import { isValidDid } from '@atproto/syntax';
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 
 import * as Annotation from '#/lexicons/com/marginalia/annotation';
-import { oauth } from '#/lib/atproto/server';
+import { getAuthenticatedClient } from '#/lib/atproto/server';
 import { getAppSession } from '#/lib/auth/server';
 import { isBookId, isValidVerseId } from '#/lib/bible/verse';
 import { getAnnotationsForChapter } from '#/lib/db/queries';
-import { AppError } from '#/lib/error';
 import { logger } from '#/logger';
 import type {
   AnnotationRecord,
@@ -39,19 +36,6 @@ const listChapterAnnotationsSchema = z.object({
   chapter: z.number().int().positive(),
 });
 
-async function getAuthenticatedClient() {
-  const session = await getAppSession();
-  if (!session.data.did) {
-    throw new AppError(AppError.Code.Unauthorized, 'Sign in required');
-  }
-  const oauthSession = await oauth.restore(session.data.did);
-  const did = session.data.did;
-  if (!isValidDid(did)) {
-    throw new AppError(AppError.Code.Unauthorized, 'Invalid DID');
-  }
-  return { client: new Client(oauthSession), did };
-}
-
 export const uploadAnnotationFn = createServerFn({ method: 'POST' })
   .validator(uploadAnnotationSchema)
   .handler(async ({ data }) => {
@@ -71,7 +55,12 @@ export const uploadAnnotationFn = createServerFn({ method: 'POST' })
 export const listChapterAnnotationsFn = createServerFn({ method: 'GET' })
   .validator(listChapterAnnotationsSchema)
   .handler(async ({ data }): Promise<ChapterAnnotationSnapshot> => {
-    const rows = await getAnnotationsForChapter(data.bookId, data.chapter);
+    const session = await getAppSession();
+    const rows = await getAnnotationsForChapter(
+      session.data.did ?? null,
+      data.bookId,
+      data.chapter,
+    );
     const annotations = new Map<string, AnnotationRecord>();
     const annotationVerses: AnnotationVerseRecord[] = [];
     const ordinals = new Map<string, number>();
@@ -81,7 +70,12 @@ export const listChapterAnnotationsFn = createServerFn({ method: 'GET' })
         logger.warn('Skipping invalid projected annotation verse', row.uri);
         continue;
       }
-      const comment = row.comment.trim();
+      const comment = row.comment?.trim();
+
+      if (!comment) {
+        logger.warn('Skipping annotation with empty comment', row.uri);
+        continue;
+      }
 
       if (!annotations.has(row.uri)) {
         annotations.set(row.uri, {

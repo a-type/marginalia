@@ -1,0 +1,46 @@
+.root {
+  width: 100%;
+}
+
+.form {
+  width: 100%;
+}
+
+.result,
+.suggestions {
+  width: 100%;
+}
+
+.person {
+  align-items: center;
+  display: grid;
+  gap: var(--m-sp-sm);
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+}
+
+.avatar {
+  border-radius: 50%;
+  height: 2rem;
+  object-fit: cover;
+  width: 2rem;
+}
+
+.avatarFallback {
+  align-items: center;
+  border-radius: 50%;
+  display: flex;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.name {
+  min-width: 0;
+}
+
+.name > * {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

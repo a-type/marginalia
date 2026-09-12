@@ -1,3 +1,4 @@
+import { Client } from '@atproto/lex';
 import type {
   NodeSavedSession,
   NodeSavedSessionStore,
@@ -5,9 +6,11 @@ import type {
   NodeSavedStateStore,
 } from '@atproto/oauth-client-node';
 import { NodeOAuthClient } from '@atproto/oauth-client-node';
+import { isValidDid } from '@atproto/syntax';
 import { sql } from 'kysely';
 
 import { getRequiredClient } from '#/db';
+import { getAppSession } from '../auth/server';
 import { AppError } from '../error';
 
 const scope = 'atproto transition:generic';
@@ -114,3 +117,13 @@ export const oauth = new NodeOAuthClient({
   stateStore: new AuthStateStore(),
   sessionStore: new AuthSessionStore(),
 });
+
+export async function getAuthenticatedClient() {
+  const session = await getAppSession();
+  const did = session.data.did;
+  if (!did || !isValidDid(did)) {
+    throw new AppError(AppError.Code.Unauthorized, 'Sign in required');
+  }
+  const oauthSession = await oauth.restore(did);
+  return { client: new Client(oauthSession), did, session: oauthSession };
+}

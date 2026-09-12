@@ -6,6 +6,7 @@ import { createHighlight } from '#/lib/highlights/create';
 import { highlightColors } from '#/lib/highlights/types';
 import { annotationPaneActions } from './annotationPaneState';
 import {
+  useIsAnnotationPaneActive,
   usePrimarySelectedVerseId,
   useSetSelectedVerseNumber,
 } from './annotationPaneStore';
@@ -15,8 +16,9 @@ export function AnnotationToolbar() {
   const dbClient = useDbClient();
   const selectedVerse = usePrimarySelectedVerseId();
   const setSelectedVerseNumber = useSetSelectedVerseNumber();
+  const paneOpen = useIsAnnotationPaneActive();
 
-  if (!selectedVerse) return null;
+  if (!selectedVerse || paneOpen) return null;
 
   return (
     <div

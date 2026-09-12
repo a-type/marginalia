@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { useResetAnnotationPaneOnRouteChange } from '#/components/annotations/annotationPaneStore';
 import { useChapterAnnotations } from '#/components/annotations/useChapterAnnotations';
 import { useHighlightSync } from '#/components/annotations/useChapterHighlights';
+import { SocialSidebar } from '#/components/auth/SocialSidebar';
 import { UserMenu } from '#/components/auth/UserMenu';
 import { reconcileChapterAnnotations } from '#/lib/annotations/reconcile';
 import { storeBibleLocation } from '#/lib/bible/location';
@@ -49,7 +50,9 @@ export function BibleReader() {
 
   return (
     <main className={cls.root}>
-      <Box className={cls.pane} items="center"></Box>
+      <Box className={cls.pane} items="center">
+        <SocialSidebar accountDid={account?.did ?? null} />
+      </Box>
       <Box className={cls.menubar} items="center">
         <UserMenu />
         <ColorModeToggle />

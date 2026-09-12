@@ -34,6 +34,19 @@ export interface UpsertHighlightInput extends RecordMetadata {
   createdAt: string;
 }
 
+export interface UpsertProfileInput extends Omit<RecordMetadata, 'tid'> {
+  handle: string;
+  displayName: string | null;
+  avatar: string | null;
+  description: string | null;
+  createdAt: string;
+}
+
+export interface UpsertFollowInput extends RecordMetadata {
+  subject: string;
+  createdAt: string;
+}
+
 export async function upsertCommentary(input: UpsertCommentaryInput) {
   const db = await getRequiredClient();
 
@@ -121,11 +134,62 @@ export async function upsertHighlight(input: UpsertHighlightInput) {
     .execute();
 }
 
+export async function upsertProfile(input: UpsertProfileInput) {
+  const db = await getRequiredClient();
+  await db
+    .insertInto('com_marginalia_profile')
+    .values(input)
+    .onConflict((conflict) =>
+      conflict.column('authorDid').doUpdateSet({
+        uri: sql`excluded.uri`,
+        cid: sql`excluded.cid`,
+        handle: sql`excluded.handle`,
+        displayName: sql`excluded.displayName`,
+        avatar: sql`excluded.avatar`,
+        description: sql`excluded.description`,
+        recordJson: sql`excluded.recordJson`,
+        createdAt: sql`excluded.createdAt`,
+        updatedAt: sql`CURRENT_TIMESTAMP`,
+      }),
+    )
+    .execute();
+}
+
+export async function upsertFollow(input: UpsertFollowInput) {
+  const db = await getRequiredClient();
+  await db
+    .insertInto('com_marginalia_follow')
+    .values(input)
+    .onConflict((conflict) =>
+      conflict.columns(['authorDid', 'subject']).doUpdateSet({
+        uri: sql`excluded.uri`,
+        tid: sql`excluded.tid`,
+        cid: sql`excluded.cid`,
+        recordJson: sql`excluded.recordJson`,
+        createdAt: sql`excluded.createdAt`,
+        updatedAt: sql`CURRENT_TIMESTAMP`,
+      }),
+    )
+    .execute();
+}
+
 export async function getAnnotationsForChapter(
+  viewerDid: string | null,
   bookId: string,
   chapter: number,
 ) {
+  if (!viewerDid) return [];
   const db = await getRequiredClient();
+  // TODO: fold into main query via join?
+  const followedRows = await db
+    .selectFrom('com_marginalia_follow')
+    .select('subject')
+    .where('authorDid', '=', viewerDid)
+    .execute();
+  const visibleAuthorDids = [
+    viewerDid,
+    ...followedRows.map((follow) => follow.subject),
+  ];
   return db
     .selectFrom('com_marginalia_annotation as annotation')
     .innerJoin(
@@ -135,11 +199,41 @@ export async function getAnnotationsForChapter(
     )
     .selectAll('annotation')
     .select(['verse.verseId', 'verse.bookId', 'verse.chapter', 'verse.verse'])
+    .where('annotation.authorDid', 'in', visibleAuthorDids)
     .where('verse.bookId', '=', bookId)
     .where('verse.chapter', '=', chapter)
     .orderBy('annotation.createdAt', 'desc')
     .orderBy('verse.verse', 'asc')
     .execute();
+}
+
+export async function getProfile(authorDid: string) {
+  const db = await getRequiredClient();
+  return db
+    .selectFrom('com_marginalia_profile')
+    .selectAll()
+    .where('authorDid', '=', authorDid)
+    .executeTakeFirst();
+}
+
+export async function getProfilesByDids(authorDids: readonly string[]) {
+  if (authorDids.length === 0) return [];
+  const db = await getRequiredClient();
+  return db
+    .selectFrom('com_marginalia_profile')
+    .selectAll()
+    .where('authorDid', 'in', authorDids)
+    .execute();
+}
+
+export async function getFollowedDids(authorDid: string) {
+  const db = await getRequiredClient();
+  const follows = await db
+    .selectFrom('com_marginalia_follow')
+    .select('subject')
+    .where('authorDid', '=', authorDid)
+    .execute();
+  return follows.map((follow) => follow.subject);
 }
 
 export async function getHighlightsForChapter(
@@ -179,4 +273,17 @@ export async function deleteHighlight(uri: string) {
     .deleteFrom('com_marginalia_highlight')
     .where('uri', '=', uri)
     .execute();
+}
+
+export async function deleteProfile(uri: string) {
+  const db = await getRequiredClient();
+  await db
+    .deleteFrom('com_marginalia_profile')
+    .where('uri', '=', uri)
+    .execute();
+}
+
+export async function deleteFollow(uri: string) {
+  const db = await getRequiredClient();
+  await db.deleteFrom('com_marginalia_follow').where('uri', '=', uri).execute();
 }

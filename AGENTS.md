@@ -50,3 +50,23 @@ Do not manually edit these generated outputs:
 - `src/paraglide/`: regenerate through `pnpm dev` or `pnpm build` after editing [messages/](messages/) or [project.inlang/settings.json](project.inlang/settings.json).
 
 Bible source files under `src/data/usfm-source/` are imported as raw text. Avoid reformatting or bulk-editing this corpus as part of unrelated changes.
+
+## Development
+
+Follow all React recommended practices and rules consistently.
+
+- Do not use `useEffect` for data fetching. Use React Query (with route loader preloading).
+- Avoid `useEffect` in general.
+- Never duplicate state. Use derived state as needed.
+
+React Compiler is in use in this project. Refrain from adding memoization and rely on the Compiler.
+
+Fix typechecking errors before calling something complete.
+
+Prefer clean code to preserving existing structures. Refactoring is good and encouraged. When a refactor is significant, shelve the current work, plan it out, and get user confirmation. Deliver the refactor first, then proceed with planned changes. If refactoring first doesn't make sense, consider doing it after the new changes are working. Otherwise, clearly explain the refactor and its impact when summarizing changes.
+
+## Testing
+
+Prefer tests which are decoupled from implementation and focus on end-user visible behaviors. Don't test everything out of obligation. Focus on high-value targets which are unlikely to change much or have particularly high risk of regression.
+
+A bug fix is always a good time to add a regression test - if it happened once, it could again.

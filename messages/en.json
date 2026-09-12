@@ -36,5 +36,17 @@
   "annotation_close": "Close annotation",
   "annotation_previous": "Previous annotation",
   "annotation_next": "Next annotation",
-  "annotation_highlight_only": "Highlight"
+  "annotation_highlight_only": "Highlight",
+  "profile_setup_title": "Profile",
+  "profile_handle_label": "Handle",
+  "profile_display_name_label": "Display name",
+  "profile_avatar_label": "Avatar URL",
+  "profile_description_label": "Description",
+  "profile_save": "Save profile",
+  "social_people_title": "People",
+  "social_lookup_label": "ATProto handle",
+  "social_lookup_submit": "Find account",
+  "social_suggestions_title": "From Bluesky",
+  "social_follow": "Follow",
+  "social_following": "Following"
 }
