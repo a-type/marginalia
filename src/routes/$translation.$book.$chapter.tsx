@@ -1,12 +1,6 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
 
 import { BibleReader } from '#/components/bible/BibleReader';
-import {
-  annotationCollectionOptions,
-  annotationVerseCollectionOptions,
-  getAnnotationCollections,
-} from '#/lib/annotations/collections';
-import { listChapterAnnotationsFn } from '#/lib/annotations/functions';
 import { parseBibleLocation } from '#/lib/bible/location';
 import {
   formatVerseSelection,
@@ -19,9 +13,6 @@ import {
   hasTranslationChapter,
   isTranslationId,
 } from '#/lib/bible/source';
-import { highlightCollectionOptions } from '#/lib/highlights/collections';
-import { listChapterHighlightsFn } from '#/lib/highlights/functions';
-import { userAccountQueryOptions } from '#/queries/user';
 
 export const Route = createFileRoute('/$translation/$book/$chapter')({
   validateSearch: (search: Record<string, unknown>) => {
@@ -36,7 +27,7 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
       ...(verses && annotation ? { annotation } : {}),
     };
   },
-  loader: async ({ params, context }) => {
+  loader: async ({ params }) => {
     const location = parseBibleLocation(params.book, params.chapter);
     if (!location || !isTranslationId(params.translation)) throw notFound();
 
@@ -44,42 +35,9 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
     const book = getTranslationBook(manifest, location.bookId);
     if (!hasTranslationChapter(book, location.chapter)) throw notFound();
 
-    const [source, chapterAnnotations, chapterHighlights] = await Promise.all([
-      fetchTranslationSource(params.translation, book),
-      listChapterAnnotationsFn({ data: location }),
-      listChapterHighlightsFn({ data: location }),
-      context.queryClient.query({
-        ...userAccountQueryOptions,
-        staleTime: 'static',
-      }),
-    ]);
-
-    getAnnotationCollections(context.dbClient);
-    context.dbClient.applyCollectionChunk({
-      collectionId: annotationCollectionOptions.id,
-      rows: chapterAnnotations.annotations.map((annotation) => ({
-        key: annotation.id,
-        value: annotation,
-      })),
-    });
-    context.dbClient.applyCollectionChunk({
-      collectionId: annotationVerseCollectionOptions.id,
-      rows: chapterAnnotations.annotationVerses.map((annotationVerse) => ({
-        key: annotationVerse.id,
-        value: annotationVerse,
-      })),
-    });
-    context.dbClient.applyCollectionChunk({
-      collectionId: highlightCollectionOptions.id,
-      rows: chapterHighlights.highlights.map((highlight) => ({
-        key: highlight.id,
-        value: highlight,
-      })),
-    });
+    const source = await fetchTranslationSource(params.translation, book);
 
     return {
-      chapterAnnotations,
-      chapterHighlights,
       location,
       manifest,
       source,

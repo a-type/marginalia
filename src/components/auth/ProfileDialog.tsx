@@ -12,11 +12,13 @@ import { useServerFn } from '@tanstack/react-start';
 import { followProfileFn, saveProfileFn } from '#/lib/social/functions';
 import { m } from '#/paraglide/messages';
 import {
+  currentProfileQueryOptions,
   followSuggestionsQueryOptions,
   profileSetupQueryOptions,
 } from '#/queries/social';
 
 export interface ProfileDialogProps {
+  accountDid: string | null;
   open: boolean;
   setOpen: (value: boolean) => void;
 }
@@ -28,13 +30,17 @@ interface ProfileValues {
   description: string;
 }
 
-export function ProfileDialog({ open, setOpen }: ProfileDialogProps) {
+export function ProfileDialog({
+  accountDid,
+  open,
+  setOpen,
+}: ProfileDialogProps) {
   const saveProfile = useServerFn(saveProfileFn);
   const followProfile = useServerFn(followProfileFn);
   const queryClient = useQueryClient();
   const profileSetup = useQuery({
-    ...profileSetupQueryOptions,
-    enabled: open,
+    ...profileSetupQueryOptions(accountDid),
+    enabled: typeof window !== 'undefined' && open && Boolean(accountDid),
   });
   const followSuggestions = useQuery({
     ...followSuggestionsQueryOptions,
@@ -57,11 +63,25 @@ export function ProfileDialog({ open, setOpen }: ProfileDialogProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <Dialog.Content>
         <Dialog.Title>{m.profile_setup_title()}</Dialog.Title>
+        {open && accountDid && profileSetup.isPending ? (
+          <p>{m.profile_setup_loading()}</p>
+        ) : null}
+        {profileSetup.isError ? (
+          <p role="alert">{m.profile_setup_error()}</p>
+        ) : null}
         {initialValues ? (
           <FormikForm<ProfileValues>
             initialValues={initialValues}
             onSubmit={async (values) => {
               await saveProfile({ data: values });
+              await Promise.all([
+                queryClient.invalidateQueries({
+                  queryKey: currentProfileQueryOptions.queryKey,
+                }),
+                queryClient.invalidateQueries({
+                  queryKey: profileSetupQueryOptions(accountDid).queryKey,
+                }),
+              ]);
               setOpen(false);
             }}
           >

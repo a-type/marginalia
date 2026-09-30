@@ -1,9 +1,13 @@
-import { redirect } from '@tanstack/react-router';
-import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 
-import { oauth } from '../atproto/server';
-import { clearAppSession, getAppSession, getCurrentAccount } from './server';
+import { isValidDid } from '@atproto/syntax';
+
+import {
+  getHappyViewSession,
+  signInToHappyView,
+  signOutOfHappyView,
+} from '#/lib/atproto/client';
+import { AppError } from '#/lib/error';
 
 const loginSchema = z.object({
   identifier: z
@@ -13,23 +17,20 @@ const loginSchema = z.object({
     .max(255, 'Enter a valid handle, DID, or PDS address'),
 });
 
-export const loginFn = createServerFn({ method: 'POST' })
-  .validator(loginSchema)
-  .handler(async ({ data }) => {
-    const url = await oauth.authorize(data.identifier);
-    throw redirect({ href: url.href });
-  });
+export async function loginFn({ data }: { data: unknown }) {
+  const { identifier } = loginSchema.parse(data);
+  await signInToHappyView(identifier);
+}
 
-export const getCurrentAccountFn = createServerFn({ method: 'GET' }).handler(
-  () => getCurrentAccount(),
-);
-
-export const logoutFn = createServerFn({ method: 'POST' }).handler(async () => {
-  const session = await getAppSession();
-  if (session.data.did) {
-    const oauthSession = await oauth.restore(session.data.did);
-    await oauthSession.signOut();
+export async function getCurrentUserDidFn(): Promise<string | null> {
+  const session = await getHappyViewSession();
+  if (!session) return null;
+  if (!isValidDid(session.did)) {
+    throw new AppError(AppError.Code.Unauthorized, 'Invalid HappyView session');
   }
-  await clearAppSession();
-  throw redirect({ to: '/', reloadDocument: true });
-});
+  return session.did;
+}
+
+export async function logoutFn() {
+  await signOutOfHappyView();
+}

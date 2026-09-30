@@ -3,11 +3,14 @@
 }
 
 html,
-body,
-#app {
+body {
   min-height: 100%;
 }
 
 body {
   margin: 0;
+}
+
+body > main {
+  isolation: isolate;
 }

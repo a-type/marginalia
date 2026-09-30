@@ -1,0 +1,10 @@
+{
+  "lexicon": 1,
+  "id": "com.marginalia.profile.list",
+  "description": "Lists Marginalia profiles.",
+  "defs": {
+    "main": {
+      "type": "query"
+    }
+  }
+}

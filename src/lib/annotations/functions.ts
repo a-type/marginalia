@@ -1,12 +1,14 @@
 import { TID } from '@atproto/common-web';
-import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 
 import * as Annotation from '#/lexicons/com/marginalia/annotation';
-import { getAuthenticatedClient } from '#/lib/atproto/server';
-import { getAppSession } from '#/lib/auth/server';
-import { isBookId, isValidVerseId } from '#/lib/bible/verse';
-import { getAnnotationsForChapter } from '#/lib/db/queries';
+import * as ListAnnotationsForChapter from '#/lexicons/com/marginalia/annotation/listForChapter';
+import {
+  getAuthenticatedHappyViewClient,
+  getHappyViewSession,
+} from '#/lib/atproto/client';
+import { fetchXrpcRecordPage, parseAtRecordUri } from '#/lib/atproto/xrpc';
+import { isBookId, isValidVerseId, parseVerseId } from '#/lib/bible/verse';
 import { logger } from '#/logger';
 import type {
   AnnotationRecord,
@@ -14,6 +16,7 @@ import type {
   ChapterAnnotationSnapshot,
 } from './collections';
 import { formatAnnotationVerseRecordId } from './collections';
+import type { VerseId } from '#/lib/bible/verse';
 
 const uploadAnnotationSchema = z.object({
   rkey: z.string().refine(TID.is, 'Invalid annotation key'),
@@ -36,78 +39,146 @@ const listChapterAnnotationsSchema = z.object({
   chapter: z.number().int().positive(),
 });
 
-export const uploadAnnotationFn = createServerFn({ method: 'POST' })
-  .validator(uploadAnnotationSchema)
-  .handler(async ({ data }) => {
-    const { client } = await getAuthenticatedClient();
-    const record = Annotation.$build({
-      verses: data.verses.map((id) => ({ id })),
-      comment: data.comment,
-      createdAt: data.createdAt as Annotation.Main['createdAt'],
-    });
-    const response = await client.putRecord(record, data.rkey);
-    return {
-      uri: response.body.uri,
-      cid: response.body.cid,
-    };
+const remoteAnnotationSchema = z
+  .object({
+    uri: z.string(),
+    cid: z.string().nullish(),
+    verses: z.array(z.object({ id: z.string() })),
+    comment: z.string(),
+    createdAt: z.string(),
+  })
+  .passthrough();
+
+export async function uploadAnnotationFn({
+  data,
+}: {
+  data: UploadAnnotationInput;
+}) {
+  const input = uploadAnnotationSchema.parse(data);
+  const { client } = await getAuthenticatedHappyViewClient();
+  const record = Annotation.$build({
+    verses: input.verses.map((id) => ({ id })),
+    comment: input.comment,
+    createdAt: input.createdAt as Annotation.Main['createdAt'],
   });
+  const response = await client.putRecord(record, input.rkey);
+  return {
+    uri: response.body.uri,
+    cid: response.body.cid,
+  };
+}
 
-export const listChapterAnnotationsFn = createServerFn({ method: 'GET' })
-  .validator(listChapterAnnotationsSchema)
-  .handler(async ({ data }): Promise<ChapterAnnotationSnapshot> => {
-    const session = await getAppSession();
-    const rows = await getAnnotationsForChapter(
-      session.data.did ?? null,
-      data.bookId,
-      data.chapter,
-    );
-    const annotations = new Map<string, AnnotationRecord>();
-    const annotationVerses: AnnotationVerseRecord[] = [];
-    const ordinals = new Map<string, number>();
+export async function listChapterAnnotationsFn({
+  data,
+}: {
+  data: z.input<typeof listChapterAnnotationsSchema>;
+}): Promise<ChapterAnnotationSnapshot> {
+  const location = listChapterAnnotationsSchema.parse(data);
+  const session = await getHappyViewSession();
+  if (!session) return { annotations: [], annotationVerses: [] };
 
-    for (const row of rows) {
-      if (!isValidVerseId(row.verseId)) {
-        logger.warn('Skipping invalid projected annotation verse', row.uri);
-        continue;
-      }
-      const comment = row.comment?.trim();
+  const page = await fetchXrpcRecordPage(
+    session,
+    ListAnnotationsForChapter.$nsid,
+    {
+      bookId: location.bookId,
+      chapter: String(location.chapter),
+    },
+  );
+  const annotations = new Map<string, AnnotationRecord>();
+  const annotationVerses: AnnotationVerseRecord[] = [];
 
-      if (!comment) {
-        logger.warn('Skipping annotation with empty comment', row.uri);
-        continue;
-      }
-
-      if (!annotations.has(row.uri)) {
-        annotations.set(row.uri, {
-          id: row.uri,
-          rkey: row.tid,
-          uri: row.uri,
-          cid: row.cid,
-          authorDid: row.authorDid,
-          bookId: row.bookId,
-          chapter: row.chapter,
-          comment,
-          createdAt: row.createdAt,
-          status: 'synced',
-          syncError: null,
-        });
-      }
-
-      const ordinal = ordinals.get(row.uri) ?? 0;
-      annotationVerses.push({
-        id: formatAnnotationVerseRecordId(row.uri, row.verseId),
-        annotationId: row.uri,
-        verseId: row.verseId,
-        bookId: row.bookId,
-        chapter: row.chapter,
-        verse: row.verse,
-        ordinal,
-      });
-      ordinals.set(row.uri, ordinal + 1);
+  for (const candidate of page.records) {
+    const parsed = remoteAnnotationSchema.safeParse(candidate);
+    if (!parsed.success) {
+      logger.warn('Skipping malformed HappyView annotation record', candidate);
+      continue;
     }
 
-    return {
-      annotations: [...annotations.values()],
-      annotationVerses,
-    };
-  });
+    const uriParts = parseAtRecordUri(parsed.data.uri, Annotation.$nsid);
+    if (!uriParts) {
+      logger.warn(
+        'Skipping HappyView annotation with invalid AT URI',
+        parsed.data.uri,
+      );
+      continue;
+    }
+
+    let record: Annotation.Main;
+    try {
+      record = Annotation.$parse(parsed.data);
+    } catch (error) {
+      logger.warn(
+        'Skipping invalid HappyView annotation record',
+        parsed.data.uri,
+        error,
+      );
+      continue;
+    }
+
+    const comment = record.comment.trim();
+    if (!comment) {
+      logger.warn(
+        'Skipping HappyView annotation with an empty comment',
+        parsed.data.uri,
+      );
+      continue;
+    }
+
+    const verses = new Map<VerseId, ReturnType<typeof parseVerseId>>();
+    for (const verse of record.verses) {
+      const verseId = verse.id;
+      if (!isValidVerseId(verseId)) {
+        logger.warn(
+          'Skipping invalid verse in HappyView annotation',
+          parsed.data.uri,
+          verseId,
+        );
+        continue;
+      }
+      const parsedVerse = parseVerseId(verseId);
+      if (
+        parsedVerse.bookId === location.bookId &&
+        parsedVerse.chapter === location.chapter
+      ) {
+        verses.set(verseId, parsedVerse);
+      }
+    }
+
+    if (verses.size === 0) continue;
+
+    annotations.set(parsed.data.uri, {
+      id: parsed.data.uri,
+      rkey: uriParts.rkey,
+      uri: parsed.data.uri,
+      cid: parsed.data.cid ?? null,
+      authorDid: uriParts.authorDid,
+      bookId: location.bookId,
+      chapter: location.chapter,
+      comment,
+      createdAt: record.createdAt,
+      status: 'synced',
+      syncError: null,
+    });
+
+    const orderedVerses = [...verses.entries()].sort(
+      ([, left], [, right]) => left.verse - right.verse,
+    );
+    orderedVerses.forEach(([verseId, verse], ordinal) => {
+      annotationVerses.push({
+        id: formatAnnotationVerseRecordId(parsed.data.uri, verseId),
+        annotationId: parsed.data.uri,
+        verseId,
+        ...verse,
+        ordinal,
+      });
+    });
+  }
+
+  return {
+    annotations: [...annotations.values()].sort((left, right) =>
+      right.createdAt.localeCompare(left.createdAt),
+    ),
+    annotationVerses,
+  };
+}

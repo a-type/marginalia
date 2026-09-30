@@ -1,235 +1,135 @@
-Welcome to your new TanStack Start app!
+# Marginalia
 
-# Getting Started
+Marginalia is a Bible reader with decentralized social commentary. Bible text is
+loaded from USFM, and annotations, highlights, profiles, and follows are stored
+as ATProto records.
 
-To run this application:
+## Development
 
-```bash
+The project uses Node.js 24 and pnpm 11. Copy `.env.example` to `.env`, set
+`HAPPYVIEW_SESSION_SECRET` to at least 64 random characters, and set
+`HAPPYVIEW_TOKEN_ENCRYPTION_KEY` to a base64-encoded 32-byte key. For example:
+
+```sh
+openssl rand -base64 48
+openssl rand -base64 32
+```
+
+HappyView v2.14 or newer is required for authenticated repository writes. The
+provisioning command enables service-proxy routing, preserves the existing
+proxy mode, and adds `com.atproto.repo.putRecord` to an allowlist when needed.
+It stops with an error if the proxy policy explicitly blocks repository writes.
+If you already have a `.env`, set
+`HAPPYVIEW_VERSION=2.15.0`, then pull and restart HappyView before provisioning:
+
+```sh
+docker compose pull happyview
+docker compose up -d happyview
+```
+
+Start HappyView and the TanStack Start development server:
+
+```sh
+docker compose up -d happyview
 pnpm install
-pnpm run dev
+pnpm dev
 ```
 
-Copy `.env.example` to `.env` and set `SESSION_PASSWORD`. Local ATProto OAuth expects the app at
-`http://127.0.0.1:3000`; open that address rather than `localhost`.
+Open `http://127.0.0.1:7654`. Vite proxies `/api/*` to HappyView and rewrites
+root-level `/xrpc/*` requests to HappyView's `/api/xrpc/*` routes. The HappyView
+dashboard is available at `http://127.0.0.1:7654/api/dashboard`.
 
-# Building For Production
+Sign in to the HappyView dashboard and create an admin API key with
+`settings:manage`, `scripts:manage`, and `backfill:create` permissions. Set that
+key as `HAPPYVIEW_ADMIN_KEY` in `.env`, then provision the source lexicons and
+Lua query scripts:
 
-To build this application for production:
-
-```bash
-npm run build
+```sh
+pnpm happyview:provision
 ```
 
-## Linting & Formatting
+Create a **public** HappyView API client for the app. Set its app URI and allowed
+origin to `http://127.0.0.1:7654`, and its redirect URI to
+`http://127.0.0.1:7654/oauth/callback`. Use the `client_id` returned by
+`http://127.0.0.1:7654/oauth-client-metadata.json` as its Client ID URL. Put the
+resulting `hvc_` client key in `VITE_HAPPYVIEW_CLIENT_KEY` in `.env`, then
+restart Vite. The key is public and is intentionally included in the browser
+bundle; never put the HappyView admin API key there.
 
-This project uses [eslint](https://eslint.org/) and [prettier](https://prettier.io/) for linting and formatting. Eslint is configured using [tanstack/eslint-config](https://tanstack.com/config/latest/docs/eslint). The following scripts are available:
+Each record lexicon is uploaded with backfill enabled, so HappyView starts
+indexing existing network records on its first upload. Lexicons and query
+scripts can be re-provisioned safely:
 
-```bash
-npm run lint
-npm run format
-npm run check
+```sh
+pnpm lexicons
+pnpm happyview:provision
 ```
 
-## Deploy to Railway
+## Production deployment
 
-Railway's Railpack builder detects the project's package manager and package
-scripts automatically.
+Set `APP_URL` to the app's exact public HTTPS origin and `APP_DOMAIN` to its
+hostname, for example:
 
-1. Push this repo to GitHub
-2. Visit https://railway.com/new and create a project from your repo
-3. In the **Variables** tab, add the entries from `.env.example` with their production values
-4. Deploy, then open **Networking** and select **Generate Domain**
-
-Railpack runs the project's build script and starts the generated Nitro server
-with `node .output/server/index.mjs`. The server handles SSR, server functions,
-API routes, and static assets.
-
-For ATProto login, set `APP_URL` to the generated public HTTPS origin and set a
-unique `SESSION_PASSWORD` of at least 32 characters. The app exposes its OAuth
-client metadata at `/oauth-client-metadata.json` and persists accounts, OAuth
-state, and OAuth sessions in SQLite. Set `DATABASE_PATH` to a persistent volume
-path when deploying to Railway.
-
-## ATProto Tap Webhook
-
-The app accepts Tap webhook events at `/api/tap/webhook` and persists records for
-the local lexicons:
-
-- `com.marginalia.commentary`
-- `com.marginalia.annotation`
-
-Run Tap in webhook mode with collection filters for the app lexicons:
-
-```bash
-TAP_WEBHOOK_URL="$APP_URL/api/tap/webhook" \
-TAP_COLLECTION_FILTERS="com.marginalia.commentary,com.marginalia.annotation" \
-TAP_ADMIN_PASSWORD="$TAP_ADMIN_PASSWORD" \
-tap run --no-replay
+```dotenv
+APP_URL=https://marginalia.example.com
+APP_DOMAIN=marginalia.example.com
 ```
 
-When `TAP_ADMIN_PASSWORD` is set in the app environment, the webhook endpoint
-requires Tap's Basic auth header. Add repos to Tap with its admin API to trigger
-backfill and live delivery:
+Set the HappyView secrets in `.env`. The public client key can be added after
+the first deployment. Start the stack:
 
-```bash
-curl -u "admin:$TAP_ADMIN_PASSWORD" \
-  -H "Content-Type: application/json" \
-  -d '{"dids":["did:plc:..."]}' \
-  http://127.0.0.1:2480/repos/add
+```sh
+docker compose up --build -d
 ```
 
-# Paraglide i18n
+Sign in to the HappyView dashboard at
+`https://marginalia.example.com/api`, create an admin API key with
+`settings:manage`, `scripts:manage`, and `backfill:create`, and set it as
+`HAPPYVIEW_ADMIN_KEY` in `.env`. Provision the backend:
 
-This add-on wires up ParaglideJS for localized routing and message formatting.
-
-- Messages live in `project.inlang/messages`.
-- URLs are localized through the Paraglide Vite plugin and router `rewrite` hooks.
-- Run the dev server or build to regenerate the `src/paraglide` outputs.
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from '@tanstack/react-router';
+```sh
+docker compose --profile setup run --rm --build happyview-provision
 ```
 
-Then anywhere in your JSX you can use it like so:
+Create a **public** HappyView API client whose client ID URL is
+`https://marginalia.example.com/oauth-client-metadata.json`, client URI and
+allowed origin are `https://marginalia.example.com`, and redirect URI is
+`https://marginalia.example.com/oauth/callback`. Set the resulting `hvc_` key
+as `VITE_HAPPYVIEW_CLIENT_KEY` in `.env`, then rebuild and restart the app:
 
-```tsx
-<Link to="/about">About</Link>
+```sh
+docker compose up --build -d app
 ```
 
-This will create a link that will navigate to the `/about` route.
+Caddy terminates TLS and routes `/api/*` to HappyView, rewrites `/xrpc/*` to
+`/api/xrpc/*`, and sends all other requests to the TanStack Start app. HappyView
+uses `BASE_PATH=/api`; its `PUBLIC_URL` remains the app origin without that
+path. The HappyView container is bound to loopback on host port 3001 and is not
+directly exposed to the network.
 
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
+## Backend architecture
 
-### Using A Layout
+- `lexicons/` is the source of truth for Marginalia ATProto records and XRPC
+  query methods. Run `pnpm lexicons` to regenerate `src/lexicons/`.
+- `happyview/lua/` contains custom HappyView query scripts for chapter records
+  and batched profile lookup. `scripts/provision-happyview.mjs` uploads these
+  along with the lexicons through HappyView's admin API.
+- HappyView owns OAuth token handling, DPoP authentication, record indexing,
+  Jetstream sync, backfill, and XRPC reads/writes. The browser uses
+  `@happyview/oauth-client-browser` and `@happyview/lex-agent`.
+- The Bible reader keeps pending annotations and highlights in browser storage
+  for offline use; HappyView is the authoritative remote record index.
 
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
+## Checks
 
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router';
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-});
+```sh
+pnpm test
+pnpm check
+pnpm lint
+pnpm build
 ```
 
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
+## Localization
 
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start';
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString();
-});
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('');
-
-  useEffect(() => {
-    getServerTime().then(setTime);
-  }, []);
-
-  return <div>Server time: {time}</div>;
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router';
-import { json } from '@tanstack/react-start';
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-});
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router';
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people');
-    return response.json();
-  },
-  component: PeopleComponent,
-});
-
-function PeopleComponent() {
-  const data = Route.useLoaderData();
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  );
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+Messages live in `project.inlang/messages`. Paraglide generates runtime files
+under `src/paraglide/` during development and builds.

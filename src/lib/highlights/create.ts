@@ -1,5 +1,5 @@
 import * as Highlight from '#/lexicons/com/marginalia/highlight';
-import { getCurrentAccountFn } from '#/lib/auth/functions';
+import { getCurrentUserDidFn } from '#/lib/auth/functions';
 import type { DbClient } from '@tanstack/react-db';
 
 import { parseVerseId } from '#/lib/bible/verse';
@@ -13,7 +13,7 @@ export async function createHighlight(
 ): Promise<HighlightRecord> {
   let authorDid: string | null = null;
   try {
-    authorDid = (await getCurrentAccountFn())?.did ?? null;
+    authorDid = (await getCurrentUserDidFn()) ?? null;
   } catch {
     // Anonymous and offline highlights remain local until a later sync.
   }

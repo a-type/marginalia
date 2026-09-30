@@ -1,0 +1,16 @@
+{$APP_DOMAIN} {
+	@happyview_api path /api /api/*
+	handle @happyview_api {
+		reverse_proxy happyview:3000
+	}
+
+	@happyview_xrpc path /xrpc /xrpc/*
+	handle @happyview_xrpc {
+		rewrite * /api{uri}
+		reverse_proxy happyview:3000
+	}
+
+	handle {
+		reverse_proxy app:3000
+	}
+}

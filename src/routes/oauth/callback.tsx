@@ -1,46 +1,40 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
-import { createServerFn } from '@tanstack/react-start';
-import { z } from 'zod';
+import { createFileRoute } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
 
-import { oauth } from '#/lib/atproto/server';
-import { setAppSession, upsertAccount } from '#/lib/auth/server';
-import { AppError } from '#/lib/error';
-
-const callbackFn = createServerFn({ method: 'GET' })
-  .validator(z.record(z.string(), z.string()))
-  .handler(async ({ data }) => {
-    const { session } = await oauth.callback(new URLSearchParams(data));
-    const response = await session.fetchHandler(
-      `/xrpc/com.atproto.repo.describeRepo?repo=${encodeURIComponent(session.did)}`,
-    );
-    if (!response.ok) {
-      throw new AppError(
-        AppError.Code.ExternalServiceError,
-        `Unable to load the ATProto account (${response.status})`,
-      );
-    }
-
-    const profile: unknown = await response.json();
-    if (
-      !profile ||
-      typeof profile !== 'object' ||
-      !('handle' in profile) ||
-      typeof profile.handle !== 'string'
-    ) {
-      throw new AppError(
-        AppError.Code.ExternalServiceError,
-        'The ATProto server returned an invalid account',
-      );
-    }
-
-    await upsertAccount(session.did, profile.handle);
-    await setAppSession(session.did);
-  });
+import { completeHappyViewOAuthCallback } from '#/lib/atproto/client';
 
 export const Route = createFileRoute('/oauth/callback')({
-  loader: async ({ location }) => {
-    await callbackFn({ data: location.search });
-    throw redirect({ to: '/' });
-  },
-  component: () => <p>Completing sign in…</p>,
+  component: OAuthCallback,
 });
+
+function OAuthCallback() {
+  const navigate = Route.useNavigate();
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void completeHappyViewOAuthCallback()
+      .then(() => {
+        if (active) {
+          void navigate({ to: '/', replace: true, reloadDocument: true });
+        }
+      })
+      .catch((callbackError: unknown) => {
+        if (active) {
+          setError(
+            callbackError instanceof Error
+              ? callbackError.message
+              : String(callbackError),
+          );
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  return (
+    <p role={error ? 'alert' : undefined}>{error ?? 'Completing sign in…'}</p>
+  );
+}

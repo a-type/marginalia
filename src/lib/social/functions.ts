@@ -1,20 +1,23 @@
 import { TID } from '@atproto/common-web';
 import { isValidDid } from '@atproto/syntax';
-import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 
 import * as Follow from '#/lexicons/com/marginalia/follow';
+import * as FollowList from '#/lexicons/com/marginalia/follow/list';
 import * as Profile from '#/lexicons/com/marginalia/profile';
-import { getAuthenticatedClient } from '#/lib/atproto/server';
-import { getCurrentAccount } from '#/lib/auth/server';
+import * as ProfilesForDids from '#/lexicons/com/marginalia/profile/getForDids';
+import * as ProfileList from '#/lexicons/com/marginalia/profile/list';
 import {
-  getFollowedDids,
-  getProfile,
-  getProfilesByDids,
-  upsertFollow,
-  upsertProfile,
-} from '#/lib/db/queries';
+  getAuthenticatedHappyViewClient,
+  getHappyViewSession,
+} from '#/lib/atproto/client';
+import {
+  fetchAllXrpcRecords,
+  fetchXrpcRecordPage,
+  parseAtRecordUri,
+} from '#/lib/atproto/xrpc';
 import { AppError } from '#/lib/error';
+import { logger } from '#/logger';
 
 const profileInputSchema = z.object({
   handle: z.string().trim().min(1).max(253),
@@ -27,7 +30,71 @@ const handleInputSchema = z.object({
   handle: z.string().trim().min(1).max(253),
 });
 
-interface ActorProfileResponse {
+const followInputSchema = z.object({
+  subject: z.string().refine(isValidDid, 'Invalid DID'),
+});
+
+const actorProfileSchema = z
+  .object({
+    did: z.string().refine(isValidDid),
+    handle: z.string(),
+    displayName: z.string().optional(),
+    avatar: z.string().optional(),
+    description: z.string().optional(),
+  })
+  .passthrough();
+
+const happyViewActorProfileSchema = z
+  .object({
+    did: z.string().refine(isValidDid),
+    handle: z.string(),
+    displayName: z.string().optional(),
+    description: z.string().optional(),
+    avatarURL: z.string().optional(),
+  })
+  .passthrough();
+
+const blueskyPublicApi = 'https://public.api.bsky.app';
+
+const followsResponseSchema = z
+  .object({
+    follows: z.array(z.unknown()).optional(),
+    cursor: z.string().optional(),
+  })
+  .passthrough();
+
+const profileRecordSchema = z
+  .object({
+    uri: z.string(),
+    cid: z.string().nullish(),
+    handle: z.string(),
+    displayName: z.string().optional(),
+    avatar: z.string().optional(),
+    description: z.string().optional(),
+    createdAt: z.string(),
+  })
+  .passthrough();
+
+const followRecordSchema = z
+  .object({
+    uri: z.string(),
+    subject: z.string(),
+    createdAt: z.string(),
+  })
+  .passthrough();
+
+export interface SocialProfile {
+  uri: string;
+  cid: string | null;
+  authorDid: string;
+  handle: string;
+  displayName: string | null;
+  avatar: string | null;
+  description: string | null;
+  createdAt: string;
+}
+
+export interface ActorProfileResponse {
   did: string;
   handle: string;
   displayName?: string;
@@ -35,156 +102,326 @@ interface ActorProfileResponse {
   description?: string;
 }
 
-interface GetFollowsResponse {
-  follows?: ActorProfileResponse[];
-  cursor?: string;
-}
+type HappyViewSession = NonNullable<
+  Awaited<ReturnType<typeof getHappyViewSession>>
+>;
 
-function isActorProfile(value: unknown): value is ActorProfileResponse {
-  return (
-    !!value &&
-    typeof value === 'object' &&
-    'did' in value &&
-    typeof value.did === 'string' &&
-    isValidDid(value.did) &&
-    'handle' in value &&
-    typeof value.handle === 'string'
-  );
-}
-
-async function getBlueskyProfile(actor: string) {
-  const { session } = await getAuthenticatedClient();
+async function fetchHappyViewActorProfile(session: HappyViewSession) {
   const response = await session.fetchHandler(
-    `/xrpc/app.bsky.actor.getProfile?actor=${encodeURIComponent(actor)}`,
+    '/xrpc/app.bsky.actor.getProfile',
+    { method: 'GET' },
   );
-  if (!response.ok) return null;
+  if (!response.ok) {
+    throw new AppError(
+      AppError.Code.ExternalServiceError,
+      `Unable to load the HappyView actor profile (${response.status})`,
+    );
+  }
+
   const profile: unknown = await response.json();
-  return isActorProfile(profile) ? profile : null;
+  const result = happyViewActorProfileSchema.safeParse(profile);
+  if (!result.success) {
+    throw new AppError(
+      AppError.Code.ExternalServiceError,
+      'HappyView returned an invalid actor profile',
+      result.error,
+    );
+  }
+
+  return {
+    did: result.data.did,
+    handle: result.data.handle,
+    ...(result.data.displayName === undefined
+      ? {}
+      : { displayName: result.data.displayName }),
+    ...(result.data.avatarURL === undefined
+      ? {}
+      : { avatar: result.data.avatarURL }),
+    ...(result.data.description === undefined
+      ? {}
+      : { description: result.data.description }),
+  } satisfies ActorProfileResponse;
 }
 
-export const getProfileSetupFn = createServerFn({ method: 'GET' }).handler(
-  async () => {
-    const account = await getCurrentAccount();
-    if (!account) return null;
+async function fetchPublicBlueskyProfile(actor: string) {
+  const query = new URLSearchParams({ actor });
+  const response = await fetch(
+    new URL(`/xrpc/app.bsky.actor.getProfile?${query}`, blueskyPublicApi),
+  );
+  if (response.status === 400 || response.status === 404) return null;
+  if (!response.ok) {
+    throw new AppError(
+      AppError.Code.ExternalServiceError,
+      `Unable to load the Bluesky profile (${response.status})`,
+    );
+  }
 
-    const [profile, blueskyProfile] = await Promise.all([
-      getProfile(account.did),
-      getBlueskyProfile(account.did),
-    ]);
-    return {
-      profile,
-      seed: {
-        handle:
-          profile?.handle ?? blueskyProfile?.handle ?? account.handle ?? '',
-        displayName: profile?.displayName ?? blueskyProfile?.displayName ?? '',
-        avatar: profile?.avatar ?? blueskyProfile?.avatar ?? '',
-        description: profile?.description ?? blueskyProfile?.description ?? '',
-      },
-    };
-  },
-);
+  const profile: unknown = await response.json();
+  const result = actorProfileSchema.safeParse(profile);
+  if (!result.success) {
+    throw new AppError(
+      AppError.Code.ExternalServiceError,
+      'Bluesky returned an invalid actor profile',
+      result.error,
+    );
+  }
+  return result.data;
+}
 
-export const saveProfileFn = createServerFn({ method: 'POST' })
-  .validator(profileInputSchema)
-  .handler(async ({ data }) => {
-    const { client, did } = await getAuthenticatedClient();
-    const existingProfile = await getProfile(did);
-    const createdAt = (existingProfile?.createdAt ??
-      new Date().toISOString()) as Profile.Main['createdAt'];
-    const record = Profile.$build({
-      handle: data.handle as Profile.Main['handle'],
-      ...(data.displayName ? { displayName: data.displayName } : {}),
-      ...(data.avatar ? { avatar: data.avatar as Profile.Main['avatar'] } : {}),
-      ...(data.description ? { description: data.description } : {}),
-      createdAt,
-    });
-    const response = await client.putRecord(record, 'self');
-    await upsertProfile({
-      uri: response.body.uri,
-      cid: response.body.cid,
-      authorDid: did,
-      handle: data.handle,
-      displayName: data.displayName || null,
-      avatar: data.avatar || null,
-      description: data.description || null,
-      recordJson: JSON.stringify(record),
-      createdAt,
-    });
-    return { did };
+export async function getCurrentBlueskyProfileFn() {
+  const session = await getHappyViewSession();
+  if (!session) return null;
+  if (!isValidDid(session.did)) {
+    throw new AppError(AppError.Code.Unauthorized, 'Invalid HappyView session');
+  }
+  return fetchHappyViewActorProfile(session);
+}
+
+function parseProfile(candidate: unknown): SocialProfile | null {
+  const result = profileRecordSchema.safeParse(candidate);
+  if (!result.success) {
+    logger.warn('Skipping malformed HappyView profile record', candidate);
+    return null;
+  }
+
+  const uriParts = parseAtRecordUri(result.data.uri, Profile.$nsid);
+  if (!uriParts) {
+    logger.warn(
+      'Skipping HappyView profile with invalid AT URI',
+      result.data.uri,
+    );
+    return null;
+  }
+
+  let record: Profile.Main;
+  try {
+    record = Profile.$parse(result.data);
+  } catch (error) {
+    logger.warn(
+      'Skipping invalid HappyView profile record',
+      result.data.uri,
+      error,
+    );
+    return null;
+  }
+
+  return {
+    uri: result.data.uri,
+    cid: result.data.cid ?? null,
+    authorDid: uriParts.authorDid,
+    handle: record.handle,
+    displayName: record.displayName ?? null,
+    avatar: record.avatar ?? null,
+    description: record.description ?? null,
+    createdAt: record.createdAt,
+  };
+}
+
+async function getProfileForDid(session: HappyViewSession, did: string) {
+  const records = await fetchAllXrpcRecords(session, ProfileList.$nsid, {
+    did,
   });
+  return (
+    records.map(parseProfile).find((profile) => profile?.authorDid === did) ??
+    null
+  );
+}
 
-export const lookupProfileByHandleFn = createServerFn({ method: 'POST' })
-  .validator(handleInputSchema)
-  .handler(async ({ data }) => {
-    const profile = await getBlueskyProfile(data.handle);
-    if (!profile) {
-      throw new AppError(AppError.Code.NotFound, 'Account not found');
+async function getProfilesByDids(
+  session: HappyViewSession,
+  dids: readonly string[],
+) {
+  const uniqueDids = [...new Set(dids)];
+  const profiles: SocialProfile[] = [];
+
+  for (let offset = 0; offset < uniqueDids.length; offset += 100) {
+    const batch = uniqueDids.slice(offset, offset + 100);
+    const page = await fetchXrpcRecordPage(session, ProfilesForDids.$nsid, {
+      dids: batch.join(','),
+    });
+    for (const candidate of page.records) {
+      const profile = parseProfile(candidate);
+      if (profile) profiles.push(profile);
     }
-    return profile;
-  });
+  }
 
-export const followProfileFn = createServerFn({ method: 'POST' })
-  .validator(
-    z.object({ subject: z.string().refine(isValidDid, 'Invalid DID') }),
-  )
-  .handler(async ({ data }) => {
-    const { client, did } = await getAuthenticatedClient();
-    if (data.subject === did) {
-      throw new AppError(
-        AppError.Code.BadRequest,
-        'You cannot follow yourself',
+  return profiles;
+}
+
+async function getFollowedDids(session: HappyViewSession, authorDid: string) {
+  const records = await fetchAllXrpcRecords(session, FollowList.$nsid, {
+    did: authorDid,
+  });
+  const followedDids = new Set<string>();
+
+  for (const candidate of records) {
+    const result = followRecordSchema.safeParse(candidate);
+    if (!result.success) {
+      logger.warn('Skipping malformed HappyView follow record', candidate);
+      continue;
+    }
+    if (!parseAtRecordUri(result.data.uri, Follow.$nsid)) {
+      logger.warn(
+        'Skipping HappyView follow with invalid AT URI',
+        result.data.uri,
+      );
+      continue;
+    }
+
+    try {
+      const record = Follow.$parse(result.data);
+      followedDids.add(record.subject);
+    } catch (error) {
+      logger.warn(
+        'Skipping invalid HappyView follow record',
+        result.data.uri,
+        error,
       );
     }
-    const createdAt = new Date().toISOString() as Follow.Main['createdAt'];
-    const rkey = TID.nextStr();
-    const record = Follow.$build({
-      subject: data.subject,
-      createdAt,
-    });
-    const response = await client.putRecord(record, rkey);
-    await upsertFollow({
-      uri: response.body.uri,
-      tid: rkey,
-      cid: response.body.cid,
-      authorDid: did,
-      subject: data.subject,
-      recordJson: JSON.stringify(record),
-      createdAt,
-    });
-    return { subject: data.subject };
-  });
+  }
 
-export const listFollowSuggestionsFn = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  const { did, session } = await getAuthenticatedClient();
-  const followedDids = new Set(await getFollowedDids(did));
-  const blueskyFollowDids: string[] = [];
-  let cursor: string | undefined;
+  return followedDids;
+}
 
-  do {
-    const suffix = cursor ? `&cursor=${encodeURIComponent(cursor)}` : '';
-    const response = await session.fetchHandler(
-      `/xrpc/app.bsky.graph.getFollows?actor=${encodeURIComponent(did)}&limit=100${suffix}`,
+async function getBlueskyFollowDids(did: string) {
+  const followedDids = new Set<string>();
+  const cursors = new Set<string>();
+  let cursor: string | null | undefined;
+
+  while (cursor !== null) {
+    const query = new URLSearchParams({ actor: did, limit: '100' });
+    if (cursor) query.set('cursor', cursor);
+    // Bluesky's public AppView serves graph queries; HappyView only routes loaded lexicons.
+    const url = new URL(
+      `/xrpc/app.bsky.graph.getFollows?${query.toString()}`,
+      blueskyPublicApi,
     );
-    if (!response.ok) break;
-    const page = (await response.json()) as GetFollowsResponse;
-    for (const follow of page.follows ?? []) {
-      if (isActorProfile(follow)) blueskyFollowDids.push(follow.did);
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new AppError(
+        AppError.Code.ExternalServiceError,
+        `Unable to load Bluesky follows (${response.status})`,
+      );
     }
-    cursor = page.cursor;
-  } while (cursor);
 
-  const candidates = blueskyFollowDids.filter(
-    (candidate) => candidate !== did && !followedDids.has(candidate),
+    const body: unknown = await response.json();
+    const page = followsResponseSchema.safeParse(body);
+    if (!page.success) {
+      throw new AppError(
+        AppError.Code.ExternalServiceError,
+        'The ATProto server returned an invalid follow list',
+        page.error,
+      );
+    }
+
+    for (const candidate of page.data.follows ?? []) {
+      const follow = actorProfileSchema.safeParse(candidate);
+      if (follow.success) {
+        followedDids.add(follow.data.did);
+      } else {
+        logger.warn('Skipping invalid ATProto follow profile', candidate);
+      }
+    }
+
+    if (!page.data.cursor) {
+      cursor = null;
+      continue;
+    }
+    if (cursors.has(page.data.cursor)) {
+      throw new AppError(
+        AppError.Code.ExternalServiceError,
+        'The ATProto server returned a repeated follow cursor',
+      );
+    }
+    cursors.add(page.data.cursor);
+    cursor = page.data.cursor;
+  }
+
+  return followedDids;
+}
+
+export async function getProfileSetupFn(expectedDid: string) {
+  const session = await getHappyViewSession();
+  if (!session || !isValidDid(session.did) || session.did !== expectedDid) {
+    throw new AppError(AppError.Code.Unauthorized, 'Invalid HappyView session');
+  }
+
+  const [profile, actorProfile] = await Promise.all([
+    getProfileForDid(session, session.did),
+    fetchHappyViewActorProfile(session),
+  ]);
+
+  return {
+    profile,
+    seed: {
+      handle: profile?.handle ?? actorProfile.handle,
+      displayName: profile?.displayName ?? actorProfile.displayName ?? '',
+      avatar: profile?.avatar ?? actorProfile.avatar ?? '',
+      description: profile?.description ?? actorProfile.description ?? '',
+    },
+  };
+}
+
+export async function saveProfileFn({ data }: { data: unknown }) {
+  const input = profileInputSchema.parse(data);
+  const { session, client } = await getAuthenticatedHappyViewClient();
+  const existingProfile = await getProfileForDid(session, session.did);
+  const createdAt = (existingProfile?.createdAt ??
+    new Date().toISOString()) as Profile.Main['createdAt'];
+  const record = Profile.$build({
+    handle: input.handle as Profile.Main['handle'],
+    ...(input.displayName ? { displayName: input.displayName } : {}),
+    ...(input.avatar ? { avatar: input.avatar as Profile.Main['avatar'] } : {}),
+    ...(input.description ? { description: input.description } : {}),
+    createdAt,
+  });
+  const response = await client.putRecord(record, 'self');
+  return { did: session.did, uri: response.body.uri, cid: response.body.cid };
+}
+
+export async function lookupProfileByHandleFn({ data }: { data: unknown }) {
+  const input = handleInputSchema.parse(data);
+  const profile = await fetchPublicBlueskyProfile(input.handle);
+  if (!profile) {
+    throw new AppError(AppError.Code.NotFound, 'Account not found');
+  }
+  return profile;
+}
+
+export async function followProfileFn({ data }: { data: unknown }) {
+  const input = followInputSchema.parse(data);
+  const { session, client } = await getAuthenticatedHappyViewClient();
+  if (input.subject === session.did) {
+    throw new AppError(AppError.Code.BadRequest, 'You cannot follow yourself');
+  }
+
+  const followedDids = await getFollowedDids(session, session.did);
+  if (followedDids.has(input.subject)) return { subject: input.subject };
+
+  const record = Follow.$build({
+    subject: input.subject,
+    createdAt: new Date().toISOString() as Follow.Main['createdAt'],
+  });
+  await client.putRecord(record, TID.nextStr());
+  return { subject: input.subject };
+}
+
+export async function listFollowSuggestionsFn() {
+  const session = await getHappyViewSession();
+  if (!session) return [];
+
+  const [followedDids, blueskyFollowDids] = await Promise.all([
+    getFollowedDids(session, session.did),
+    getBlueskyFollowDids(session.did),
+  ]);
+  const candidateDids = [...blueskyFollowDids].filter(
+    (did) => did !== session.did && !followedDids.has(did),
   );
-  return getProfilesByDids([...new Set(candidates)]);
-});
+  return getProfilesByDids(session, candidateDids);
+}
 
-export const getCurrentProfileFn = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  const { did } = await getAuthenticatedClient();
-  const profile = await getProfile(did);
-  return profile ?? null;
-});
+export async function getCurrentProfileFn() {
+  const session = await getHappyViewSession();
+  if (!session) return null;
+  return getProfileForDid(session, session.did);
+}

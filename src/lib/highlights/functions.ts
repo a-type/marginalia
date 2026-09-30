@@ -1,13 +1,14 @@
-import { Client } from '@atproto/lex';
-import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 
 import * as Highlight from '#/lexicons/com/marginalia/highlight';
-import { oauth } from '#/lib/atproto/server';
-import { getAppSession } from '#/lib/auth/server';
+import * as ListHighlightsForChapter from '#/lexicons/com/marginalia/highlight/listForChapter';
+import {
+  getAuthenticatedHappyViewClient,
+  getHappyViewSession,
+} from '#/lib/atproto/client';
+import { fetchXrpcRecordPage, parseAtRecordUri } from '#/lib/atproto/xrpc';
 import { isBookId, isValidVerseId, parseVerseId } from '#/lib/bible/verse';
-import { getHighlightsForChapter } from '#/lib/db/queries';
-import { AppError } from '#/lib/error';
+import { logger } from '#/logger';
 import type { ChapterHighlightSnapshot, HighlightRecord } from './collections';
 import { formatHighlightRkey } from './collections';
 import { highlightColors } from './types';
@@ -28,58 +29,115 @@ const listChapterHighlightsSchema = z.object({
   chapter: z.number().int().positive(),
 });
 
-export const uploadHighlightFn = createServerFn({ method: 'POST' })
-  .validator(uploadHighlightSchema)
-  .handler(async ({ data }) => {
-    const session = await getAppSession();
-    if (!session.data.did) {
-      throw new AppError(AppError.Code.Unauthorized, 'Sign in required');
-    }
-    const client = new Client(await oauth.restore(session.data.did));
-    const record = Highlight.$build({
-      verse: { id: data.verseId },
-      color: data.color,
-      createdAt: data.createdAt as Highlight.Main['createdAt'],
-    });
-    const response = await client.putRecord(
-      record,
-      formatHighlightRkey(data.verseId),
-    );
-    return { uri: response.body.uri, cid: response.body.cid };
-  });
+const remoteHighlightSchema = z
+  .object({
+    uri: z.string(),
+    cid: z.string().nullish(),
+    verse: z.object({ id: z.string() }),
+    color: z.string(),
+    createdAt: z.string(),
+  })
+  .passthrough();
 
-export const listChapterHighlightsFn = createServerFn({ method: 'GET' })
-  .validator(listChapterHighlightsSchema)
-  .handler(async ({ data }): Promise<ChapterHighlightSnapshot> => {
-    const session = await getAppSession();
-    if (!session.data.did) return { highlights: [] };
-    const rows = await getHighlightsForChapter(
-      session.data.did,
-      data.bookId,
-      data.chapter,
-    );
-    const highlights: HighlightRecord[] = rows.flatMap((row) => {
-      if (
-        !isValidVerseId(row.verseId) ||
-        !highlightColors.includes(row.color as HighlightRecord['color'])
-      ) {
-        return [];
-      }
-      return [
-        {
-          id: row.uri,
-          rkey: row.rkey,
-          uri: row.uri,
-          cid: row.cid,
-          authorDid: row.authorDid,
-          verseId: row.verseId,
-          ...parseVerseId(row.verseId),
-          color: row.color as HighlightRecord['color'],
-          createdAt: row.createdAt,
-          status: 'synced',
-          syncError: null,
-        },
-      ];
-    });
-    return { highlights };
+export async function uploadHighlightFn({
+  data,
+}: {
+  data: z.input<typeof uploadHighlightSchema>;
+}) {
+  const input = uploadHighlightSchema.parse(data);
+  const { client } = await getAuthenticatedHappyViewClient();
+  const record = Highlight.$build({
+    verse: { id: input.verseId },
+    color: input.color,
+    createdAt: input.createdAt as Highlight.Main['createdAt'],
   });
+  const response = await client.putRecord(
+    record,
+    formatHighlightRkey(input.verseId),
+  );
+  return { uri: response.body.uri, cid: response.body.cid };
+}
+
+export async function listChapterHighlightsFn({
+  data,
+}: {
+  data: z.input<typeof listChapterHighlightsSchema>;
+}): Promise<ChapterHighlightSnapshot> {
+  const location = listChapterHighlightsSchema.parse(data);
+  const session = await getHappyViewSession();
+  if (!session) return { highlights: [] };
+
+  const page = await fetchXrpcRecordPage(
+    session,
+    ListHighlightsForChapter.$nsid,
+    {
+      bookId: location.bookId,
+      chapter: String(location.chapter),
+    },
+  );
+  const highlights: HighlightRecord[] = [];
+
+  for (const candidate of page.records) {
+    const parsed = remoteHighlightSchema.safeParse(candidate);
+    if (!parsed.success) {
+      logger.warn('Skipping malformed HappyView highlight record', candidate);
+      continue;
+    }
+
+    const uriParts = parseAtRecordUri(parsed.data.uri, Highlight.$nsid);
+    if (!uriParts) {
+      logger.warn(
+        'Skipping HappyView highlight with invalid AT URI',
+        parsed.data.uri,
+      );
+      continue;
+    }
+
+    let record: Highlight.Main;
+    try {
+      record = Highlight.$parse(parsed.data);
+    } catch (error) {
+      logger.warn(
+        'Skipping invalid HappyView highlight record',
+        parsed.data.uri,
+        error,
+      );
+      continue;
+    }
+
+    if (!isValidVerseId(record.verse.id)) {
+      logger.warn(
+        'Skipping invalid verse in HappyView highlight',
+        parsed.data.uri,
+      );
+      continue;
+    }
+    const verse = parseVerseId(record.verse.id);
+    const color = highlightColors.find(
+      (candidateColor) => candidateColor === record.color,
+    );
+    if (
+      verse.bookId !== location.bookId ||
+      verse.chapter !== location.chapter ||
+      !color
+    ) {
+      continue;
+    }
+
+    highlights.push({
+      id: parsed.data.uri,
+      rkey: uriParts.rkey,
+      uri: parsed.data.uri,
+      cid: parsed.data.cid ?? null,
+      authorDid: uriParts.authorDid,
+      verseId: record.verse.id,
+      ...verse,
+      color,
+      createdAt: record.createdAt,
+      status: 'synced',
+      syncError: null,
+    });
+  }
+
+  return { highlights };
+}

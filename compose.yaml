@@ -1,0 +1,72 @@
+name: marginalia
+
+x-app-image: &app-image
+  image: marginalia-app
+  build:
+    context: .
+    args:
+      VITE_HAPPYVIEW_CLIENT_KEY: ${VITE_HAPPYVIEW_CLIENT_KEY:-}
+
+services:
+  app:
+    <<: *app-image
+    environment:
+      APP_URL: ${APP_URL:-http://127.0.0.1:7654}
+      HOST: 0.0.0.0
+      NODE_ENV: production
+      PORT: 3000
+    expose:
+      - '3000'
+    restart: unless-stopped
+
+  happyview:
+    image: ghcr.io/gamesgamesgamesgamesgames/happyview:${HAPPYVIEW_VERSION:-2.15.0}
+    environment:
+      BASE_PATH: /api
+      DATABASE_URL: ${HAPPYVIEW_DATABASE_URL:-sqlite:///data/happyview.sqlite?mode=rwc}
+      HOST: 0.0.0.0
+      PORT: 3000
+      PUBLIC_URL: ${APP_URL:-http://127.0.0.1:7654}
+      RUST_LOG: ${HAPPYVIEW_RUST_LOG:-happyview=info,tower_http=info}
+      SESSION_SECRET: ${HAPPYVIEW_SESSION_SECRET:?Set HAPPYVIEW_SESSION_SECRET in .env}
+      TOKEN_ENCRYPTION_KEY: ${HAPPYVIEW_TOKEN_ENCRYPTION_KEY:?Set HAPPYVIEW_TOKEN_ENCRYPTION_KEY in .env}
+    ports:
+      - '127.0.0.1:3001:3000'
+    volumes:
+      - happyview-data:/data
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+      - happyview
+    restart: unless-stopped
+
+  happyview-provision:
+    <<: *app-image
+    profiles:
+      - setup
+    command:
+      - node
+      - scripts/provision-happyview.mjs
+    environment:
+      HAPPYVIEW_ADMIN_KEY: ${HAPPYVIEW_ADMIN_KEY:-}
+      HAPPYVIEW_BASE_URL: http://happyview:3000/api
+    depends_on:
+      - happyview
+
+volumes:
+  happyview-data:
+  caddy-data:
+  caddy-config:

@@ -51,7 +51,7 @@ export async function reconcileChapterAnnotations(
     .map((annotationVerse) => annotationVerse.id);
 
   const transaction = dbClient.createTransaction({
-    mutationFn: ({ transaction: pendingTransaction }) => {
+    mutationFn: async ({ transaction: pendingTransaction }) => {
       annotations.utils.acceptMutations(pendingTransaction);
       annotationVerses.utils.acceptMutations(pendingTransaction);
     },

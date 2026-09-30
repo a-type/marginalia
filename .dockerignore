@@ -1,0 +1,12 @@
+node_modules
+.pnpm-store
+.git
+.output
+.tanstack
+.vitest-attachments
+tmp
+.env
+.env.*
+!.env.example
+*.sqlite*
+*.db*

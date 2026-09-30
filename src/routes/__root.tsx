@@ -13,7 +13,6 @@ import { getLocale } from '#/paraglide/runtime';
 import uiCss from '@a-type/ui/main.css?url';
 import appCss from '../styles.css?url';
 
-import { currentProfileQueryOptions } from '#/queries/social';
 import { Provider } from '@a-type/ui';
 import type { DbClient } from '@tanstack/react-db';
 import type { QueryClient } from '@tanstack/react-query';
@@ -24,18 +23,12 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  beforeLoad: async ({ context }) => {
+  beforeLoad: () => {
     // Other redirect strategies are possible; see
     // https://github.com/TanStack/router/tree/main/examples/react/i18n-paraglide#offline-redirect
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('lang', getLocale());
     }
-
-    // always preload current profile
-    context.queryClient.query({
-      ...currentProfileQueryOptions,
-      staleTime: 'static',
-    });
   },
 
   head: () => ({

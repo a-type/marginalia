@@ -29,6 +29,8 @@
   "annotation_next": "Nächste Anmerkung",
   "annotation_highlight_only": "Markierung",
   "profile_setup_title": "Profil",
+  "profile_setup_loading": "Profil wird geladen…",
+  "profile_setup_error": "Dein Profil konnte nicht geladen werden. Bitte versuche es erneut.",
   "profile_handle_label": "Handle",
   "profile_display_name_label": "Anzeigename",
   "profile_avatar_label": "Avatar-URL",

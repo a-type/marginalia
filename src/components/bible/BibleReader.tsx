@@ -1,5 +1,6 @@
 import { Box, ColorModeToggle } from '@a-type/ui';
 import { useDbClient } from '@tanstack/react-db';
+import { useQuery } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
@@ -8,31 +9,51 @@ import { useChapterAnnotations } from '#/components/annotations/useChapterAnnota
 import { useHighlightSync } from '#/components/annotations/useChapterHighlights';
 import { SocialSidebar } from '#/components/auth/SocialSidebar';
 import { UserMenu } from '#/components/auth/UserMenu';
+import type { ChapterAnnotationSnapshot } from '#/lib/annotations/collections';
 import { reconcileChapterAnnotations } from '#/lib/annotations/reconcile';
 import { storeBibleLocation } from '#/lib/bible/location';
 import { storeTranslationId } from '#/lib/bible/source';
+import type { ChapterHighlightSnapshot } from '#/lib/highlights/collections';
 import { reconcileChapterHighlights } from '#/lib/highlights/reconcile';
-import { userAccountQueryOptions } from '#/queries/user';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { chapterAnnotationsQueryOptions } from '#/queries/annotations';
+import { chapterHighlightsQueryOptions } from '#/queries/highlights';
+import { currentUserDidQueryOptions } from '#/queries/user';
 import { AnnotatedBibleChapter } from './AnnotatedBibleChapter';
 import cls from './BibleReader.module.css';
 import { BibleReaderLocation } from './BibleReaderLocation';
 
 const readerRoute = getRouteApi('/$translation/$book/$chapter');
+const emptyChapterAnnotations: ChapterAnnotationSnapshot = {
+  annotations: [],
+  annotationVerses: [],
+};
+const emptyChapterHighlights: ChapterHighlightSnapshot = { highlights: [] };
 
 export function BibleReader() {
-  const {
-    chapterAnnotations,
-    chapterHighlights,
-    location,
-    manifest,
-    source,
-    translationId,
-  } = readerRoute.useLoaderData();
+  const { location, manifest, source, translationId } =
+    readerRoute.useLoaderData();
   const dbClient = useDbClient();
-  const { data: account } = useSuspenseQuery(userAccountQueryOptions);
-  const annotations = useChapterAnnotations(account?.did ?? null, location);
-  useHighlightSync(account?.did ?? null);
+  const userDidQuery = useQuery({
+    ...currentUserDidQueryOptions,
+    enabled: typeof window !== 'undefined',
+  });
+  const accountDid = userDidQuery.data ?? null;
+  const chapterAnnotationsQuery = useQuery({
+    ...chapterAnnotationsQueryOptions(accountDid, location),
+    enabled:
+      typeof window !== 'undefined' &&
+      userDidQuery.isSuccess &&
+      Boolean(accountDid),
+  });
+  const chapterHighlightsQuery = useQuery({
+    ...chapterHighlightsQueryOptions(accountDid, location),
+    enabled:
+      typeof window !== 'undefined' &&
+      userDidQuery.isSuccess &&
+      Boolean(accountDid),
+  });
+  const annotations = useChapterAnnotations(accountDid, location);
+  useHighlightSync(accountDid);
   useResetAnnotationPaneOnRouteChange();
 
   useEffect(() => {
@@ -41,17 +62,43 @@ export function BibleReader() {
   }, [location, translationId]);
 
   useEffect(() => {
-    void reconcileChapterAnnotations(dbClient, location, chapterAnnotations);
-  }, [chapterAnnotations, dbClient, location]);
+    if (!userDidQuery.isSuccess) return;
+    if (accountDid && !chapterAnnotationsQuery.isSuccess) return;
+    void reconcileChapterAnnotations(
+      dbClient,
+      location,
+      chapterAnnotationsQuery.data ?? emptyChapterAnnotations,
+    );
+  }, [
+    accountDid,
+    userDidQuery.isSuccess,
+    chapterAnnotationsQuery.data,
+    chapterAnnotationsQuery.isSuccess,
+    dbClient,
+    location,
+  ]);
 
   useEffect(() => {
-    void reconcileChapterHighlights(dbClient, location, chapterHighlights);
-  }, [chapterHighlights, dbClient, location]);
+    if (!userDidQuery.isSuccess) return;
+    if (accountDid && !chapterHighlightsQuery.isSuccess) return;
+    void reconcileChapterHighlights(
+      dbClient,
+      location,
+      chapterHighlightsQuery.data ?? emptyChapterHighlights,
+    );
+  }, [
+    accountDid,
+    userDidQuery.isSuccess,
+    chapterHighlightsQuery.data,
+    chapterHighlightsQuery.isSuccess,
+    dbClient,
+    location,
+  ]);
 
   return (
     <main className={cls.root}>
       <Box className={cls.pane} items="center">
-        <SocialSidebar accountDid={account?.did ?? null} />
+        <SocialSidebar accountDid={accountDid} />
       </Box>
       <Box className={cls.menubar} items="center">
         <UserMenu />
@@ -66,7 +113,7 @@ export function BibleReader() {
       />
       <AnnotatedBibleChapter
         key={`${location.bookId}/${location.chapter}`}
-        accountDid={account?.did ?? null}
+        accountDid={accountDid}
         annotations={annotations}
         location={location}
         source={source}

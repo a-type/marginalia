@@ -1,9 +1,12 @@
 import { logoutFn } from '#/lib/auth/functions';
 import { m } from '#/paraglide/messages';
-import { currentProfileQueryOptions } from '#/queries/social';
-import { userAccountQueryOptions } from '#/queries/user';
+import {
+  currentActorProfileQueryOptions,
+  currentProfileQueryOptions,
+} from '#/queries/social';
+import { currentUserDidQueryOptions } from '#/queries/user';
 import { Avatar, Button, DropdownMenu } from '@a-type/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { useState } from 'react';
 import { LoginDialog } from './LoginDialog';
@@ -14,8 +17,21 @@ export interface UserMenuProps {
 }
 
 export function UserMenu({ className }: UserMenuProps) {
-  const { data: account } = useSuspenseQuery(userAccountQueryOptions);
-  const { data: profile } = useSuspenseQuery(currentProfileQueryOptions);
+  const userDidQuery = useQuery({
+    ...currentUserDidQueryOptions,
+    enabled: typeof window !== 'undefined',
+  });
+  const userDid = userDidQuery.data ?? null;
+  const actorProfileQuery = useQuery({
+    ...currentActorProfileQueryOptions(userDid),
+    enabled: typeof window !== 'undefined' && Boolean(userDid),
+  });
+  const actorProfile = actorProfileQuery.data;
+  const profileQuery = useQuery({
+    ...currentProfileQueryOptions,
+    enabled: typeof window !== 'undefined' && Boolean(userDid),
+  });
+  const profile = profileQuery.data;
   const logout = useServerFn(logoutFn);
 
   const [showLogin, setShowLogin] = useState(false);
@@ -32,22 +48,28 @@ export function UserMenu({ className }: UserMenuProps) {
           <Button.Icon
             render={
               <Avatar
-                name={profile?.displayName ?? account?.handle ?? undefined}
-                imageSrc={profile?.avatar}
+                name={
+                  profile?.displayName ??
+                  actorProfile?.displayName ??
+                  actorProfile?.handle ??
+                  userDid ??
+                  undefined
+                }
+                imageSrc={profile?.avatar ?? actorProfile?.avatar}
                 size="16px"
               />
             }
           />
         </DropdownMenu.Trigger>
         <DropdownMenu.Content>
-          {account ? (
+          {userDid ? (
             <>
               <DropdownMenu.Item onClick={() => setShowProfile(true)}>
                 {m.profile_setup_title()}
               </DropdownMenu.Item>
               <DropdownMenu.Item
                 className="@mode-attention"
-                onClick={() => logout()}
+                onClick={() => void logout()}
               >
                 {m.equal_zany_marlin_feel()}
               </DropdownMenu.Item>
@@ -63,7 +85,11 @@ export function UserMenu({ className }: UserMenuProps) {
         </DropdownMenu.Content>
       </DropdownMenu>
       <LoginDialog open={showLogin} setOpen={setShowLogin} />
-      <ProfileDialog open={showProfile} setOpen={setShowProfile} />
+      <ProfileDialog
+        accountDid={userDid}
+        open={showProfile}
+        setOpen={setShowProfile}
+      />
     </>
   );
 }

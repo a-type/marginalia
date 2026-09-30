@@ -38,6 +38,8 @@
   "annotation_next": "Next annotation",
   "annotation_highlight_only": "Highlight",
   "profile_setup_title": "Profile",
+  "profile_setup_loading": "Loading your profile…",
+  "profile_setup_error": "Unable to load your profile. Please try again.",
   "profile_handle_label": "Handle",
   "profile_display_name_label": "Display name",
   "profile_avatar_label": "Avatar URL",
