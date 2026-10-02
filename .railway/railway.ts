@@ -10,7 +10,6 @@ import {
 
 export default defineRailway(() => {
   const publicUrl = 'https://apostilbible.com';
-  const publicDomain = new URL(publicUrl).hostname;
   const happyviewData = volume('happyview-data', { sizeMB: 1024 });
 
   const marginalia = service('marginalia', {
@@ -50,7 +49,6 @@ export default defineRailway(() => {
       dockerfilePath: 'Caddy.Dockerfile',
     },
     replicas: { sfo: 1 },
-    domains: [{ domain: publicDomain, port: 80 }],
     env: {
       APP_PRIVATE_DOMAIN: marginalia.env.RAILWAY_PRIVATE_DOMAIN,
       CADDY_SITE_ADDRESS: ':80',
