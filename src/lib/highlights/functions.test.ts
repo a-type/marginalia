@@ -39,8 +39,8 @@ describe('chapter highlight records', () => {
     fetchXrpcRecordPage.mockResolvedValue({ records: [record] });
     parseAtRecordUri.mockReturnValue({ authorDid: did, rkey: 'rkey' });
 
-    const { listChapterHighlightsFn } = await import('./functions');
-    const snapshot = await listChapterHighlightsFn({
+    const { listChapterHighlights } = await import('./functions');
+    const snapshot = await listChapterHighlights({
       data: { bookId: 'GEN', chapter: 1 },
     });
 

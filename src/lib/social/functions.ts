@@ -168,7 +168,7 @@ async function fetchPublicBlueskyProfile(actor: string) {
   return result.data;
 }
 
-export async function getCurrentBlueskyProfileFn() {
+export async function getCurrentBlueskyProfile() {
   const session = await getHappyViewSession();
   if (!session) return null;
   if (!isValidDid(session.did)) {
@@ -340,9 +340,9 @@ async function getBlueskyFollowDids(did: string) {
   return followedDids;
 }
 
-export async function getProfileSetupFn(expectedDid: string) {
+export async function getProfileSetup() {
   const session = await getHappyViewSession();
-  if (!session || !isValidDid(session.did) || session.did !== expectedDid) {
+  if (!session || !isValidDid(session.did)) {
     throw new AppError(AppError.Code.Unauthorized, 'Invalid HappyView session');
   }
 
@@ -362,7 +362,7 @@ export async function getProfileSetupFn(expectedDid: string) {
   };
 }
 
-export async function saveProfileFn({ data }: { data: unknown }) {
+export async function saveProfile({ data }: { data: unknown }) {
   const input = profileInputSchema.parse(data);
   const { session, client } = await getAuthenticatedHappyViewClient();
   const existingProfile = await getProfileForDid(session, session.did);
@@ -379,7 +379,7 @@ export async function saveProfileFn({ data }: { data: unknown }) {
   return { did: session.did, uri: response.body.uri, cid: response.body.cid };
 }
 
-export async function lookupProfileByHandleFn({ data }: { data: unknown }) {
+export async function lookupProfileByHandle({ data }: { data: unknown }) {
   const input = handleInputSchema.parse(data);
   const profile = await fetchPublicBlueskyProfile(input.handle);
   if (!profile) {
@@ -388,7 +388,7 @@ export async function lookupProfileByHandleFn({ data }: { data: unknown }) {
   return profile;
 }
 
-export async function followProfileFn({ data }: { data: unknown }) {
+export async function followProfile({ data }: { data: unknown }) {
   const input = followInputSchema.parse(data);
   const { session, client } = await getAuthenticatedHappyViewClient();
   if (input.subject === session.did) {
@@ -406,7 +406,7 @@ export async function followProfileFn({ data }: { data: unknown }) {
   return { subject: input.subject };
 }
 
-export async function listFollowSuggestionsFn() {
+export async function listFollowSuggestions() {
   const session = await getHappyViewSession();
   if (!session) return [];
 
@@ -420,7 +420,7 @@ export async function listFollowSuggestionsFn() {
   return getProfilesByDids(session, candidateDids);
 }
 
-export async function getCurrentProfileFn() {
+export async function getCurrentProfile() {
   const session = await getHappyViewSession();
   if (!session) return null;
   return getProfileForDid(session, session.did);

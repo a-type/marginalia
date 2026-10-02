@@ -53,9 +53,9 @@ describe('current Bluesky profile and graph queries', () => {
     );
     getHappyViewSession.mockResolvedValue({ did, fetchHandler });
 
-    const { getCurrentBlueskyProfileFn } = await import('./functions');
+    const { getCurrentBlueskyProfile } = await import('./functions');
 
-    await expect(getCurrentBlueskyProfileFn()).resolves.toEqual({
+    await expect(getCurrentBlueskyProfile()).resolves.toEqual({
       did,
       handle: 'reader.example',
       displayName: 'Reader',
@@ -86,9 +86,9 @@ describe('current Bluesky profile and graph queries', () => {
     getHappyViewSession.mockResolvedValue({ did, fetchHandler });
     fetchAllXrpcRecords.mockResolvedValue([]);
 
-    const { getProfileSetupFn } = await import('./functions');
+    const { getProfileSetup } = await import('./functions');
 
-    await expect(getProfileSetupFn(did)).resolves.toEqual({
+    await expect(getProfileSetup(did)).resolves.toEqual({
       profile: null,
       seed: {
         handle: 'reader.example',
@@ -117,10 +117,10 @@ describe('current Bluesky profile and graph queries', () => {
       return new Response(JSON.stringify(profile), { status: 200 });
     });
 
-    const { lookupProfileByHandleFn } = await import('./functions');
+    const { lookupProfileByHandle } = await import('./functions');
 
     await expect(
-      lookupProfileByHandleFn({ data: { handle: profile.handle } }),
+      lookupProfileByHandle({ data: { handle: profile.handle } }),
     ).resolves.toEqual(profile);
     expect(requestedUrls).toEqual([
       `https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${encodeURIComponent(profile.handle)}`,
@@ -144,9 +144,9 @@ describe('current Bluesky profile and graph queries', () => {
     ]);
     parseAtRecordUri.mockReturnValue({ authorDid: did, rkey: 'self' });
 
-    const { getCurrentProfileFn } = await import('./functions');
+    const { getCurrentProfile } = await import('./functions');
 
-    await expect(getCurrentProfileFn()).resolves.toMatchObject({
+    await expect(getCurrentProfile()).resolves.toMatchObject({
       authorDid: did,
       handle: 'reader.example',
       displayName: 'Reader',
@@ -157,10 +157,10 @@ describe('current Bluesky profile and graph queries', () => {
   it('does not return a successful null result when the session is missing', async () => {
     getHappyViewSession.mockResolvedValue(null);
 
-    const { getProfileSetupFn } = await import('./functions');
+    const { getProfileSetup } = await import('./functions');
 
     await expect(
-      getProfileSetupFn('did:plc:abcdefghijklmnopqrstuvwx'),
+      getProfileSetup('did:plc:abcdefghijklmnopqrstuvwx'),
     ).rejects.toThrow('Invalid HappyView session');
   });
 
@@ -193,9 +193,9 @@ describe('current Bluesky profile and graph queries', () => {
       );
     });
 
-    const { listFollowSuggestionsFn } = await import('./functions');
+    const { listFollowSuggestions } = await import('./functions');
 
-    await listFollowSuggestionsFn();
+    await listFollowSuggestions();
 
     expect(fetchXrpcRecordPage).not.toHaveBeenCalled();
     expect(requestedUrls).toEqual([

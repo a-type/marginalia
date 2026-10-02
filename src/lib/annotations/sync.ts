@@ -5,7 +5,7 @@ import {
   formatAnnotationVerseRecordId,
   getAnnotationCollections,
 } from './collections';
-import { uploadAnnotationFn } from './functions';
+import { uploadAnnotation } from './functions';
 
 const activeSyncs = new WeakMap<DbClient, Promise<void>>();
 
@@ -66,7 +66,7 @@ async function synchronizeAnnotations(dbClient: DbClient, ownerDid: string) {
       .sort((left, right) => left.ordinal - right.ordinal)
       .map((annotationVerse) => annotationVerse.verseId);
     try {
-      const remote = await uploadAnnotationFn({
+      const remote = await uploadAnnotation({
         data: {
           rkey: annotation.rkey,
           verses,

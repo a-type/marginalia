@@ -1,7 +1,6 @@
-import { loginFn } from '#/lib/auth/functions';
+import { login } from '#/lib/auth/functions';
 import { m } from '#/paraglide/messages';
 import { Dialog, FormikForm, SubmitButton, TextField } from '@a-type/ui';
-import { useServerFn } from '@tanstack/react-start';
 
 export interface LoginDialogProps {
   open?: boolean;
@@ -9,8 +8,6 @@ export interface LoginDialogProps {
 }
 
 export function LoginDialog({ open, setOpen }: LoginDialogProps) {
-  const login = useServerFn(loginFn);
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <Dialog.Content>

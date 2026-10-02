@@ -17,12 +17,12 @@ const loginSchema = z.object({
     .max(255, 'Enter a valid handle, DID, or PDS address'),
 });
 
-export async function loginFn({ data }: { data: unknown }) {
+export async function login({ data }: { data: unknown }) {
   const { identifier } = loginSchema.parse(data);
   await signInToHappyView(identifier);
 }
 
-export async function getCurrentUserDidFn(): Promise<string | null> {
+export async function getCurrentUserDid(): Promise<string | null> {
   const session = await getHappyViewSession();
   if (!session) return null;
   if (!isValidDid(session.did)) {
@@ -31,6 +31,6 @@ export async function getCurrentUserDidFn(): Promise<string | null> {
   return session.did;
 }
 
-export async function logoutFn() {
+export async function logout() {
   await signOutOfHappyView();
 }

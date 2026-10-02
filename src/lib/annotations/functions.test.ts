@@ -39,8 +39,8 @@ describe('chapter annotation records', () => {
     fetchXrpcRecordPage.mockResolvedValue({ records: [record] });
     parseAtRecordUri.mockReturnValue({ authorDid: did, rkey: 'rkey' });
 
-    const { listChapterAnnotationsFn } = await import('./functions');
-    const snapshot = await listChapterAnnotationsFn({
+    const { listChapterAnnotations } = await import('./functions');
+    const snapshot = await listChapterAnnotations({
       data: { bookId: 'GEN', chapter: 1 },
     });
 

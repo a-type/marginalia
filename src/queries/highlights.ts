@@ -1,19 +1,10 @@
 import { queryOptions } from '@tanstack/react-query';
 
-import { listChapterHighlightsFn } from '#/lib/highlights/functions';
 import type { BibleLocation } from '#/lib/bible/location';
+import { listChapterHighlights } from '#/lib/highlights/functions';
 
-export const chapterHighlightsQueryOptions = (
-  accountDid: string | null,
-  location: BibleLocation,
-) =>
+export const chapterHighlightsQueryOptions = (location: BibleLocation) =>
   queryOptions({
-    queryKey: [
-      'highlights',
-      'chapter',
-      accountDid,
-      location.bookId,
-      location.chapter,
-    ],
-    queryFn: () => listChapterHighlightsFn({ data: location }),
+    queryKey: ['highlights', 'chapter', location.bookId, location.chapter],
+    queryFn: () => listChapterHighlights({ data: location }),
   });

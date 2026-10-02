@@ -7,9 +7,8 @@ import {
   TextField,
 } from '@a-type/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useServerFn } from '@tanstack/react-start';
 
-import { followProfileFn, saveProfileFn } from '#/lib/social/functions';
+import { followProfile, saveProfile } from '#/lib/social/functions';
 import { m } from '#/paraglide/messages';
 import {
   currentProfileQueryOptions,
@@ -18,7 +17,6 @@ import {
 } from '#/queries/social';
 
 export interface ProfileDialogProps {
-  accountDid: string | null;
   open: boolean;
   setOpen: (value: boolean) => void;
 }
@@ -30,17 +28,11 @@ interface ProfileValues {
   description: string;
 }
 
-export function ProfileDialog({
-  accountDid,
-  open,
-  setOpen,
-}: ProfileDialogProps) {
-  const saveProfile = useServerFn(saveProfileFn);
-  const followProfile = useServerFn(followProfileFn);
+export function ProfileDialog({ open, setOpen }: ProfileDialogProps) {
   const queryClient = useQueryClient();
   const profileSetup = useQuery({
-    ...profileSetupQueryOptions(accountDid),
-    enabled: typeof window !== 'undefined' && open && Boolean(accountDid),
+    ...profileSetupQueryOptions(),
+    enabled: typeof window !== 'undefined' && open,
   });
   const followSuggestions = useQuery({
     ...followSuggestionsQueryOptions,
@@ -63,7 +55,7 @@ export function ProfileDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <Dialog.Content>
         <Dialog.Title>{m.profile_setup_title()}</Dialog.Title>
-        {open && accountDid && profileSetup.isPending ? (
+        {open && profileSetup.isPending ? (
           <p>{m.profile_setup_loading()}</p>
         ) : null}
         {profileSetup.isError ? (
@@ -79,7 +71,7 @@ export function ProfileDialog({
                   queryKey: currentProfileQueryOptions.queryKey,
                 }),
                 queryClient.invalidateQueries({
-                  queryKey: profileSetupQueryOptions(accountDid).queryKey,
+                  queryKey: profileSetupQueryOptions().queryKey,
                 }),
               ]);
               setOpen(false);

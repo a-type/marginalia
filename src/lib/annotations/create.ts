@@ -1,5 +1,5 @@
 import * as Annotation from '#/lexicons/com/marginalia/annotation';
-import { getCurrentUserDidFn } from '#/lib/auth/functions';
+import { getCurrentUserDid } from '#/lib/auth/functions';
 import type { VerseId } from '#/lib/bible/verse';
 import { parseVerseId } from '#/lib/bible/verse';
 import { TID } from '@atproto/common-web';
@@ -35,7 +35,7 @@ export async function createAnnotation(
 
   let authorDid: string | null = null;
   try {
-    authorDid = (await getCurrentUserDidFn()) ?? null;
+    authorDid = (await getCurrentUserDid()) ?? null;
   } catch {
     // Anonymous and offline annotations remain local until a later sync.
   }

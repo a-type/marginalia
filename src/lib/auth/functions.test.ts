@@ -25,9 +25,9 @@ describe('current HappyView user identity', () => {
     const fetchHandler = vi.fn();
     getHappyViewSession.mockResolvedValue({ did, fetchHandler });
 
-    const { getCurrentUserDidFn } = await import('./functions');
+    const { getCurrentUserDid } = await import('./functions');
 
-    await expect(getCurrentUserDidFn()).resolves.toBe(did);
+    await expect(getCurrentUserDid()).resolves.toBe(did);
     expect(fetchHandler).not.toHaveBeenCalled();
   });
 });

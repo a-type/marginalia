@@ -49,7 +49,7 @@ const remoteAnnotationSchema = z
   })
   .passthrough();
 
-export async function uploadAnnotationFn({
+export async function uploadAnnotation({
   data,
 }: {
   data: UploadAnnotationInput;
@@ -68,7 +68,7 @@ export async function uploadAnnotationFn({
   };
 }
 
-export async function listChapterAnnotationsFn({
+export async function listChapterAnnotations({
   data,
 }: {
   data: z.input<typeof listChapterAnnotationsSchema>;

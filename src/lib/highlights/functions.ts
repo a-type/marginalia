@@ -39,7 +39,7 @@ const remoteHighlightSchema = z
   })
   .passthrough();
 
-export async function uploadHighlightFn({
+export async function uploadHighlight({
   data,
 }: {
   data: z.input<typeof uploadHighlightSchema>;
@@ -58,7 +58,7 @@ export async function uploadHighlightFn({
   return { uri: response.body.uri, cid: response.body.cid };
 }
 
-export async function listChapterHighlightsFn({
+export async function listChapterHighlights({
   data,
 }: {
   data: z.input<typeof listChapterHighlightsSchema>;

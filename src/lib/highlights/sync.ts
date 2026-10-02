@@ -2,7 +2,7 @@ import type { DbClient } from '@tanstack/react-db';
 
 import * as Highlight from '#/lexicons/com/marginalia/highlight';
 import { formatHighlightRkey, getHighlightCollections } from './collections';
-import { uploadHighlightFn } from './functions';
+import { uploadHighlight } from './functions';
 
 const activeSyncs = new WeakMap<DbClient, Promise<void>>();
 
@@ -25,7 +25,7 @@ async function synchronizeHighlights(dbClient: DbClient, ownerDid: string) {
     if (highlight.authorDid !== ownerDid || highlight.status !== 'pending')
       continue;
     try {
-      const remote = await uploadHighlightFn({
+      const remote = await uploadHighlight({
         data: {
           verseId: highlight.verseId,
           color: highlight.color,

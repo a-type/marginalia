@@ -11,6 +11,7 @@ import { SocialSidebar } from '#/components/auth/SocialSidebar';
 import { UserMenu } from '#/components/auth/UserMenu';
 import type { ChapterAnnotationSnapshot } from '#/lib/annotations/collections';
 import { reconcileChapterAnnotations } from '#/lib/annotations/reconcile';
+import type { BibleLocation } from '#/lib/bible/location';
 import { storeBibleLocation } from '#/lib/bible/location';
 import { storeTranslationId } from '#/lib/bible/source';
 import type { ChapterHighlightSnapshot } from '#/lib/highlights/collections';
@@ -39,61 +40,34 @@ export function BibleReader() {
   });
   const accountDid = userDidQuery.data ?? null;
   const chapterAnnotationsQuery = useQuery({
-    ...chapterAnnotationsQueryOptions(accountDid, location),
-    enabled:
-      typeof window !== 'undefined' &&
-      userDidQuery.isSuccess &&
-      Boolean(accountDid),
+    ...chapterAnnotationsQueryOptions(location),
+    enabled: typeof window !== 'undefined' && userDidQuery.isSuccess,
   });
   const chapterHighlightsQuery = useQuery({
-    ...chapterHighlightsQueryOptions(accountDid, location),
-    enabled:
-      typeof window !== 'undefined' &&
-      userDidQuery.isSuccess &&
-      Boolean(accountDid),
+    ...chapterHighlightsQueryOptions(location),
+    enabled: typeof window !== 'undefined' && userDidQuery.isSuccess,
   });
   const annotations = useChapterAnnotations(accountDid, location);
   useHighlightSync(accountDid);
   useResetAnnotationPaneOnRouteChange();
 
-  useEffect(() => {
-    storeBibleLocation(location);
-    storeTranslationId(translationId);
-  }, [location, translationId]);
-
-  useEffect(() => {
-    if (!userDidQuery.isSuccess) return;
-    if (accountDid && !chapterAnnotationsQuery.isSuccess) return;
-    void reconcileChapterAnnotations(
-      dbClient,
-      location,
-      chapterAnnotationsQuery.data ?? emptyChapterAnnotations,
-    );
-  }, [
+  useStoreBibleReaderLocation(location, translationId);
+  useReconcileChapterAnnotations({
     accountDid,
-    userDidQuery.isSuccess,
-    chapterAnnotationsQuery.data,
-    chapterAnnotationsQuery.isSuccess,
     dbClient,
     location,
-  ]);
-
-  useEffect(() => {
-    if (!userDidQuery.isSuccess) return;
-    if (accountDid && !chapterHighlightsQuery.isSuccess) return;
-    void reconcileChapterHighlights(
-      dbClient,
-      location,
-      chapterHighlightsQuery.data ?? emptyChapterHighlights,
-    );
-  }, [
+    queryData: chapterAnnotationsQuery.data,
+    queryIsSuccess: chapterAnnotationsQuery.isSuccess,
+    userQueryIsSuccess: userDidQuery.isSuccess,
+  });
+  useReconcileChapterHighlights({
     accountDid,
-    userDidQuery.isSuccess,
-    chapterHighlightsQuery.data,
-    chapterHighlightsQuery.isSuccess,
     dbClient,
     location,
-  ]);
+    queryData: chapterHighlightsQuery.data,
+    queryIsSuccess: chapterHighlightsQuery.isSuccess,
+    userQueryIsSuccess: userDidQuery.isSuccess,
+  });
 
   return (
     <main className={cls.root}>
@@ -120,4 +94,80 @@ export function BibleReader() {
       />
     </main>
   );
+}
+
+function useStoreBibleReaderLocation(
+  location: BibleLocation,
+  translationId: string,
+) {
+  useEffect(() => {
+    storeBibleLocation(location);
+    storeTranslationId(translationId);
+  }, [location, translationId]);
+}
+
+function useReconcileChapterAnnotations({
+  accountDid,
+  dbClient,
+  location,
+  queryData,
+  queryIsSuccess,
+  userQueryIsSuccess,
+}: {
+  accountDid: string | null;
+  dbClient: ReturnType<typeof useDbClient>;
+  location: BibleLocation;
+  queryData: ChapterAnnotationSnapshot | undefined;
+  queryIsSuccess: boolean;
+  userQueryIsSuccess: boolean;
+}) {
+  useEffect(() => {
+    if (!userQueryIsSuccess) return;
+    if (accountDid && !queryIsSuccess) return;
+    void reconcileChapterAnnotations(
+      dbClient,
+      location,
+      queryData ?? emptyChapterAnnotations,
+    );
+  }, [
+    accountDid,
+    userQueryIsSuccess,
+    queryData,
+    queryIsSuccess,
+    dbClient,
+    location,
+  ]);
+}
+
+function useReconcileChapterHighlights({
+  accountDid,
+  dbClient,
+  location,
+  queryData,
+  queryIsSuccess,
+  userQueryIsSuccess,
+}: {
+  accountDid: string | null;
+  dbClient: ReturnType<typeof useDbClient>;
+  location: BibleLocation;
+  queryData: ChapterHighlightSnapshot | undefined;
+  queryIsSuccess: boolean;
+  userQueryIsSuccess: boolean;
+}) {
+  useEffect(() => {
+    if (!userQueryIsSuccess) return;
+    if (accountDid && !queryIsSuccess) return;
+    void reconcileChapterHighlights(
+      dbClient,
+      location,
+      queryData ?? emptyChapterHighlights,
+    );
+  }, [
+    accountDid,
+    userQueryIsSuccess,
+    queryData,
+    queryIsSuccess,
+    dbClient,
+    location,
+  ]);
 }

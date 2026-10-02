@@ -8,13 +8,9 @@ import {
 } from '@a-type/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
-import { useServerFn } from '@tanstack/react-start';
 import { useState } from 'react';
 
-import {
-  followProfileFn,
-  lookupProfileByHandleFn,
-} from '#/lib/social/functions';
+import { followProfile, lookupProfileByHandle } from '#/lib/social/functions';
 import { m } from '#/paraglide/messages';
 import { followSuggestionsQueryOptions } from '#/queries/social';
 import cls from './SocialSidebar.module.css';
@@ -31,8 +27,6 @@ export interface SocialSidebarProps {
 }
 
 export function SocialSidebar({ accountDid }: SocialSidebarProps) {
-  const lookupProfile = useServerFn(lookupProfileByHandleFn);
-  const followProfile = useServerFn(followProfileFn);
   const router = useRouter();
   const queryClient = useQueryClient();
   const [followedDids, setFollowedDids] = useState<Set<string>>(new Set());
@@ -41,7 +35,7 @@ export function SocialSidebar({ accountDid }: SocialSidebarProps) {
     enabled: !!accountDid,
   });
   const lookup = useMutation({
-    mutationFn: (handle: string) => lookupProfile({ data: { handle } }),
+    mutationFn: (handle: string) => lookupProfileByHandle({ data: { handle } }),
   });
   const follow = useMutation({
     mutationFn: (subject: string) => followProfile({ data: { subject } }),
