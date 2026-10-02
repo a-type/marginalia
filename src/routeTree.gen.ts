@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as HealthRouteImport } from './routes/health'
 import { Route as OauthClientMetadataDotjsonRouteImport } from './routes/oauth-client-metadata[.]json'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
 import { Route as TranslationBookChapterRouteImport } from './routes/$translation.$book.$chapter'
@@ -17,6 +18,11 @@ import { Route as TranslationBookChapterRouteImport } from './routes/$translatio
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HealthRoute = HealthRouteImport.update({
+  id: '/health',
+  path: '/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OauthClientMetadataDotjsonRoute =
@@ -38,12 +44,14 @@ const TranslationBookChapterRoute = TranslationBookChapterRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/health': typeof HealthRoute
   '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/$translation/$book/$chapter': typeof TranslationBookChapterRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/health': typeof HealthRoute
   '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/$translation/$book/$chapter': typeof TranslationBookChapterRoute
@@ -51,6 +59,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/health': typeof HealthRoute
   '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/$translation/$book/$chapter': typeof TranslationBookChapterRoute
@@ -59,18 +68,21 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/health'
     | '/oauth-client-metadata.json'
     | '/oauth/callback'
     | '/$translation/$book/$chapter'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/health'
     | '/oauth-client-metadata.json'
     | '/oauth/callback'
     | '/$translation/$book/$chapter'
   id:
     | '__root__'
     | '/'
+    | '/health'
     | '/oauth-client-metadata.json'
     | '/oauth/callback'
     | '/$translation/$book/$chapter'
@@ -78,6 +90,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HealthRoute: typeof HealthRoute
   OauthClientMetadataDotjsonRoute: typeof OauthClientMetadataDotjsonRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
   TranslationBookChapterRoute: typeof TranslationBookChapterRoute
@@ -90,6 +103,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/health': {
+      id: '/health'
+      path: '/health'
+      fullPath: '/health'
+      preLoaderRoute: typeof HealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oauth-client-metadata.json': {
@@ -118,6 +138,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HealthRoute: HealthRoute,
   OauthClientMetadataDotjsonRoute: OauthClientMetadataDotjsonRoute,
   OauthCallbackRoute: OauthCallbackRoute,
   TranslationBookChapterRoute: TranslationBookChapterRoute,
