@@ -39,7 +39,10 @@ services:
   caddy:
     image: caddy:2-alpine
     environment:
-      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+      APP_PRIVATE_DOMAIN: app
+      CADDY_SITE_ADDRESS: ${APP_DOMAIN:-localhost}
+      HAPPYVIEW_BASE_PATH: /api
+      HAPPYVIEW_PRIVATE_DOMAIN: happyview
     ports:
       - '80:80'
       - '443:443'

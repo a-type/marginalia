@@ -107,6 +107,21 @@ uses `BASE_PATH=/api`; its `PUBLIC_URL` remains the app origin without that
 path. The HappyView container is bound to loopback on host port 3001 and is not
 directly exposed to the network.
 
+## Railway deployment
+
+`.railway/railway.ts` configures the app, HappyView, Caddy, and a persistent
+volume for HappyView's SQLite database. Only Caddy has a public domain:
+`apostilbible.com` on port 80. Railway terminates public TLS, while Caddy routes
+requests to the other services over Railway's private network. HappyView's
+`PUBLIC_URL`, Caddy's private upstreams, and its `/api` path use Railway
+reference variables so they stay aligned with the source service settings.
+
+Set `SESSION_SECRET` and `TOKEN_ENCRYPTION_KEY` on the Railway `happyview`
+service before deploying. Set `VITE_HAPPYVIEW_CLIENT_KEY` on `marginalia` after
+creating the public HappyView API client; this key is included in the browser
+build and is intentionally public. The IaC config preserves these values when
+planning subsequent changes.
+
 ## Backend architecture
 
 - `lexicons/` is the source of truth for Marginalia ATProto records and XRPC

@@ -1,16 +1,16 @@
-{$APP_DOMAIN} {
-	@happyview_api path /api /api/*
+{$CADDY_SITE_ADDRESS} {
+	@happyview_api path {$HAPPYVIEW_BASE_PATH} {$HAPPYVIEW_BASE_PATH}/*
 	handle @happyview_api {
-		reverse_proxy happyview:3000
+		reverse_proxy {$HAPPYVIEW_PRIVATE_DOMAIN}:3000
 	}
 
 	@happyview_xrpc path /xrpc /xrpc/*
 	handle @happyview_xrpc {
-		rewrite * /api{uri}
-		reverse_proxy happyview:3000
+		rewrite * {$HAPPYVIEW_BASE_PATH}{uri}
+		reverse_proxy {$HAPPYVIEW_PRIVATE_DOMAIN}:3000
 	}
 
 	handle {
-		reverse_proxy app:3000
+		reverse_proxy {$APP_PRIVATE_DOMAIN}:3000
 	}
 }
