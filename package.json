@@ -46,6 +46,7 @@
   },
   "devDependencies": {
     "@inlang/paraglide-js": "^2.25.0",
+    "@railway/cli": "^5.63.1",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tanstack/devtools-vite": "latest",
     "@tanstack/eslint-config": "latest",
