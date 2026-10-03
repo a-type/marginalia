@@ -4,7 +4,7 @@
 
 import { l } from '@atproto/lex'
 
-const $nsid = 'com.apsotilbible.profile'
+const $nsid = 'com.apostilbible.profile'
 
 type $nsid = typeof $nsid
 
@@ -12,7 +12,7 @@ export { $nsid }
 
 /** The profile for a Apostil account. */
 type Main = {
-  $type: 'com.apsotilbible.profile'
+  $type: 'com.apostilbible.profile'
   handle: l.HandleString
   displayName?: string
   avatar?: l.UriString

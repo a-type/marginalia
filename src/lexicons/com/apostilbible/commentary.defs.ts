@@ -4,7 +4,7 @@
 
 import { l } from '@atproto/lex'
 
-const $nsid = 'com.apsotilbible.commentary'
+const $nsid = 'com.apostilbible.commentary'
 
 type $nsid = typeof $nsid
 
@@ -12,7 +12,7 @@ export { $nsid }
 
 /** A named collection of verse annotations */
 type Main = {
-  $type: 'com.apsotilbible.commentary'
+  $type: 'com.apostilbible.commentary'
 
   /**
    * The name of the commentary. This is used to identify the commentary in the UI.

@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "com.apsotilbible.highlight.listForChapter",
+  "id": "com.apostilbible.highlight.listForChapter",
   "description": "Lists the caller's highlights on a Bible chapter.",
   "defs": {
     "main": {

@@ -2,11 +2,11 @@ import { TID } from '@atproto/common-web';
 import { isValidDid } from '@atproto/syntax';
 import { z } from 'zod';
 
-import * as Follow from '#/lexicons/com/apostil/follow';
-import * as FollowList from '#/lexicons/com/apostil/follow/list';
-import * as Profile from '#/lexicons/com/apostil/profile';
-import * as ProfilesForDids from '#/lexicons/com/apostil/profile/getForDids';
-import * as ProfileList from '#/lexicons/com/apostil/profile/list';
+import * as Follow from '#/lexicons/com/apostilbible/follow';
+import * as FollowList from '#/lexicons/com/apostilbible/follow/list';
+import * as Profile from '#/lexicons/com/apostilbible/profile';
+import * as ProfilesForDids from '#/lexicons/com/apostilbible/profile/getForDids';
+import * as ProfileList from '#/lexicons/com/apostilbible/profile/list';
 import {
   getAuthenticatedHappyViewClient,
   getHappyViewSession,

@@ -4,7 +4,7 @@
 
 import { l } from '@atproto/lex'
 
-const $nsid = 'com.apsotilbible.annotation.listForChapter'
+const $nsid = 'com.apostilbible.annotation.listForChapter'
 
 type $nsid = typeof $nsid
 

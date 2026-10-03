@@ -134,9 +134,9 @@ describe('current Bluesky profile and graph queries', () => {
     getHappyViewSession.mockResolvedValue({ did });
     fetchAllXrpcRecords.mockResolvedValue([
       {
-        uri: `at://${did}/com.apsotilbible.profile/self`,
+        uri: `at://${did}/com.apostilbible.profile/self`,
         cid: 'bafyreitest',
-        $type: 'com.apsotilbible.profile',
+        $type: 'com.apostilbible.profile',
         handle: 'reader.example',
         displayName: 'Reader',
         createdAt,
@@ -172,9 +172,9 @@ describe('current Bluesky profile and graph queries', () => {
     getHappyViewSession.mockResolvedValue({ did, fetchHandler });
     fetchAllXrpcRecords.mockResolvedValue([
       {
-        uri: `at://${did}/com.apsotilbible.follow/self`,
+        uri: `at://${did}/com.apostilbible.follow/self`,
         cid: 'bafyreitest',
-        $type: 'com.apsotilbible.follow',
+        $type: 'com.apostilbible.follow',
         subject: followedDid,
         createdAt: '2026-09-30T12:00:00.000Z',
       },

@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "com.apsotilbible.profile.getForDids",
+  "id": "com.apostilbible.profile.getForDids",
   "description": "Gets Apostil profiles for a set of DIDs.",
   "defs": {
     "main": {

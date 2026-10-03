@@ -148,11 +148,11 @@ const lexicons = await Promise.all(
   })),
 );
 const recordOrder = new Map([
-  ['com.apsotilbible.commentary', 0],
-  ['com.apsotilbible.annotation', 1],
-  ['com.apsotilbible.profile', 2],
-  ['com.apsotilbible.follow', 3],
-  ['com.apsotilbible.highlight', 4],
+  ['com.apostilbible.commentary', 0],
+  ['com.apostilbible.annotation', 1],
+  ['com.apostilbible.profile', 2],
+  ['com.apostilbible.follow', 3],
+  ['com.apostilbible.highlight', 4],
 ]);
 const recordLexicons = lexicons
   .filter(({ lexicon }) => lexicon.defs?.main?.type === 'record')
@@ -165,11 +165,11 @@ const queryLexicons = lexicons
   .filter(({ lexicon }) => lexicon.defs?.main?.type !== 'record')
   .sort((left, right) => left.lexicon.id.localeCompare(right.lexicon.id));
 const queryTargets = new Map([
-  ['com.apsotilbible.annotation.listForChapter', 'com.apsotilbible.annotation'],
-  ['com.apsotilbible.follow.list', 'com.apsotilbible.follow'],
-  ['com.apsotilbible.highlight.listForChapter', 'com.apsotilbible.highlight'],
-  ['com.apsotilbible.profile.getForDids', 'com.apsotilbible.profile'],
-  ['com.apsotilbible.profile.list', 'com.apsotilbible.profile'],
+  ['com.apostilbible.annotation.listForChapter', 'com.apostilbible.annotation'],
+  ['com.apostilbible.follow.list', 'com.apostilbible.follow'],
+  ['com.apostilbible.highlight.listForChapter', 'com.apostilbible.highlight'],
+  ['com.apostilbible.profile.getForDids', 'com.apostilbible.profile'],
+  ['com.apostilbible.profile.list', 'com.apostilbible.profile'],
 ]);
 
 for (const { lexicon } of [...recordLexicons, ...queryLexicons]) {
@@ -185,17 +185,17 @@ for (const { lexicon } of [...recordLexicons, ...queryLexicons]) {
 
 const scripts = [
   {
-    id: 'xrpc.query:com.apsotilbible.annotation.listForChapter',
+    id: 'xrpc.query:com.apostilbible.annotation.listForChapter',
     file: 'list-annotations-for-chapter.lua',
     description: 'Lists chapter annotations from the caller and followed DIDs.',
   },
   {
-    id: 'xrpc.query:com.apsotilbible.highlight.listForChapter',
+    id: 'xrpc.query:com.apostilbible.highlight.listForChapter',
     file: 'list-highlights-for-chapter.lua',
     description: 'Lists chapter highlights for the authenticated caller.',
   },
   {
-    id: 'xrpc.query:com.apsotilbible.profile.getForDids',
+    id: 'xrpc.query:com.apostilbible.profile.getForDids',
     file: 'list-profiles-for-dids.lua',
     description: 'Returns indexed Apostil profiles for multiple DIDs.',
   },

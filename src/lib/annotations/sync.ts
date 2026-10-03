@@ -1,6 +1,6 @@
 import type { DbClient } from '@tanstack/react-db';
 
-import * as Annotation from '#/lexicons/com/apostil/annotation';
+import * as Annotation from '#/lexicons/com/apostilbible/annotation';
 import {
   formatAnnotationVerseRecordId,
   getAnnotationCollections,

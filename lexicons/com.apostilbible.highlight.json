@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "com.apsotilbible.highlight",
+  "id": "com.apostilbible.highlight",
   "description": "Defines a user's color highlight for one verse.",
   "defs": {
     "main": {
@@ -13,7 +13,7 @@
         "properties": {
           "verse": {
             "type": "ref",
-            "ref": "com.apsotilbible.annotation#verseRef"
+            "ref": "com.apostilbible.annotation#verseRef"
           },
           "color": {
             "type": "string",

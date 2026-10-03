@@ -28,9 +28,9 @@ describe('chapter annotation records', () => {
     const did = 'did:plc:abcdefghijklmnopqrstuvwx';
     const createdAt = '2026-09-30T12:00:00.000Z';
     const record = {
-      uri: `at://${did}/com.apsotilbible.annotation/rkey`,
+      uri: `at://${did}/com.apostilbible.annotation/rkey`,
       cid: 'bafyreitest',
-      $type: 'com.apsotilbible.annotation',
+      $type: 'com.apostilbible.annotation',
       verses: [{ id: 'GEN/1:1' }],
       comment: 'A note',
       createdAt,

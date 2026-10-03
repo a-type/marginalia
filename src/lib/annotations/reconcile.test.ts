@@ -64,7 +64,7 @@ describe('reconcileChapterAnnotations', () => {
     ]);
 
     const stale = annotation(
-      'at://did:plc:old/com.apsotilbible.annotation/old',
+      'at://did:plc:old/com.apostilbible.annotation/old',
       'synced',
     );
     const pending = annotation('local:pending', 'pending');
@@ -77,7 +77,7 @@ describe('reconcileChapterAnnotations', () => {
     ]);
 
     const remote = annotation(
-      'at://did:plc:new/com.apsotilbible.annotation/new',
+      'at://did:plc:new/com.apostilbible.annotation/new',
       'synced',
     );
     const remoteVerse = annotationVerse(remote.id, 3);
@@ -113,7 +113,7 @@ describe('reconcileChapterAnnotations', () => {
 
     const otherChapter = {
       ...annotation(
-        'at://did:plc:other/com.apsotilbible.annotation/other',
+        'at://did:plc:other/com.apostilbible.annotation/other',
         'synced',
       ),
       chapter: 2,

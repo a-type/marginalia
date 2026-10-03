@@ -1,5 +1,5 @@
-local annotation_collection = "com.apsotilbible.annotation"
-local follow_collection = "com.apsotilbible.follow"
+local annotation_collection = "com.apostilbible.annotation"
+local follow_collection = "com.apostilbible.follow"
 
 local function query_all(collection, did, filter)
   local records = {}

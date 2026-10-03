@@ -1,4 +1,4 @@
-local highlight_collection = "com.apsotilbible.highlight"
+local highlight_collection = "com.apostilbible.highlight"
 
 local function query_all(did, filter)
   local records = {}

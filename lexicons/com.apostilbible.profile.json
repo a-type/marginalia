@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "com.apsotilbible.profile",
+  "id": "com.apostilbible.profile",
   "description": "Defines a Apostil user's public profile.",
   "defs": {
     "main": {

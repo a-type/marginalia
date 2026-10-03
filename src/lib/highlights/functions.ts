@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import * as Highlight from '#/lexicons/com/apostil/highlight';
-import * as ListHighlightsForChapter from '#/lexicons/com/apostil/highlight/listForChapter';
+import * as Highlight from '#/lexicons/com/apostilbible/highlight';
+import * as ListHighlightsForChapter from '#/lexicons/com/apostilbible/highlight/listForChapter';
 import {
   getAuthenticatedHappyViewClient,
   getHappyViewSession,

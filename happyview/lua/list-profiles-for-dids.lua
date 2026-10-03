@@ -1,4 +1,4 @@
-local profile_collection = "com.apsotilbible.profile"
+local profile_collection = "com.apostilbible.profile"
 
 function handle()
   local dids = {}

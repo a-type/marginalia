@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "com.apsotilbible.annotation",
+  "id": "com.apostilbible.annotation",
   "description": "Defines how users make comments on one or more verses.",
   "defs": {
     "main": {
@@ -13,7 +13,7 @@
         "properties": {
           "commentaryId": {
             "type": "ref",
-            "ref": "com.apsotilbible.commentary",
+            "ref": "com.apostilbible.commentary",
             "description": "References a commentary (a named collection of annotations) if one is associated"
           },
           "verses": {
