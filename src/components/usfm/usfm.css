@@ -3,6 +3,7 @@
   font-family: Georgia, 'Times New Roman', serif;
   font-size: var(--m-fs-md);
   line-height: var(--m-lh-loose);
+  width: 100%;
 }
 
 .usfm-title {
@@ -13,8 +14,9 @@
 }
 
 .usfm-title-secondary {
-  @apply --mx-prose-secondary;
+  @apply --mx-prose-ambient;
   @apply --mx-fg-lighter(3);
+  margin-bottom: var(--m-sp-xs);
 }
 
 .usfm-chapter + .usfm-chapter {

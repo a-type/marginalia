@@ -17,6 +17,9 @@
   "extra_happy_hare_blink": "Bluesky, Blacksky, Eurosky, etc.",
   "bible_book_label": "Book",
   "bible_chapter_label": "Chapter",
+  "bible_chapter_navigation": "Chapter navigation",
+  "bible_previous_chapter": "Previous chapter",
+  "bible_next_chapter": "Next chapter",
   "bible_loading": "Loading chapter…",
   "bible_load_error": "Unable to load this book.",
   "bible_chapter_unavailable": "This chapter is not available in this translation.",
@@ -50,5 +53,6 @@
   "social_lookup_submit": "Find account",
   "social_suggestions_title": "From Bluesky",
   "social_follow": "Follow",
-  "social_following": "Following"
+  "social_following": "Following",
+  "elegant_watery_oryx_radiate": "Settings"
 }

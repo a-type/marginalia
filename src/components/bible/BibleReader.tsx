@@ -1,4 +1,4 @@
-import { Box, ColorModeToggle } from '@a-type/ui';
+import { Box } from '@a-type/ui';
 import { useDbClient } from '@tanstack/react-db';
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
@@ -21,7 +21,6 @@ import { chapterHighlightsQueryOptions } from '#/queries/highlights';
 import { currentUserDidQueryOptions } from '#/queries/user';
 import { AnnotatedBibleChapter } from './AnnotatedBibleChapter';
 import cls from './BibleReader.module.css';
-import { BibleReaderLocation } from './BibleReaderLocation';
 
 const readerRoute = getRouteApi('/$translation/$book/$chapter');
 const emptyChapterAnnotations: ChapterAnnotationSnapshot = {
@@ -76,21 +75,16 @@ export function BibleReader() {
       </Box>
       <Box className={cls.menubar} items="center">
         <UserMenu />
-        <ColorModeToggle />
       </Box>
-      <BibleReaderLocation
-        bookId={location.bookId}
-        chapter={location.chapter}
-        manifest={manifest}
-        translationId={translationId}
-        className={cls.location}
-      />
       <AnnotatedBibleChapter
         key={`${location.bookId}/${location.chapter}`}
+        className={cls.content}
         accountDid={accountDid}
         annotations={annotations}
         location={location}
+        manifest={manifest}
         source={source}
+        translationId={translationId}
       />
     </main>
   );

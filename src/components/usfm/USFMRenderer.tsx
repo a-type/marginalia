@@ -2,6 +2,7 @@ import { Fragment, useMemo } from 'react';
 
 import { defaultUSFMComponents } from './default-components';
 import { parseUSFM } from './parser';
+import { selectChapter } from './select-chapter';
 import './usfm.css';
 
 import type {
@@ -17,23 +18,6 @@ export interface USFMRendererProps {
   chapter?: number;
   components?: USFMComponents;
   className?: string;
-}
-
-function selectChapter(
-  document: USFMDocument,
-  chapter: number | undefined,
-): USFMDocument {
-  if (chapter === undefined) return document;
-
-  return {
-    ...document,
-    children: document.children.filter(
-      (node) =>
-        node.type !== 'marker' ||
-        node.category !== 'chapter' ||
-        Number(node.argument) === chapter,
-    ),
-  };
 }
 
 function RenderMarker({

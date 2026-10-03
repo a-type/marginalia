@@ -55,7 +55,7 @@ export function SocialSidebar({ accountDid }: SocialSidebarProps) {
   if (!accountDid) return null;
 
   return (
-    <Box className={cls.root} gap>
+    <Box className={cls.root} col gap>
       <Heading render={<h2 />} emphasis="secondary">
         {m.social_people_title()}
       </Heading>
