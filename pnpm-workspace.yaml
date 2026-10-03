@@ -6,3 +6,12 @@ allowBuilds:
   lightningcss: true
 minimumReleaseAgeExclude:
   - '@a-type/ui'
+  - '@arbor-css/core@0.0.149'
+  - '@arbor-css/css-eval@0.0.149'
+  - '@arbor-css/functions@0.0.149'
+  - '@arbor-css/globals@0.0.149'
+  - '@arbor-css/modes@0.0.149'
+  - '@arbor-css/postcss@0.0.149'
+  - '@arbor-css/preset@0.0.149'
+  - '@arbor-css/tokens@0.0.149'
+  - '@arbor-css/util@0.0.149'

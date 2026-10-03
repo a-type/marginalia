@@ -21,9 +21,9 @@
     "free-ports": "pnpx kill-port 7654"
   },
   "dependencies": {
-    "@a-type/ui": "^6.1.52",
-    "@arbor-css/core": "^0.0.147",
-    "@arbor-css/postcss": "^0.0.147",
+    "@a-type/ui": "^6.1.54",
+    "@arbor-css/core": "^0.0.149",
+    "@arbor-css/postcss": "^0.0.149",
     "@atproto/common-web": "^0.5.10",
     "@atproto/lex": "^0.3.8",
     "@atproto/syntax": "^0.7.5",
