@@ -1,4 +1,4 @@
-import * as Annotation from '#/lexicons/com/marginalia/annotation';
+import * as Annotation from '#/lexicons/com/apostil/annotation';
 import { getCurrentUserDid } from '#/lib/auth/functions';
 import type { VerseId } from '#/lib/bible/verse';
 import { parseVerseId } from '#/lib/bible/verse';

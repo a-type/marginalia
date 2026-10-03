@@ -1,0 +1,10 @@
+{
+  "lexicon": 1,
+  "id": "com.apsotilbible.profile.getForDids",
+  "description": "Gets Apostil profiles for a set of DIDs.",
+  "defs": {
+    "main": {
+      "type": "query"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "lexicon": 1,
+  "id": "com.apsotilbible.annotation.listForChapter",
+  "description": "Lists annotations on a Bible chapter from followed Apostil accounts.",
+  "defs": {
+    "main": {
+      "type": "query"
+    }
+  }
+}

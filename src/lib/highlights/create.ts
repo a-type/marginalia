@@ -1,4 +1,4 @@
-import * as Highlight from '#/lexicons/com/marginalia/highlight';
+import * as Highlight from '#/lexicons/com/apostil/highlight';
 import { getCurrentUserDid } from '#/lib/auth/functions';
 import type { DbClient } from '@tanstack/react-db';
 

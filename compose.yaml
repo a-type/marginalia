@@ -1,7 +1,7 @@
-name: marginalia
+name: apostil
 
 x-app-image: &app-image
-  image: marginalia-app
+  image: apostil-app
   build:
     context: .
     args:
@@ -16,7 +16,7 @@ services:
       NODE_ENV: production
       PORT: 3000
     expose:
-      - '3000'
+      - "3000"
     restart: unless-stopped
 
   happyview:
@@ -31,7 +31,7 @@ services:
       SESSION_SECRET: ${HAPPYVIEW_SESSION_SECRET:?Set HAPPYVIEW_SESSION_SECRET in .env}
       TOKEN_ENCRYPTION_KEY: ${HAPPYVIEW_TOKEN_ENCRYPTION_KEY:?Set HAPPYVIEW_TOKEN_ENCRYPTION_KEY in .env}
     ports:
-      - '127.0.0.1:3001:3000'
+      - "127.0.0.1:3001:3000"
     volumes:
       - happyview-data:/data
     restart: unless-stopped
@@ -44,9 +44,9 @@ services:
       HAPPYVIEW_BASE_PATH: /api
       HAPPYVIEW_PRIVATE_DOMAIN: happyview
     ports:
-      - '80:80'
-      - '443:443'
-      - '443:443/udp'
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

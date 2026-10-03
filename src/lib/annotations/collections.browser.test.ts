@@ -8,8 +8,8 @@ const clients: DbClient[] = [];
 
 afterEach(async () => {
   await Promise.all(clients.splice(0).map((client) => client.cleanup()));
-  localStorage.removeItem('marginalia.annotations.v2');
-  localStorage.removeItem('marginalia.annotation-verses.v2');
+  localStorage.removeItem('apostil.annotations.v2');
+  localStorage.removeItem('apostil.annotation-verses.v2');
 });
 
 describe('annotation collections', () => {

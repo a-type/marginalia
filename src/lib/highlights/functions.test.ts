@@ -28,9 +28,9 @@ describe('chapter highlight records', () => {
     const did = 'did:plc:abcdefghijklmnopqrstuvwx';
     const createdAt = '2026-09-30T12:00:00.000Z';
     const record = {
-      uri: `at://${did}/com.marginalia.highlight/rkey`,
+      uri: `at://${did}/com.apsotilbible.highlight/rkey`,
       cid: 'bafyreitest',
-      $type: 'com.marginalia.highlight',
+      $type: 'com.apsotilbible.highlight',
       verse: { id: 'GEN/1:1' },
       color: 'lemon',
       createdAt,

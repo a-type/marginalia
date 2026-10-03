@@ -13,8 +13,8 @@ export default defineRailway(() => {
   const publicDomain = new URL(publicUrl).hostname;
   const happyviewData = volume('happyview-data', { sizeMB: 1024 });
 
-  const marginalia = service('marginalia', {
-    source: github('a-type/marginalia', { checkSuites: false }),
+  const apostil = service('apostil', {
+    source: github('a-type/apostil', { checkSuites: false }),
     replicas: { sfo: 1 },
     env: {
       APP_URL: publicUrl,
@@ -36,7 +36,7 @@ export default defineRailway(() => {
       DATABASE_URL: 'sqlite:///data/happyview.sqlite?mode=rwc',
       HOST: '0.0.0.0',
       PORT: '3000',
-      PUBLIC_URL: marginalia.env.APP_URL,
+      PUBLIC_URL: apostil.env.APP_URL,
       RUST_LOG: 'happyview=info,tower_http=info',
       SESSION_SECRET: preserve(),
       TOKEN_ENCRYPTION_KEY: preserve(),
@@ -44,7 +44,7 @@ export default defineRailway(() => {
   });
 
   const caddy = service('caddy', {
-    source: github('a-type/marginalia', { checkSuites: false }),
+    source: github('a-type/apostil', { checkSuites: false }),
     build: {
       builder: 'DOCKERFILE',
       dockerfilePath: 'Caddy.Dockerfile',
@@ -52,7 +52,7 @@ export default defineRailway(() => {
     replicas: { sfo: 1 },
     domains: [{ domain: publicDomain, port: 80 }],
     env: {
-      APP_PRIVATE_DOMAIN: marginalia.env.RAILWAY_PRIVATE_DOMAIN,
+      APP_PRIVATE_DOMAIN: apostil.env.RAILWAY_PRIVATE_DOMAIN,
       CADDY_SITE_ADDRESS: ':80',
       HAPPYVIEW_BASE_PATH: happyview.env.BASE_PATH,
       HAPPYVIEW_PRIVATE_DOMAIN: happyview.env.RAILWAY_PRIVATE_DOMAIN,
@@ -60,6 +60,6 @@ export default defineRailway(() => {
   });
 
   return project('miraculous-connection', {
-    resources: [marginalia, happyview, caddy, happyviewData],
+    resources: [apostil, happyview, caddy, happyviewData],
   });
 });

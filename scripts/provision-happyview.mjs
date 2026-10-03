@@ -82,7 +82,7 @@ async function configureXrpcProxy() {
       nsids.some((pattern) => matchesNsidPattern(pattern, putRecordNsid)))
   ) {
     throw new Error(
-      `HappyView's XRPC proxy policy blocks ${putRecordNsid}, which Marginalia needs to write records`,
+      `HappyView's XRPC proxy policy blocks ${putRecordNsid}, which Apostil needs to write records`,
     );
   }
 
@@ -148,11 +148,11 @@ const lexicons = await Promise.all(
   })),
 );
 const recordOrder = new Map([
-  ['com.marginalia.commentary', 0],
-  ['com.marginalia.annotation', 1],
-  ['com.marginalia.profile', 2],
-  ['com.marginalia.follow', 3],
-  ['com.marginalia.highlight', 4],
+  ['com.apsotilbible.commentary', 0],
+  ['com.apsotilbible.annotation', 1],
+  ['com.apsotilbible.profile', 2],
+  ['com.apsotilbible.follow', 3],
+  ['com.apsotilbible.highlight', 4],
 ]);
 const recordLexicons = lexicons
   .filter(({ lexicon }) => lexicon.defs?.main?.type === 'record')
@@ -165,11 +165,11 @@ const queryLexicons = lexicons
   .filter(({ lexicon }) => lexicon.defs?.main?.type !== 'record')
   .sort((left, right) => left.lexicon.id.localeCompare(right.lexicon.id));
 const queryTargets = new Map([
-  ['com.marginalia.annotation.listForChapter', 'com.marginalia.annotation'],
-  ['com.marginalia.follow.list', 'com.marginalia.follow'],
-  ['com.marginalia.highlight.listForChapter', 'com.marginalia.highlight'],
-  ['com.marginalia.profile.getForDids', 'com.marginalia.profile'],
-  ['com.marginalia.profile.list', 'com.marginalia.profile'],
+  ['com.apsotilbible.annotation.listForChapter', 'com.apsotilbible.annotation'],
+  ['com.apsotilbible.follow.list', 'com.apsotilbible.follow'],
+  ['com.apsotilbible.highlight.listForChapter', 'com.apsotilbible.highlight'],
+  ['com.apsotilbible.profile.getForDids', 'com.apsotilbible.profile'],
+  ['com.apsotilbible.profile.list', 'com.apsotilbible.profile'],
 ]);
 
 for (const { lexicon } of [...recordLexicons, ...queryLexicons]) {
@@ -185,19 +185,19 @@ for (const { lexicon } of [...recordLexicons, ...queryLexicons]) {
 
 const scripts = [
   {
-    id: 'xrpc.query:com.marginalia.annotation.listForChapter',
+    id: 'xrpc.query:com.apsotilbible.annotation.listForChapter',
     file: 'list-annotations-for-chapter.lua',
     description: 'Lists chapter annotations from the caller and followed DIDs.',
   },
   {
-    id: 'xrpc.query:com.marginalia.highlight.listForChapter',
+    id: 'xrpc.query:com.apsotilbible.highlight.listForChapter',
     file: 'list-highlights-for-chapter.lua',
     description: 'Lists chapter highlights for the authenticated caller.',
   },
   {
-    id: 'xrpc.query:com.marginalia.profile.getForDids',
+    id: 'xrpc.query:com.apsotilbible.profile.getForDids',
     file: 'list-profiles-for-dids.lua',
-    description: 'Returns indexed Marginalia profiles for multiple DIDs.',
+    description: 'Returns indexed Apostil profiles for multiple DIDs.',
   },
 ];
 

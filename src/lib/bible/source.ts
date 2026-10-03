@@ -5,7 +5,7 @@ import type { BookId } from '#/lib/bible/verse';
 import { isBookId } from '#/lib/bible/verse';
 
 export const defaultTranslationId = 'web';
-const TRANSLATION_STORAGE_KEY = 'marginalia:translation';
+const TRANSLATION_STORAGE_KEY = 'apostil:translation';
 
 const getResourceOrigin = createIsomorphicFn()
   .client(() => window.location.origin)

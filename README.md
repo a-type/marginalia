@@ -1,6 +1,6 @@
-# Marginalia
+# Apostil
 
-Marginalia is a Bible reader with decentralized social commentary. Bible text is
+Apostil is a Bible reader with decentralized social commentary. Bible text is
 loaded from USFM, and annotations, highlights, profiles, and follows are stored
 as ATProto records.
 
@@ -71,8 +71,8 @@ Set `APP_URL` to the app's exact public HTTPS origin and `APP_DOMAIN` to its
 hostname, for example:
 
 ```dotenv
-APP_URL=https://marginalia.example.com
-APP_DOMAIN=marginalia.example.com
+APP_URL=https://apostil.example.com
+APP_DOMAIN=apostil.example.com
 ```
 
 Set the HappyView secrets in `.env`. The public client key can be added after
@@ -83,7 +83,7 @@ docker compose up --build -d
 ```
 
 Sign in to the HappyView dashboard at
-`https://marginalia.example.com/api`, create an admin API key with
+`https://apostil.example.com/api`, create an admin API key with
 `settings:manage`, `scripts:manage`, and `backfill:create`, and set it as
 `HAPPYVIEW_ADMIN_KEY` in `.env`. Provision the backend:
 
@@ -92,9 +92,9 @@ docker compose --profile setup run --rm --build happyview-provision
 ```
 
 Create a **public** HappyView API client whose client ID URL is
-`https://marginalia.example.com/oauth-client-metadata.json`, client URI and
-allowed origin are `https://marginalia.example.com`, and redirect URI is
-`https://marginalia.example.com/oauth/callback`. Set the resulting `hvc_` key
+`https://apostil.example.com/oauth-client-metadata.json`, client URI and
+allowed origin are `https://apostil.example.com`, and redirect URI is
+`https://apostil.example.com/oauth/callback`. Set the resulting `hvc_` key
 as `VITE_HAPPYVIEW_CLIENT_KEY` in `.env`, then rebuild and restart the app:
 
 ```sh
@@ -117,14 +117,14 @@ requests to the other services over Railway's private network. HappyView's
 reference variables so they stay aligned with the source service settings.
 
 Set `SESSION_SECRET` and `TOKEN_ENCRYPTION_KEY` on the Railway `happyview`
-service before deploying. Set `VITE_HAPPYVIEW_CLIENT_KEY` on `marginalia` after
+service before deploying. Set `VITE_HAPPYVIEW_CLIENT_KEY` on `apostil` after
 creating the public HappyView API client; this key is included in the browser
 build and is intentionally public. The IaC config preserves these values when
 planning subsequent changes.
 
 ## Backend architecture
 
-- `lexicons/` is the source of truth for Marginalia ATProto records and XRPC
+- `lexicons/` is the source of truth for Apostil ATProto records and XRPC
   query methods. Run `pnpm lexicons` to regenerate `src/lexicons/`.
 - `happyview/lua/` contains custom HappyView query scripts for chapter records
   and batched profile lookup. `scripts/provision-happyview.mjs` uploads these

@@ -28,9 +28,9 @@ describe('chapter annotation records', () => {
     const did = 'did:plc:abcdefghijklmnopqrstuvwx';
     const createdAt = '2026-09-30T12:00:00.000Z';
     const record = {
-      uri: `at://${did}/com.marginalia.annotation/rkey`,
+      uri: `at://${did}/com.apsotilbible.annotation/rkey`,
       cid: 'bafyreitest',
-      $type: 'com.marginalia.annotation',
+      $type: 'com.apsotilbible.annotation',
       verses: [{ id: 'GEN/1:1' }],
       comment: 'A note',
       createdAt,

@@ -1,13 +1,14 @@
 import { TID } from '@atproto/common-web';
 import { z } from 'zod';
 
-import * as Annotation from '#/lexicons/com/marginalia/annotation';
-import * as ListAnnotationsForChapter from '#/lexicons/com/marginalia/annotation/listForChapter';
+import * as Annotation from '#/lexicons/com/apostil/annotation';
+import * as ListAnnotationsForChapter from '#/lexicons/com/apostil/annotation/listForChapter';
 import {
   getAuthenticatedHappyViewClient,
   getHappyViewSession,
 } from '#/lib/atproto/client';
 import { fetchXrpcRecordPage, parseAtRecordUri } from '#/lib/atproto/xrpc';
+import type { VerseId } from '#/lib/bible/verse';
 import { isBookId, isValidVerseId, parseVerseId } from '#/lib/bible/verse';
 import { logger } from '#/logger';
 import type {
@@ -16,7 +17,6 @@ import type {
   ChapterAnnotationSnapshot,
 } from './collections';
 import { formatAnnotationVerseRecordId } from './collections';
-import type { VerseId } from '#/lib/bible/verse';
 
 const uploadAnnotationSchema = z.object({
   rkey: z.string().refine(TID.is, 'Invalid annotation key'),

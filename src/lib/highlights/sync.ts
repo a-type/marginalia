@@ -1,6 +1,6 @@
 import type { DbClient } from '@tanstack/react-db';
 
-import * as Highlight from '#/lexicons/com/marginalia/highlight';
+import * as Highlight from '#/lexicons/com/apostil/highlight';
 import { formatHighlightRkey, getHighlightCollections } from './collections';
 import { uploadHighlight } from './functions';
 

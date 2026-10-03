@@ -68,7 +68,7 @@ describe('current Bluesky profile and graph queries', () => {
     );
   });
 
-  it('seeds profile setup from HappyView when no Marginalia profile exists', async () => {
+  it('seeds profile setup from HappyView when no Apostil profile exists', async () => {
     const did = 'did:plc:abcdefghijklmnopqrstuvwx';
     const fetchHandler = vi.fn(
       async () =>
@@ -134,9 +134,9 @@ describe('current Bluesky profile and graph queries', () => {
     getHappyViewSession.mockResolvedValue({ did });
     fetchAllXrpcRecords.mockResolvedValue([
       {
-        uri: `at://${did}/com.marginalia.profile/self`,
+        uri: `at://${did}/com.apsotilbible.profile/self`,
         cid: 'bafyreitest',
-        $type: 'com.marginalia.profile',
+        $type: 'com.apsotilbible.profile',
         handle: 'reader.example',
         displayName: 'Reader',
         createdAt,
@@ -172,9 +172,9 @@ describe('current Bluesky profile and graph queries', () => {
     getHappyViewSession.mockResolvedValue({ did, fetchHandler });
     fetchAllXrpcRecords.mockResolvedValue([
       {
-        uri: `at://${did}/com.marginalia.follow/self`,
+        uri: `at://${did}/com.apsotilbible.follow/self`,
         cid: 'bafyreitest',
-        $type: 'com.marginalia.follow',
+        $type: 'com.apsotilbible.follow',
         subject: followedDid,
         createdAt: '2026-09-30T12:00:00.000Z',
       },

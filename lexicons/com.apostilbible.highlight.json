@@ -1,0 +1,31 @@
+{
+  "lexicon": 1,
+  "id": "com.apsotilbible.highlight",
+  "description": "Defines a user's color highlight for one verse.",
+  "defs": {
+    "main": {
+      "key": "any",
+      "type": "record",
+      "description": "A color highlight on exactly one verse. Clients use a canonical verse-derived record key, so a repository has one highlight per verse.",
+      "record": {
+        "type": "object",
+        "required": ["verse", "color", "createdAt"],
+        "properties": {
+          "verse": {
+            "type": "ref",
+            "ref": "com.apsotilbible.annotation#verseRef"
+          },
+          "color": {
+            "type": "string",
+            "description": "The highlight color."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "Client-side creation time"
+          }
+        }
+      }
+    }
+  }
+}

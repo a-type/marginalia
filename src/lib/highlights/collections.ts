@@ -33,7 +33,7 @@ export interface ChapterHighlightSnapshot {
 export const highlightCollectionOptions = collectionOptions(
   localStorageCollectionOptions<HighlightRecord>({
     id: 'highlights-v1',
-    storageKey: 'marginalia.highlights.v1',
+    storageKey: 'apostil.highlights.v1',
     getKey: (highlight) => highlight.id,
     defaultIndexType: BasicIndex,
     autoIndex: 'eager',

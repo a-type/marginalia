@@ -22,7 +22,8 @@ vi.mock('./client-metadata', () => ({
     client_id: 'http://localhost/',
     redirect_uris: ['http://127.0.0.1:7654/oauth/callback'],
   }),
-  oauthScope: 'atproto transition:generic',
+  oauthScope:
+    'atproto repo?collection=com.apsotilbible.annotation&collection=com.apsotilbible.highlight&collection=com.apsotilbible.profile&collection=com.apsotilbible.follow&action=create&action=update rpc?lxm=com.apsotilbible.annotation.listForChapter&lxm=com.apsotilbible.highlight.listForChapter&lxm=com.apsotilbible.profile.list&lxm=com.apsotilbible.profile.getForDids&lxm=com.apsotilbible.follow.list&lxm=app.bsky.actor.getProfile&aud=*',
 }));
 
 describe('HappyView OAuth callback initialization', () => {

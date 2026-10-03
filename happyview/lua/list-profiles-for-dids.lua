@@ -1,4 +1,4 @@
-local profile_collection = "com.marginalia.profile"
+local profile_collection = "com.apsotilbible.profile"
 
 function handle()
   local dids = {}

@@ -41,7 +41,7 @@ export interface ChapterAnnotationSnapshot {
 export const annotationCollectionOptions = collectionOptions(
   localStorageCollectionOptions<AnnotationRecord>({
     id: 'annotations-v2',
-    storageKey: 'marginalia.annotations.v2',
+    storageKey: 'apostil.annotations.v2',
     getKey: (annotation) => annotation.id,
   }),
 );
@@ -49,7 +49,7 @@ export const annotationCollectionOptions = collectionOptions(
 export const annotationVerseCollectionOptions = collectionOptions(
   localStorageCollectionOptions<AnnotationVerseRecord>({
     id: 'annotation-verses-v2',
-    storageKey: 'marginalia.annotation-verses.v2',
+    storageKey: 'apostil.annotation-verses.v2',
     getKey: (annotationVerse) => annotationVerse.id,
     defaultIndexType: BasicIndex,
     autoIndex: 'eager',

@@ -1,14 +1,14 @@
 import { DbClient } from '@tanstack/react-db';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import {
-  formatAnnotationVerseRecordId,
-  getAnnotationCollections,
-} from './collections';
 import type {
   AnnotationRecord,
   AnnotationVerseRecord,
   ChapterAnnotationSnapshot,
+} from './collections';
+import {
+  formatAnnotationVerseRecordId,
+  getAnnotationCollections,
 } from './collections';
 import { reconcileChapterAnnotations } from './reconcile';
 
@@ -64,7 +64,7 @@ describe('reconcileChapterAnnotations', () => {
     ]);
 
     const stale = annotation(
-      'at://did:plc:old/com.marginalia.annotation/old',
+      'at://did:plc:old/com.apsotilbible.annotation/old',
       'synced',
     );
     const pending = annotation('local:pending', 'pending');
@@ -77,7 +77,7 @@ describe('reconcileChapterAnnotations', () => {
     ]);
 
     const remote = annotation(
-      'at://did:plc:new/com.marginalia.annotation/new',
+      'at://did:plc:new/com.apsotilbible.annotation/new',
       'synced',
     );
     const remoteVerse = annotationVerse(remote.id, 3);
@@ -113,7 +113,7 @@ describe('reconcileChapterAnnotations', () => {
 
     const otherChapter = {
       ...annotation(
-        'at://did:plc:other/com.marginalia.annotation/other',
+        'at://did:plc:other/com.apsotilbible.annotation/other',
         'synced',
       ),
       chapter: 2,

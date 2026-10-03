@@ -1,6 +1,10 @@
 import { AppError } from '#/lib/error';
 
-export const oauthScope = 'atproto transition:generic';
+export const oauthScope = [
+  'atproto',
+  'repo?collection=com.apostilbible.annotation&collection=com.apostilbible.highlight&collection=com.apostilbible.profile&collection=com.apostilbible.follow&action=create&action=update',
+  'rpc?lxm=com.apostilbible.annotation.listForChapter&lxm=com.apostilbible.highlight.listForChapter&lxm=com.apostilbible.profile.list&lxm=com.apostilbible.profile.getForDids&lxm=com.apostilbible.follow.list&lxm=app.bsky.actor.getProfile&aud=*',
+].join(' ');
 
 export function getOAuthClientMetadata(appUrl: string) {
   let url: URL;
@@ -39,7 +43,7 @@ export function getOAuthClientMetadata(appUrl: string) {
   localClientId.searchParams.set('scope', oauthScope);
 
   return {
-    client_name: 'Marginalia',
+    client_name: 'Apostil',
     client_uri: origin,
     client_id: isLocal
       ? localClientId.href

@@ -25,7 +25,7 @@ function getHappyViewProxyPath(url: string | undefined) {
 
 function happyViewProxyPlugin(target: string) {
   return {
-    name: 'marginalia-happyview-proxy',
+    name: 'apostil-happyview-proxy',
     enforce: 'pre' as const,
     configureServer(server: ViteDevServer) {
       // Preserve the public Host header used to sign HappyView's DPoP htu.
@@ -86,8 +86,10 @@ const config = defineConfig(({ mode }) => {
     ssr: { noExternal: ['@a-type/ui'] },
     plugins: [
       // TanStack Start's SSR middleware runs before Vite's built-in proxy.
-      happyViewProxyPlugin(happyViewUpstream),
-      devtools(),
+      mode === 'development'
+        ? happyViewProxyPlugin(happyViewUpstream)
+        : undefined,
+      mode === 'development' ? devtools() : undefined,
       paraglideVitePlugin({
         project: './project.inlang',
         outdir: './src/paraglide',
