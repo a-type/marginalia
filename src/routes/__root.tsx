@@ -41,7 +41,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'USFM Reader · 1 John',
+        title: 'Apostil Bible',
       },
     ],
     links: [
