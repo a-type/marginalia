@@ -4,6 +4,7 @@ import {
   getCurrentBlueskyProfile,
   getCurrentProfile,
   getProfileSetup,
+  listFollowedProfiles,
   listFollowSuggestions,
   searchBlueskyActors,
   type SearchBlueskyActorsInput,
@@ -18,6 +19,11 @@ export const profileSetupQueryOptions = () =>
 export const followSuggestionsQueryOptions = queryOptions({
   queryKey: ['social', 'follow-suggestions'],
   queryFn: listFollowSuggestions,
+});
+
+export const followedProfilesQueryOptions = queryOptions({
+  queryKey: ['social', 'followed-profiles'],
+  queryFn: listFollowedProfiles,
 });
 
 export const currentProfileQueryOptions = queryOptions({

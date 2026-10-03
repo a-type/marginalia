@@ -420,6 +420,15 @@ export async function listFollowSuggestions() {
   return getProfilesByDids(session, candidateDids);
 }
 
+export async function listFollowedProfiles() {
+  const session = await getHappyViewSession();
+  if (!session) return [];
+
+  const followedDids = await getFollowedDids(session, session.did);
+  if (followedDids.size === 0) return [];
+  return getProfilesByDids(session, [...followedDids]);
+}
+
 export async function getCurrentProfile() {
   const session = await getHappyViewSession();
   if (!session) return null;

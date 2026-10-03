@@ -12,6 +12,7 @@ import { followProfile, saveProfile } from '#/lib/social/functions';
 import { m } from '#/paraglide/messages';
 import {
   currentProfileQueryOptions,
+  followedProfilesQueryOptions,
   followSuggestionsQueryOptions,
   profileSetupQueryOptions,
 } from '#/queries/social';
@@ -40,12 +41,15 @@ export function ProfileDialog({ open, setOpen }: ProfileDialogProps) {
   });
   const follow = useMutation({
     mutationFn: (subject: string) => followProfile({ data: { subject } }),
-    onSuccess: (_, subject) => {
-      queryClient.setQueryData(
-        followSuggestionsQueryOptions.queryKey,
-        (suggestions) =>
-          suggestions?.filter((suggestion) => suggestion.authorDid !== subject),
-      );
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: followSuggestionsQueryOptions.queryKey,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: followedProfilesQueryOptions.queryKey,
+        }),
+      ]);
     },
   });
   const initialValues = profileSetup.data?.seed ?? null;

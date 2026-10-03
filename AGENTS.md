@@ -65,12 +65,15 @@ Fix typechecking errors before calling something complete.
 
 Prefer clean code to preserving existing structures. Refactoring is good and encouraged. When a refactor is significant, shelve the current work, plan it out, and get user confirmation. Deliver the refactor first, then proceed with planned changes. If refactoring first doesn't make sense, consider doing it after the new changes are working. Otherwise, clearly explain the refactor and its impact when summarizing changes.
 
+Keep component prop dependencies light. If a component can get the same data from context or a query, have it get that data itself. This keeps components encapsulated and easy to move around.
+
 ## Styling
 
 The project uses CSS Modules for styling, with a CSS design system library called Arbor applied to a set of UI components in the `@a-type/ui` library.
 
 - Internal for a component should be placed in a CSS Module file with the same name alongside it.
 - Styles applied externally to other components rendered as children should live in the module file of the parent which is applying them.
+- Import `clsx` from `@a-type/ui` to combine class names
 
 ## Testing
 

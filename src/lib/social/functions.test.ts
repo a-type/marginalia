@@ -195,12 +195,51 @@ describe('current Bluesky profile and graph queries', () => {
 
     const { listFollowSuggestions } = await import('./functions');
 
-    await listFollowSuggestions();
+    await expect(listFollowSuggestions()).resolves.toEqual([]);
 
     expect(fetchXrpcRecordPage).not.toHaveBeenCalled();
     expect(requestedUrls).toEqual([
       `https://public.api.bsky.app/xrpc/app.bsky.graph.getFollows?actor=${encodeURIComponent(did)}&limit=100`,
     ]);
     expect(fetchHandler).not.toHaveBeenCalled();
+  });
+
+  it('lists profiles for persisted follow records', async () => {
+    const did = 'did:plc:abcdefghijklmnopqrstuvwx';
+    const followedDid = 'did:plc:zyxwvutsrqponmlkjihgfedcba';
+    getHappyViewSession.mockResolvedValue({ did });
+    fetchAllXrpcRecords.mockResolvedValue([
+      {
+        uri: `at://${did}/com.apostilbible.follow/self`,
+        $type: 'com.apostilbible.follow',
+        subject: followedDid,
+        createdAt: '2026-09-30T12:00:00.000Z',
+      },
+    ]);
+    fetchXrpcRecordPage.mockResolvedValue({
+      records: [
+        {
+          uri: `at://${followedDid}/com.apostilbible.profile/self`,
+          $type: 'com.apostilbible.profile',
+          handle: 'followed.example',
+          createdAt: '2026-09-30T12:00:00.000Z',
+        },
+      ],
+    });
+    parseAtRecordUri.mockImplementation((uri: string) => ({
+      authorDid: uri.includes(followedDid) ? followedDid : did,
+      rkey: 'self',
+    }));
+
+    const { listFollowedProfiles } = await import('./functions');
+
+    await expect(listFollowedProfiles()).resolves.toMatchObject([
+      { authorDid: followedDid, handle: 'followed.example' },
+    ]);
+    expect(fetchXrpcRecordPage).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.any(String),
+      { dids: followedDid },
+    );
   });
 });

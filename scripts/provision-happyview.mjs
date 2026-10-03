@@ -190,6 +190,11 @@ const scripts = [
     description: 'Lists chapter annotations from the caller and followed DIDs.',
   },
   {
+    id: 'xrpc.query:com.apostilbible.follow.list',
+    file: 'list-follows.lua',
+    description: 'Lists follow records created by the authenticated caller.',
+  },
+  {
     id: 'xrpc.query:com.apostilbible.highlight.listForChapter',
     file: 'list-highlights-for-chapter.lua',
     description: 'Lists chapter highlights for the authenticated caller.',

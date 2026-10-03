@@ -12,6 +12,7 @@ import {
 import { useDebouncedValue } from '@tanstack/react-pacer';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { FollowSuggestions } from '../auth/FollowSuggestions';
 import { FollowButton } from './FollowButton';
 
 export function SearchButton(props: ButtonProps) {
@@ -25,6 +26,7 @@ export function SearchButton(props: ButtonProps) {
       </Dialog.Trigger>
       <Dialog.Content>
         <Dialog.Title>{m.awake_jumpy_racoon_absorb()}</Dialog.Title>
+        <FollowSuggestions />
         <PersonSearch />
       </Dialog.Content>
     </Dialog>
