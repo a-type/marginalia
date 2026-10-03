@@ -89,7 +89,7 @@ const config = defineConfig(({ mode }) => {
       mode === 'development'
         ? happyViewProxyPlugin(happyViewUpstream)
         : undefined,
-      mode === 'development' ? devtools() : undefined,
+      devtools(),
       paraglideVitePlugin({
         project: './project.inlang',
         outdir: './src/paraglide',
