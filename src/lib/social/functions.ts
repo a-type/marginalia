@@ -425,3 +425,43 @@ export async function getCurrentProfile() {
   if (!session) return null;
   return getProfileForDid(session, session.did);
 }
+
+export const searchBlueskyActorsInputSchema = z.object({
+  prefix: z.string(),
+});
+export type SearchBlueskyActorsInput = z.infer<
+  typeof searchBlueskyActorsInputSchema
+>;
+export const searchBlueskyActorsResultSchema = z.object({
+  actors: z.array(
+    z.object({
+      did: z.string(),
+      handle: z.string(),
+      avatar: z.string(),
+      labels: z.array(z.any()),
+    }),
+  ),
+});
+export async function searchBlueskyActors({
+  data,
+}: {
+  data: SearchBlueskyActorsInput;
+}) {
+  const input = searchBlueskyActorsInputSchema.parse(data);
+  const query = new URLSearchParams({ q: input.prefix, limit: '10' });
+
+  const url = new URL(
+    `/xrpc/app.bsky.actor.searchActorsTypeahead?${query.toString()}`,
+    blueskyPublicApi,
+  );
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new AppError(
+      AppError.Code.ExternalServiceError,
+      `Unable to load Bluesky follows (${response.status})`,
+    );
+  }
+
+  const result: unknown = await response.json();
+  return searchBlueskyActorsResultSchema.parse(result);
+}

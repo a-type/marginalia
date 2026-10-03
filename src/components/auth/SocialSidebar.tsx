@@ -15,7 +15,7 @@ import { m } from '#/paraglide/messages';
 import { followSuggestionsQueryOptions } from '#/queries/social';
 import cls from './SocialSidebar.module.css';
 
-interface Person {
+export interface Person {
   authorDid: string;
   handle: string;
   displayName: string | null;

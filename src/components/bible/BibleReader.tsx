@@ -7,7 +7,6 @@ import { useEffect } from 'react';
 import { useResetAnnotationPaneOnRouteChange } from '#/components/annotations/annotationPaneStore';
 import { useChapterAnnotations } from '#/components/annotations/useChapterAnnotations';
 import { useHighlightSync } from '#/components/annotations/useChapterHighlights';
-import { SocialSidebar } from '#/components/auth/SocialSidebar';
 import { UserMenu } from '#/components/auth/UserMenu';
 import type { ChapterAnnotationSnapshot } from '#/lib/annotations/collections';
 import { reconcileChapterAnnotations } from '#/lib/annotations/reconcile';
@@ -19,6 +18,7 @@ import { reconcileChapterHighlights } from '#/lib/highlights/reconcile';
 import { chapterAnnotationsQueryOptions } from '#/queries/annotations';
 import { chapterHighlightsQueryOptions } from '#/queries/highlights';
 import { currentUserDidQueryOptions } from '#/queries/user';
+import { SearchButton } from '../search/SearchButton';
 import { AnnotatedBibleChapter } from './AnnotatedBibleChapter';
 import cls from './BibleReader.module.css';
 
@@ -70,11 +70,10 @@ export function BibleReader() {
 
   return (
     <main className={cls.root}>
-      <Box className={cls.pane} items="center">
-        <SocialSidebar accountDid={accountDid} />
-      </Box>
+      <Box className={cls.pane} items="center"></Box>
       <Box className={cls.menubar} items="center">
         <UserMenu />
+        <SearchButton />
       </Box>
       <AnnotatedBibleChapter
         key={`${location.bookId}/${location.chapter}`}

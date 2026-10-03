@@ -196,6 +196,9 @@ importers:
       '@tanstack/react-devtools':
         specifier: ^0.10.13
         version: 0.10.13(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(csstype@3.2.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(solid-js@1.9.15)
+      '@tanstack/react-pacer':
+        specifier: ^0.24.0
+        version: 0.24.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tanstack/react-query':
         specifier: ^5.104.0
         version: 5.104.0(react@19.2.8)
@@ -1354,6 +1357,10 @@ packages:
     resolution: {integrity: sha512-eQ1MyLKCHyXiH7NbdmB80W77OhiMgGBUb+qDx/8WMGbwg5Lf/NlfD0TfNYAqY77i8V3AxoDoYdICrQE5ADw4Yw==}
     engines: {node: '>=18'}
 
+  '@tanstack/pacer@0.23.0':
+    resolution: {integrity: sha512-sUA+uAebh8qeXNiaoPLsS6pawnX5zknhrWMkXNuqx18AOJeDPo5gzx3VlpABl80BiARleUEQeVpWZjElbmkrdw==}
+    engines: {node: '>=20'}
+
   '@tanstack/query-core@5.104.0':
     resolution: {integrity: sha512-JrC2r/JQlXt7khBSdUpsgxNvybzOg+aITa+ARRMlP2AFo93Y8vIqz077rp+e61mJetSZ0T6AJbwW1JHer1vrPQ==}
 
@@ -1371,6 +1378,13 @@ packages:
     peerDependencies:
       '@types/react': '>=16.8'
       '@types/react-dom': '>=16.8'
+      react: '>=16.8'
+      react-dom: '>=16.8'
+
+  '@tanstack/react-pacer@0.24.0':
+    resolution: {integrity: sha512-9prCIQjDKF8Pk+ytDzAjmi2uvWaY/LlXkNTjkgMZMyA371YGfcajzpkGYg/jlea3IQp7LHwGpwvKFOBxfMAKRw==}
+    engines: {node: '>=20'}
+    peerDependencies:
       react: '>=16.8'
       react-dom: '>=16.8'
 
@@ -4531,6 +4545,11 @@ snapshots:
 
   '@tanstack/pacer-lite@0.2.2': {}
 
+  '@tanstack/pacer@0.23.0':
+    dependencies:
+      '@tanstack/devtools-event-client': 0.5.0
+      '@tanstack/store': 0.11.2
+
   '@tanstack/query-core@5.104.0': {}
 
   '@tanstack/query-devtools@5.104.0(csstype@3.2.3)':
@@ -4569,6 +4588,13 @@ snapshots:
       - csstype
       - solid-js
       - utf-8-validate
+
+  '@tanstack/react-pacer@0.24.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      '@tanstack/pacer': 0.23.0
+      '@tanstack/react-store': 0.11.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
 
   '@tanstack/react-query-devtools@5.104.0(@tanstack/react-query@5.104.0(react@19.2.8))(@types/react@19.2.18)(csstype@3.2.3)(react@19.2.8)':
     dependencies:

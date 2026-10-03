@@ -5,6 +5,8 @@ import {
   getCurrentProfile,
   getProfileSetup,
   listFollowSuggestions,
+  searchBlueskyActors,
+  type SearchBlueskyActorsInput,
 } from '#/lib/social/functions';
 
 export const profileSetupQueryOptions = () =>
@@ -27,4 +29,13 @@ export const currentActorProfileQueryOptions = () =>
   queryOptions({
     queryKey: ['social', 'actor-profile'],
     queryFn: getCurrentBlueskyProfile,
+  });
+
+export const blueskyActorSearchQueryOptions = (
+  input: SearchBlueskyActorsInput,
+) =>
+  queryOptions({
+    queryKey: ['social', 'bluesky-actor-search', input.prefix],
+    queryFn: () => searchBlueskyActors({ data: input }),
+    enabled: input.prefix.length > 3,
   });
