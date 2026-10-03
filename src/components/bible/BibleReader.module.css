@@ -2,7 +2,7 @@
   height: 100dvh;
   @apply --mx-bg(var(--m-gray-wash));
 
-  padding: var(--m-sp-lg);
+  padding: var(--m-sp-sm);
   gap: var(--m-sp-md);
 
   display: grid;
@@ -11,6 +11,7 @@
   grid-template-rows: auto auto auto minmax(0, 1fr) auto;
 
   @media (min-width: 900px) {
+    padding: var(--m-sp-lg);
     grid-template-areas: 'g1 menubar location g2' 'g1 pane content g2' 'g1 pane annotation g2';
     grid-template-columns: 1fr 20rem minmax(300px, 800px) 1fr;
     grid-template-rows: auto minmax(0, 1fr) auto;
