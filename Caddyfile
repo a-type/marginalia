@@ -10,6 +10,12 @@
 		reverse_proxy {$HAPPYVIEW_PRIVATE_DOMAIN}:3000
 	}
 
+	@happyview_did path /.well-known/did.json
+	handle @happyview_did {
+		rewrite * {$HAPPYVIEW_BASE_PATH}{uri}
+		reverse_proxy {$HAPPYVIEW_PRIVATE_DOMAIN}:3000
+	}
+
 	handle {
 		reverse_proxy {$APP_PRIVATE_DOMAIN}:3000
 	}
