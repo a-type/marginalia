@@ -122,6 +122,24 @@ creating the public HappyView API client; this key is included in the browser
 build and is intentionally public. The IaC config preserves these values when
 planning subsequent changes.
 
+## Progressive web app
+
+`vite-plugin-pwa` generates the web app manifest and a Workbox service worker
+during `pnpm build`. The root document links the manifest, install icons, and
+the plugin-generated registration script. Service workers are disabled in
+development; use `pnpm build` followed by `pnpm start` to test installation on
+`http://127.0.0.1:3000` (or use HTTPS in production).
+
+The worker precaches built JavaScript, CSS, fonts, and install icons. HTML
+navigation, OAuth, API requests, and Bible downloads remain network-only; this
+does not yet provide an offline app shell or offline navigation. Updates take
+effect after all app tabs/windows are closed, without forcing a reload while
+someone is writing.
+
+The icons are intentionally blank white squares. Replace `public/icon.svg` and
+run `pnpm pwa-assets` to regenerate the PNG install icons, Apple touch icon, and
+favicon using `@vite-pwa/assets-generator`.
+
 ## Backend architecture
 
 - `lexicons/` is the source of truth for Apostil ATProto records and XRPC

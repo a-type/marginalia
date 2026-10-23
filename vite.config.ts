@@ -4,6 +4,7 @@ import { createProxyServer } from 'http-proxy-3';
 import { ServerResponse } from 'node:http';
 import type { ViteDevServer } from 'vite';
 import { defineConfig, loadEnv } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
 
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 
@@ -99,6 +100,45 @@ const config = defineConfig(({ mode }) => {
       tanstackStart(),
       viteReact(),
       babel({ presets: [reactCompilerPreset()] }),
+      VitePWA({
+        outDir: '.output/public',
+        injectRegister: 'script',
+        includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
+        manifest: {
+          id: '/',
+          name: 'Apostil Bible',
+          short_name: 'Apostil',
+          description: 'A Bible reader with decentralized social commentary.',
+          start_url: '/',
+          scope: '/',
+          display: 'standalone',
+          theme_color: '#ffffff',
+          background_color: '#ffffff',
+          icons: [
+            {
+              src: '/pwa-192x192.png',
+              sizes: '192x192',
+              type: 'image/png',
+            },
+            {
+              src: '/pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+            },
+            {
+              src: '/maskable-icon-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
+            },
+          ],
+        },
+        workbox: {
+          globPatterns: ['assets/**/*.{js,css,woff,woff2}'],
+          // Start renders HTML on the server; there is no static app shell.
+          navigateFallback: null,
+        },
+      }),
     ],
     server: {
       port: 7654,

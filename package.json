@@ -10,6 +10,7 @@
     "generate-routes": "tsr generate",
     "build": "vite build",
     "preview": "vite preview",
+    "pwa-assets": "pwa-assets-generator --preset minimal-2023 public/icon.svg",
     "test": "vitest run",
     "test:browser": "vitest run --project browser",
     "happyview:provision": "dotenv -e .env -- node ./scripts/provision-happyview.mjs",
@@ -54,6 +55,7 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
+    "@vite-pwa/assets-generator": "^2.0.0",
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/browser-playwright": "^4.1.11",
     "babel-plugin-react-compiler": "^1.0.0",
@@ -66,6 +68,7 @@
     "railway": "^3.12.0",
     "typescript": "^6.0.2",
     "vite": "^8.2.2",
+    "vite-plugin-pwa": "^2.0.0",
     "vitest": "^4.1.11"
   },
   "packageManager": "pnpm@12.8.2+sha512.a5941679663d952c5f0ecc38ba98af98b4dc01b95780354f6894f2f873973cef2f7e2989d7db3ee5393938ae21f62fe06bcdf685d475ddad829a62095d2b8b11"

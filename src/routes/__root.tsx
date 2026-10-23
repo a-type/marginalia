@@ -43,8 +43,26 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       {
         title: 'Apostil Bible',
       },
+      {
+        name: 'theme-color',
+        content: '#ffffff',
+      },
     ],
     links: [
+      {
+        rel: 'manifest',
+        href: '/manifest.webmanifest',
+      },
+      {
+        rel: 'icon',
+        href: '/favicon.ico',
+        sizes: '48x48',
+      },
+      {
+        rel: 'apple-touch-icon',
+        href: '/apple-touch-icon-180x180.png',
+        sizes: '180x180',
+      },
       {
         rel: 'stylesheet',
         href: appCss,
@@ -54,6 +72,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         href: uiCss,
       },
     ],
+    scripts: import.meta.env.PROD
+      ? [{ src: '/registerSW.js', defer: true }]
+      : [],
   }),
   shellComponent: RootDocument,
 });
