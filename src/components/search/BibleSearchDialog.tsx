@@ -55,61 +55,32 @@ function BibleSearch({
   initialTranslation: string;
   onSelect: () => void;
 }) {
-  const [translationId, setTranslationId] = useState(initialTranslation);
-  const [bookId, setBookId] = useState('all');
-  const [rawQuery, setRawQuery] = useState('');
-  const [query] = useDebouncedValue(rawQuery, { wait: 300 });
-  const [page, setPage] = useState(0);
-  const translations = useQuery(translationsQueryOptions);
-  const record = translations.data?.find(
-    (translation) => translation.id === translationId,
-  );
-  const ready =
-    record?.sourceStatus === 'ready' && record.searchStatus === 'ready';
-  const results = useQuery({
-    ...bibleSearchQueryOptions(
-      translationId,
-      query,
-      page,
-      bookId === 'all' ? undefined : bookId,
-    ),
-    enabled: ready && Boolean(query.trim()) && rawQuery === query,
-  });
-  const download = useMutation({
-    networkMode: 'always',
-    mutationFn: () => downloadTranslation(translationId),
-  });
-  const navigate = useNavigate();
-  const select = useMutation({
-    networkMode: 'always',
-    mutationFn: async (id: Parameters<typeof parseVerseId>[0]) => {
-      const verse = parseVerseId(id);
-      await navigate({
-        to: '/$translation/$book/$chapter',
-        params: {
-          translation: translationId,
-          book: verse.bookId,
-          chapter: String(verse.chapter),
-        },
-        search: { verses: String(verse.verse) },
-      });
-      onSelect();
-    },
-  });
-  const shown =
-    ready && rawQuery === query && !results.isFetching
-      ? results.data
-      : undefined;
+  const {
+    translationId,
+    bookId,
+    rawQuery,
+    query,
+    page,
+    translations,
+    record,
+    ready,
+    results,
+    download,
+    select,
+    shown,
+    onTranslationChange,
+    onQueryChange,
+    onBookChange,
+    onSelectVerse,
+    previousPage,
+    nextPage,
+  } = useBibleSearch(initialTranslation, onSelect);
   return (
     <div className={cls.root}>
       <TranslationSelect
         value={translationId}
         installedOnly
-        onValueChange={(id) => {
-          setTranslationId(id);
-          setBookId('all');
-          setPage(0);
-        }}
+        onValueChange={onTranslationChange}
       />
       <Input
         autoFocus
@@ -117,24 +88,14 @@ function BibleSearch({
         placeholder={m.bible_search_input()}
         value={rawQuery}
         className={cls.searchInput}
-        onValueChange={(value) => {
-          setRawQuery(value);
-          setPage(0);
-        }}
+        onValueChange={onQueryChange}
       />
       {record && (
         <ActionBar
           className={cls.actionBar}
           aria-label={m.bible_search_filters()}
         >
-          <Select
-            value={bookId}
-            onValueChange={(value) => {
-              if (!value) return;
-              setBookId(value);
-              setPage(0);
-            }}
-          >
+          <Select value={bookId} onValueChange={onBookChange}>
             <Select.Trigger
               className={cls.bookFilter}
               aria-label={m.bible_search_filter_book()}
@@ -224,46 +185,19 @@ function BibleSearch({
               : m.bible_search_empty()
             : ''}
       </div>
-      <ol className={cls.results}>
-        {shown?.verses.map((verse) => {
-          const location = parseVerseId(verse.id);
-          const title =
-            record?.manifest.books.find((book) => book.id === location.bookId)
-              ?.title ?? location.bookId;
-          const parts = [];
-          let offset = 0;
-          for (const [start, end] of verse.ranges) {
-            parts.push(
-              verse.text.slice(offset, start),
-              <mark key={start}>{verse.text.slice(start, end)}</mark>,
-            );
-            offset = end;
-          }
-          parts.push(verse.text.slice(offset));
-          return (
-            <li key={verse.id}>
-              <button
-                type="button"
-                className={cls.result}
-                disabled={select.isPending}
-                onClick={() => select.mutate(verse.id)}
-              >
-                <strong>
-                  {title} {location.chapter}:{verse.label}
-                </strong>
-                <span>{parts}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
+      <BibleSearchResults
+        shown={shown}
+        books={record?.manifest.books ?? []}
+        isSelecting={select.isPending}
+        onSelect={onSelectVerse}
+      />
       {shown && shown.total > 50 && (
         <nav className={cls.pagination} aria-label={m.bible_search_title()}>
           <Button
             disabled={page === 0}
             aria-label={m.bible_search_previous()}
             title={m.bible_search_previous()}
-            onClick={() => setPage(page - 1)}
+            onClick={previousPage}
           >
             <Icon name="arrowLeft" />
           </Button>
@@ -277,12 +211,145 @@ function BibleSearch({
             disabled={(page + 1) * 50 >= shown.total}
             aria-label={m.bible_search_next()}
             title={m.bible_search_next()}
-            onClick={() => setPage(page + 1)}
+            onClick={nextPage}
           >
             <Icon name="arrowRight" />
           </Button>
         </nav>
       )}
     </div>
+  );
+}
+
+function useBibleSearch(initialTranslation: string, onSelect: () => void) {
+  const [translationId, setTranslationId] = useState(initialTranslation);
+  const [bookId, setBookId] = useState('all');
+  const [rawQuery, setRawQuery] = useState('');
+  const [query] = useDebouncedValue(rawQuery, { wait: 300 });
+  const [page, setPage] = useState(0);
+  const translations = useQuery(translationsQueryOptions);
+  const record = translations.data?.find(
+    (translation) => translation.id === translationId,
+  );
+  const ready =
+    record?.sourceStatus === 'ready' && record.searchStatus === 'ready';
+  const results = useQuery({
+    ...bibleSearchQueryOptions(
+      translationId,
+      query,
+      page,
+      bookId === 'all' ? undefined : bookId,
+    ),
+    enabled: ready && Boolean(query.trim()) && rawQuery === query,
+  });
+  const download = useMutation({
+    networkMode: 'always',
+    mutationFn: () => downloadTranslation(translationId),
+  });
+  const navigate = useNavigate();
+  const select = useMutation({
+    networkMode: 'always',
+    mutationFn: async (id: Parameters<typeof parseVerseId>[0]) => {
+      const verse = parseVerseId(id);
+      await navigate({
+        to: '/$translation/$book/$chapter',
+        params: {
+          translation: translationId,
+          book: verse.bookId,
+          chapter: String(verse.chapter),
+        },
+        search: { verses: String(verse.verse) },
+      });
+      onSelect();
+    },
+  });
+  const shown =
+    ready && rawQuery === query && !results.isFetching
+      ? results.data
+      : undefined;
+  const onTranslationChange = (id: string) => {
+    setTranslationId(id);
+    setBookId('all');
+    setPage(0);
+  };
+  const onQueryChange = (value: string) => {
+    setRawQuery(value);
+    setPage(0);
+  };
+  const onBookChange = (value: string | undefined) => {
+    if (!value) return;
+    setBookId(value);
+    setPage(0);
+  };
+  return {
+    translationId,
+    bookId,
+    rawQuery,
+    query,
+    page,
+    translations,
+    record,
+    ready,
+    results,
+    download,
+    select,
+    shown,
+    onTranslationChange,
+    onQueryChange,
+    onBookChange,
+    onSelectVerse: (id: Parameters<typeof parseVerseId>[0]) =>
+      select.mutate(id),
+    previousPage: () => setPage(page - 1),
+    nextPage: () => setPage(page + 1),
+  };
+}
+
+function BibleSearchResults({
+  shown,
+  books,
+  isSelecting,
+  onSelect,
+}: {
+  shown: ReturnType<typeof useBibleSearch>['shown'];
+  books: NonNullable<
+    ReturnType<typeof useBibleSearch>['record']
+  >['manifest']['books'];
+  isSelecting: boolean;
+  onSelect: (id: Parameters<typeof parseVerseId>[0]) => void;
+}) {
+  return (
+    <ol className={cls.results}>
+      {shown?.verses.map((verse) => {
+        const location = parseVerseId(verse.id);
+        const title =
+          books.find((book) => book.id === location.bookId)?.title ??
+          location.bookId;
+        const parts = [];
+        let offset = 0;
+        for (const [start, end] of verse.ranges) {
+          parts.push(
+            verse.text.slice(offset, start),
+            <mark key={start}>{verse.text.slice(start, end)}</mark>,
+          );
+          offset = end;
+        }
+        parts.push(verse.text.slice(offset));
+        return (
+          <li key={verse.id}>
+            <button
+              type="button"
+              className={cls.result}
+              disabled={isSelecting}
+              onClick={() => onSelect(verse.id)}
+            >
+              <strong>
+                {title} {location.chapter}:{verse.label}
+              </strong>
+              <span>{parts}</span>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

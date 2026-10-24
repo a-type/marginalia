@@ -39,42 +39,11 @@ export function BibleReader() {
     select: (search) => search.verses,
   });
   const [locationOpen, setLocationOpen] = useState(false);
-  const dbClient = useDbClient();
-  const userDidQuery = useQuery({
-    ...currentUserDidQueryOptions,
-    enabled: typeof window !== 'undefined',
-  });
-  const accountDid = userDidQuery.data ?? null;
-  const chapterAnnotationsQuery = useQuery({
-    ...chapterAnnotationsQueryOptions(location),
-    enabled: typeof window !== 'undefined' && userDidQuery.isSuccess,
-  });
-  const chapterHighlightsQuery = useQuery({
-    ...chapterHighlightsQueryOptions(location),
-    enabled: typeof window !== 'undefined' && userDidQuery.isSuccess,
-  });
-  const annotations = useChapterAnnotations(accountDid, location);
-  useHighlightSync(accountDid);
+  const { accountDid, annotations } = useBibleReaderData(location);
+
   useResetAnnotationPaneOnRouteChange();
   useScrollToSelectedVerse(location, selectedVerses, translationId);
-
   useStoreBibleReaderLocation(location, translationId);
-  useReconcileChapterAnnotations({
-    accountDid,
-    dbClient,
-    location,
-    queryData: chapterAnnotationsQuery.data,
-    queryIsSuccess: chapterAnnotationsQuery.isSuccess,
-    userQueryIsSuccess: userDidQuery.isSuccess,
-  });
-  useReconcileChapterHighlights({
-    accountDid,
-    dbClient,
-    location,
-    queryData: chapterHighlightsQuery.data,
-    queryIsSuccess: chapterHighlightsQuery.isSuccess,
-    userQueryIsSuccess: userDidQuery.isSuccess,
-  });
 
   return (
     <main className={cls.root}>
@@ -98,6 +67,42 @@ export function BibleReader() {
       />
     </main>
   );
+}
+
+function useBibleReaderData(location: BibleLocation) {
+  const dbClient = useDbClient();
+  const userDidQuery = useQuery({
+    ...currentUserDidQueryOptions,
+    enabled: typeof window !== 'undefined',
+  });
+  const accountDid = userDidQuery.data ?? null;
+  const chapterAnnotationsQuery = useQuery({
+    ...chapterAnnotationsQueryOptions(location),
+    enabled: typeof window !== 'undefined' && userDidQuery.isSuccess,
+  });
+  const chapterHighlightsQuery = useQuery({
+    ...chapterHighlightsQueryOptions(location),
+    enabled: typeof window !== 'undefined' && userDidQuery.isSuccess,
+  });
+  const annotations = useChapterAnnotations(accountDid, location);
+  useHighlightSync(accountDid);
+  useReconcileChapterAnnotations({
+    accountDid,
+    dbClient,
+    location,
+    queryData: chapterAnnotationsQuery.data,
+    queryIsSuccess: chapterAnnotationsQuery.isSuccess,
+    userQueryIsSuccess: userDidQuery.isSuccess,
+  });
+  useReconcileChapterHighlights({
+    accountDid,
+    dbClient,
+    location,
+    queryData: chapterHighlightsQuery.data,
+    queryIsSuccess: chapterHighlightsQuery.isSuccess,
+    userQueryIsSuccess: userDidQuery.isSuccess,
+  });
+  return { accountDid, annotations };
 }
 
 function useScrollToSelectedVerse(
