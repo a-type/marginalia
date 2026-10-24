@@ -24,3 +24,7 @@
   flex-shrink: 0;
   padding: var(--m-sp-sm);
 }
+
+.annotationPane {
+  grid-area: annotation;
+}

@@ -15,7 +15,13 @@
   }
 
   &[data-empty] {
-    height: --fn-literal(60px);
+    height: --fn-literal(0px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    transition: none;
   }
 }
 

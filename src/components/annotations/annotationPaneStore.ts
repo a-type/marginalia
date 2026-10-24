@@ -139,14 +139,15 @@ export function useIsSelectedVerse(verseId: VerseId) {
 }
 
 export function useToggleVerseSelected(verseId: VerseId) {
-  const primarySelected = readerRoute.useSearch({
-    select: (search) =>
-      parseVerseSelection(search.verses).at(0) === parseVerseId(verseId).verse,
-  });
   const setSelectedNumber = useSetSelectedVerseNumber();
   return () => {
-    if (annotationPaneStore.state.phase !== 'closed') {
-      annotationPaneActions.toggleDraftVerse(verseId, primarySelected);
+    const phase = annotationPaneStore.state.phase;
+    if (phase === 'editing') {
+      annotationPaneActions.selectPrimaryVerse(verseId);
+      return;
+    }
+    if (phase === 'adding-verses') {
+      annotationPaneActions.toggleDraftVerse(verseId);
       return;
     }
 

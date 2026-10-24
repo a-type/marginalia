@@ -66,8 +66,6 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
       });
   }, [firstOpenAnnotationVerse]);
 
-  if (!editing && !openAnnotation) return null;
-
   return (
     <aside
       className={clsx(cls.root, className)}

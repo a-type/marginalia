@@ -21,6 +21,10 @@ export const annotationPaneActions = {
       phase: 'editing',
       draftVerses: [selectedVerse],
     })),
+  selectPrimaryVerse: (verseId: VerseId) =>
+    annotationPaneStore.setState((state) =>
+      state.phase === 'editing' ? { ...state, draftVerses: [verseId] } : state,
+    ),
   setAddingVerses: (addingVerses: boolean) =>
     annotationPaneStore.setState((state) =>
       state.phase === 'closed'
@@ -30,12 +34,17 @@ export const annotationPaneActions = {
             phase: addingVerses ? 'adding-verses' : 'editing',
           },
     ),
-  toggleDraftVerse: (verseId: VerseId, primarySelected: boolean) => {
+  toggleDraftVerse: (verseId: VerseId) => {
     const state = annotationPaneStore.state;
-    if (state.phase !== 'adding-verses' || primarySelected) return;
+    if (state.phase !== 'adding-verses' || state.draftVerses[0] === verseId)
+      return;
 
     annotationPaneStore.setState((current) => {
-      if (current.phase !== 'adding-verses') return current;
+      if (
+        current.phase !== 'adding-verses' ||
+        current.draftVerses[0] === verseId
+      )
+        return current;
       if (!current.draftVerses.includes(verseId)) {
         return {
           ...current,

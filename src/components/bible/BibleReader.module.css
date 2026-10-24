@@ -37,7 +37,3 @@
 .menubar {
   grid-area: menubar;
 }
-
-.annotationPane {
-  grid-area: annotation;
-}

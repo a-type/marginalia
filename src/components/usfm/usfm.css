@@ -53,12 +53,6 @@
     background var(--m-dur) var(--m-ease);
 }
 
-.usfm[data-viewing-annotation] > :not(.usfm-chapter),
-.usfm[data-viewing-annotation] .usfm-chapter > :not(.usfm-paragraph),
-.usfm[data-viewing-annotation] .usfm-verse:not([data-annotated]) {
-  opacity: 0.3;
-}
-
 .usfm-verse[data-highlighted] {
   @apply --mx-bg(var(--m-tint-wash));
   box-shadow: 0 0 0 var(--m-sp-xs) var(--mx-bg-ref);

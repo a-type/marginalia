@@ -28,18 +28,29 @@ describe('annotation pane state', () => {
     });
   });
 
+  it('replaces the primary verse when selecting during editing', () => {
+    annotationPaneActions.openEditor('GEN/1:1');
+
+    annotationPaneActions.selectPrimaryVerse('GEN/1:2');
+
+    expect(annotationPaneStore.state).toEqual({
+      phase: 'editing',
+      draftVerses: ['GEN/1:2'],
+    });
+  });
+
   it('adds and removes secondary verses without removing the primary verse', () => {
     annotationPaneActions.openEditor('GEN/1:1');
     annotationPaneActions.setAddingVerses(true);
 
-    annotationPaneActions.toggleDraftVerse('GEN/1:2', false);
+    annotationPaneActions.toggleDraftVerse('GEN/1:2');
     expect(annotationPaneStore.state.draftVerses).toEqual([
       'GEN/1:1',
       'GEN/1:2',
     ]);
 
-    annotationPaneActions.toggleDraftVerse('GEN/1:1', true);
-    annotationPaneActions.toggleDraftVerse('GEN/1:2', false);
+    annotationPaneActions.toggleDraftVerse('GEN/1:1');
+    annotationPaneActions.toggleDraftVerse('GEN/1:2');
     expect(annotationPaneStore.state.draftVerses).toEqual(['GEN/1:1']);
   });
 });

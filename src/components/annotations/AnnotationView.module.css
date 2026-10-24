@@ -8,17 +8,8 @@
   flex: 1;
   min-width: 0;
   white-space: pre-wrap;
-  animation: comment-enter var(--m-dur) var(--m-ease) both;
-  animation-delay: calc(var(--m-dur) * 0.65);
 }
 
 .actions {
   align-items: center;
-}
-
-@keyframes comment-enter {
-  from {
-    opacity: 0;
-    transform: translateY(var(--m-sp-md));
-  }
 }
