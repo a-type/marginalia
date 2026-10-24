@@ -14,11 +14,16 @@ import {
 import { useBookId, useChapterNumber, VerseIdProvider } from './contexts';
 import type { USFMNodeComponentProps } from './types';
 
-export function Verse({ argument, children }: USFMNodeComponentProps) {
+export function Verse({
+  argument,
+  children,
+  isContinuation = false,
+}: USFMNodeComponentProps & { isContinuation?: boolean }) {
   const bookId = useBookId();
   const chapterNumber = useChapterNumber();
   const verseNumber = argument ? (parseVerseLabel(argument) ?? 0) : 0;
-  const isAnchor = Boolean(verseNumber && !/[b-z]$/.test(argument ?? ''));
+  const isAnchor =
+    !isContinuation && Boolean(verseNumber && !/[b-z]$/.test(argument ?? ''));
   const verseId = formatVerseId(bookId, chapterNumber, verseNumber);
   const selected = useIsSelectedVerse(verseId);
   const includedInOpenAnnotation = useVerseIncludedInOpenAnnotation(verseId);
@@ -67,7 +72,7 @@ export function Verse({ argument, children }: USFMNodeComponentProps) {
           anchorName: isAnchor ? formatVerseAnchorName(verseId) : undefined,
         }}
       >
-        {verseNumber && (
+        {!isContinuation && verseNumber && (
           <sup className="usfm-verse-number @mode-denser">{argument}</sup>
         )}
         {children}

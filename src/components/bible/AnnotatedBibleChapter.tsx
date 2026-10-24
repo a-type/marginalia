@@ -66,11 +66,12 @@ export function AnnotatedBibleChapter({
               location={location}
               manifest={manifest}
               translationId={translationId}
-            />
+            >
+              <AnnotationToolbar />
+            </BibleChapterNavigation>
           </div>
         </ScrollArea>
       </Box>
-      <AnnotationToolbar />
       <AnnotationPane accountDid={accountDid} className={cls.annotationPane} />
     </>
   );

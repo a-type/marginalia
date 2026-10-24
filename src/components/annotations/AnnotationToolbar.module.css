@@ -1,21 +1,16 @@
 .toolbar {
-  position: fixed;
-  top: calc(anchor(bottom) + var(--m-sp-sm));
-  left: anchor(left);
-  position-visibility: anchors-visible;
-  z-index: 2;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: max-content;
+  max-width: 100%;
   gap: var(--m-sp-xs);
+  pointer-events: auto;
   padding: var(--m-sp-xs);
-  border: 1px solid var(--m-tint-wash);
+  border: 1px solid var(--m-gray-heavy);
   border-radius: var(--m-rd-sm);
   background: var(--m-bg);
   box-shadow: var(--m-shadow-md);
-  transition:
-    opacity,
-    top,
-    left,
-    var(--m-dur-short) var(--m-ease-out);
 }
 
 .swatch {

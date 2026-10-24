@@ -2,13 +2,28 @@
   position: sticky;
   bottom: 0;
   z-index: 1;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--m-sp-xs);
   flex-shrink: 0;
   margin-top: auto;
   padding: var(--m-sp-sm);
   padding-bottom: max(var(--m-sp-sm), env(safe-area-inset-bottom));
   pointer-events: none;
+}
+
+.chapterNavigationControls {
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.chapterNavigationCenter {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  pointer-events: auto;
 }
 
 .chapterNavigationButton {

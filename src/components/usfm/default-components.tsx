@@ -84,7 +84,7 @@ function Paragraph({ marker, children }: USFMNodeComponentProps) {
   );
 }
 
-function Poetry({ marker, children }: USFMNodeComponentProps) {
+function Poetry({ node, marker, children }: USFMNodeComponentProps) {
   const level = Number(/\d+$/.exec(marker)?.[0] ?? 1);
   return (
     <div
@@ -92,7 +92,20 @@ function Poetry({ marker, children }: USFMNodeComponentProps) {
       data-usfm-marker={marker}
       style={{ '--usfm-indent': Math.max(0, level - 1) } as React.CSSProperties}
     >
-      {children}
+      {node.continuationVerseArgument ? (
+        <Verse
+          node={node}
+          marker={marker}
+          category={node.category}
+          argument={node.continuationVerseArgument}
+          attributes={node.attributes}
+          isContinuation
+        >
+          {children}
+        </Verse>
+      ) : (
+        children
+      )}
     </div>
   );
 }

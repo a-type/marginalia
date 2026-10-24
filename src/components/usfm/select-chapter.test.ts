@@ -41,3 +41,26 @@ describe('chapter book headings', () => {
     expect(selectChapter(document, undefined)).toBe(document);
   });
 });
+
+describe('poetry verse continuations', () => {
+  it('associates continuation lines with the active verse', () => {
+    const document = parseUSFM(String.raw`\c 1
+\q1
+\v 1 First line.
+\q2 Second line.
+\q1
+\v 2 New verse.
+\q2 Continuation of verse two.`);
+    const chapter = document.children[0];
+
+    if (chapter.type !== 'marker') throw new Error('Expected chapter node');
+
+    const poetryArguments = chapter.children.flatMap((node) =>
+      node.type === 'marker' && node.category === 'poetry'
+        ? [node.continuationVerseArgument]
+        : [],
+    );
+
+    expect(poetryArguments).toEqual([undefined, '1', undefined, '2']);
+  });
+});

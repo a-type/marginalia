@@ -126,7 +126,10 @@ function createMarker(
   marker: string,
   children: USFMNode[] = [],
   values: Partial<
-    Pick<USFMMarkerNode, 'argument' | 'attributes' | 'closed'>
+    Pick<
+      USFMMarkerNode,
+      'argument' | 'attributes' | 'closed' | 'continuationVerseArgument'
+    >
   > = {},
 ): USFMMarkerNode {
   return {
@@ -137,6 +140,9 @@ function createMarker(
     children,
     closed: values.closed ?? false,
     ...(values.argument === undefined ? {} : { argument: values.argument }),
+    ...(values.continuationVerseArgument === undefined
+      ? {}
+      : { continuationVerseArgument: values.continuationVerseArgument }),
   };
 }
 
@@ -409,6 +415,7 @@ export function parseUSFM(usfm: string): USFMDocument {
   const document: USFMDocument = { type: 'document', children: [] };
   let chapter: USFMMarkerNode | undefined;
   let container: USFMMarkerNode | undefined;
+  let activeVerseArgument: string | undefined;
 
   for (const rawLine of usfm.replace(/\r\n?/g, '\n').split('\n')) {
     const line = rawLine.trim();
@@ -432,6 +439,7 @@ export function parseUSFM(usfm: string): USFMDocument {
         createMarker(marker, parseInline(content).nodes, { argument }),
       );
       container = undefined;
+      activeVerseArgument = undefined;
       continue;
     }
 
@@ -444,6 +452,7 @@ export function parseUSFM(usfm: string): USFMDocument {
       );
       document.children.push(chapter);
       container = undefined;
+      activeVerseArgument = undefined;
       continue;
     }
 
@@ -452,13 +461,20 @@ export function parseUSFM(usfm: string): USFMDocument {
       const verse = createMarker(marker, parseInline(content).nodes, {
         argument,
       });
+      if (container?.category === 'poetry') {
+        container.continuationVerseArgument = undefined;
+      }
       (container?.children ?? chapter?.children ?? document.children).push(
         verse,
       );
+      activeVerseArgument = argument;
       continue;
     }
 
-    const node = createMarker(marker, parseInline(value).nodes);
+    const node = createMarker(marker, parseInline(value).nodes, {
+      continuationVerseArgument:
+        category === 'poetry' ? activeVerseArgument : undefined,
+    });
     const chapterTarget = chapter?.children ?? document.children;
 
     if (isContainerCategory(category)) {
@@ -468,6 +484,8 @@ export function parseUSFM(usfm: string): USFMDocument {
       chapterTarget.push(node);
       container = undefined;
     }
+
+    if (category !== 'poetry') activeVerseArgument = undefined;
   }
 
   return document;

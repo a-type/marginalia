@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { Button, Icon, Tooltip } from '@a-type/ui';
 import { getRouteApi } from '@tanstack/react-router';
 
@@ -10,10 +12,12 @@ import cls from './BibleChapterNavigation.module.css';
 const readerRoute = getRouteApi('/$translation/$book/$chapter');
 
 export function BibleChapterNavigation({
+  children,
   location,
   manifest,
   translationId,
 }: {
+  children: ReactNode;
   location: BibleLocation;
   manifest: TranslationManifest;
   translationId: string;
@@ -54,26 +58,31 @@ export function BibleChapterNavigation({
       className={cls.chapterNavigation}
       aria-label={m.bible_chapter_navigation()}
     >
-      <Tooltip content={m.bible_previous_chapter()}>
-        <Button
-          className={cls.chapterNavigationButton}
-          aria-label={m.bible_previous_chapter()}
-          disabled={!previous}
-          onClick={() => navigateTo(previous)}
-        >
-          <Icon name="arrowLeft" />
-        </Button>
-      </Tooltip>
-      <Tooltip content={m.bible_next_chapter()}>
-        <Button
-          className={cls.chapterNavigationButton}
-          aria-label={m.bible_next_chapter()}
-          disabled={!next}
-          onClick={() => navigateTo(next)}
-        >
-          <Icon name="arrowRight" />
-        </Button>
-      </Tooltip>
+      <div className={cls.chapterNavigationControls}>
+        <Tooltip content={m.bible_previous_chapter()}>
+          <Button
+            className={cls.chapterNavigationButton}
+            aria-label={m.bible_previous_chapter()}
+            disabled={!previous}
+            onClick={() => navigateTo(previous)}
+          >
+            <Icon name="arrowLeft" />
+          </Button>
+        </Tooltip>
+      </div>
+      <div className={cls.chapterNavigationCenter}>{children}</div>
+      <div className={cls.chapterNavigationControls}>
+        <Tooltip content={m.bible_next_chapter()}>
+          <Button
+            className={cls.chapterNavigationButton}
+            aria-label={m.bible_next_chapter()}
+            disabled={!next}
+            onClick={() => navigateTo(next)}
+          >
+            <Icon name="arrowRight" />
+          </Button>
+        </Tooltip>
+      </div>
     </nav>
   );
 }

@@ -30,6 +30,7 @@ export interface USFMMarkerNode {
   marker: string;
   category: USFMNodeCategory;
   argument?: string;
+  continuationVerseArgument?: string;
   attributes: Record<string, string>;
   children: USFMNode[];
   closed: boolean;

@@ -45,55 +45,7 @@ export function TranslationManager() {
     enabled: typeof navigator !== 'undefined',
     gcTime: 0,
   });
-  const [draft, setDraft] = useState<{
-    file: File;
-    manifest: TranslationManifest;
-  }>();
-  const [deleting, setDeleting] = useState<{ id: string; title: string }>();
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  });
-  const navigate = useNavigate();
-  const preview = useMutation({
-    networkMode: 'always',
-    mutationFn: previewTranslation,
-    onSuccess: (manifest, file) => setDraft({ file, manifest }),
-  });
-  const importJob = useMutation({
-    networkMode: 'always',
-    mutationFn: async (value: NonNullable<typeof draft>) => {
-      requestPersistence();
-      await importTranslation(
-        value.file,
-        value.manifest.title,
-        value.manifest.id,
-      );
-    },
-    onSuccess: () => setDraft(undefined),
-  });
-  const deletion = useMutation({
-    networkMode: 'always',
-    mutationFn: async (id: string) => {
-      await removeTranslation(id);
-      if (id.startsWith('local-') && pathname.split('/').includes(id)) {
-        const next = (await listTranslations()).find(
-          (record) => record.sourceStatus === 'ready',
-        );
-        if (next) {
-          await navigate({
-            to: '/$translation/$book/$chapter',
-            params: {
-              translation: next.id,
-              book: next.manifest.books[0].id,
-              chapter: '1',
-            },
-            search: {},
-          });
-        } else await navigate({ to: '/' });
-      }
-    },
-    onSuccess: () => setDeleting(undefined),
-  });
+  const deletion = useTranslationDeletion();
   const catalog = [
     ...knownTranslations,
     ...(translations.data ?? [])
@@ -114,7 +66,7 @@ export function TranslationManager() {
             record={translations.data?.find(
               (record) => record.id === translation.id,
             )}
-            onDelete={() => setDeleting(translation)}
+            onDelete={() => deletion.setDeleting(translation)}
           />
         ))}
       </ul>
@@ -126,6 +78,23 @@ export function TranslationManager() {
           })}
         </small>
       )}
+      <TranslationImportForm />
+      <TranslationDeletionDialog
+        deleting={deletion.deleting}
+        error={deletion.error}
+        pending={deletion.pending}
+        onClose={deletion.close}
+        onConfirm={deletion.confirm}
+      />
+    </section>
+  );
+}
+
+function TranslationImportForm() {
+  const { draft, setDraft, preview, importJob, selectFile, cancelImport } =
+    useTranslationImport();
+  return (
+    <>
       <label className={cls.file}>
         {m.translation_import_file()}
         <input
@@ -134,9 +103,7 @@ export function TranslationManager() {
           disabled={preview.isPending || importJob.isPending}
           onChange={(event) => {
             const file = event.currentTarget.files?.[0];
-            setDraft(undefined);
-            importJob.reset();
-            if (file) preview.mutate(file);
+            selectFile(file);
             event.currentTarget.value = '';
           }}
         />
@@ -180,11 +147,7 @@ export function TranslationManager() {
             <Button
               type="button"
               emphasis="ghost"
-              onClick={() => {
-                if (importJob.isPending)
-                  void removeTranslation(draft.manifest.id).catch(() => {});
-                setDraft(undefined);
-              }}
+              onClick={cancelImport}
             >
               {m.annotation_cancel()}
             </Button>
@@ -192,39 +155,127 @@ export function TranslationManager() {
         </form>
       )}
       {importJob.error && <p role="alert">{importJob.error.message}</p>}
-      <Dialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => {
-          if (!open) setDeleting(undefined);
-        }}
-      >
-        <Dialog.Content>
-          <Dialog.Title>
-            {m.translation_delete_confirm({ title: deleting?.title ?? '' })}
-          </Dialog.Title>
-          <Dialog.Description>
-            {deleting?.id.startsWith('local-')
-              ? m.translation_delete_import()
-              : deleting?.id === 'web'
-                ? m.translation_delete_default()
-                : m.translation_delete()}
-          </Dialog.Description>
-          {deletion.error && <p role="alert">{deletion.error.message}</p>}
-          <Dialog.Actions>
-            <Dialog.Close>{m.annotation_cancel()}</Dialog.Close>
-            <Button
-              disabled={deletion.isPending}
-              onClick={() => {
-                if (deleting) deletion.mutate(deleting.id);
-              }}
-            >
-              <Icon name="trash" />
-              {m.translation_delete()}
-            </Button>
-          </Dialog.Actions>
-        </Dialog.Content>
-      </Dialog>
-    </section>
+    </>
+  );
+}
+
+function useTranslationImport() {
+  const [draft, setDraft] = useState<{
+    file: File;
+    manifest: TranslationManifest;
+  }>();
+  const preview = useMutation({
+    networkMode: 'always',
+    mutationFn: previewTranslation,
+    onSuccess: (manifest, file) => setDraft({ file, manifest }),
+  });
+  const importJob = useMutation({
+    networkMode: 'always',
+    mutationFn: async (value: NonNullable<typeof draft>) => {
+      requestPersistence();
+      await importTranslation(
+        value.file,
+        value.manifest.title,
+        value.manifest.id,
+      );
+    },
+    onSuccess: () => setDraft(undefined),
+  });
+  const selectFile = (file?: File) => {
+    setDraft(undefined);
+    importJob.reset();
+    if (file) preview.mutate(file);
+  };
+  const cancelImport = () => {
+    if (draft && importJob.isPending)
+      void removeTranslation(draft.manifest.id).catch(() => {});
+    setDraft(undefined);
+  };
+  return { draft, setDraft, preview, importJob, selectFile, cancelImport };
+}
+
+function useTranslationDeletion() {
+  const [deleting, setDeleting] = useState<{ id: string; title: string }>();
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+  const navigate = useNavigate();
+  const mutation = useMutation({
+    networkMode: 'always',
+    mutationFn: async (id: string) => {
+      await removeTranslation(id);
+      if (id.startsWith('local-') && pathname.split('/').includes(id)) {
+        const next = (await listTranslations()).find(
+          (record) => record.sourceStatus === 'ready',
+        );
+        if (next) {
+          await navigate({
+            to: '/$translation/$book/$chapter',
+            params: {
+              translation: next.id,
+              book: next.manifest.books[0].id,
+              chapter: '1',
+            },
+            search: {},
+          });
+        } else await navigate({ to: '/' });
+      }
+    },
+    onSuccess: () => setDeleting(undefined),
+  });
+  return {
+    deleting,
+    setDeleting,
+    error: mutation.error?.message,
+    pending: mutation.isPending,
+    close: () => setDeleting(undefined),
+    confirm: () => {
+      if (deleting) mutation.mutate(deleting.id);
+    },
+  };
+}
+
+function TranslationDeletionDialog({
+  deleting,
+  error,
+  pending,
+  onClose,
+  onConfirm,
+}: {
+  deleting?: { id: string; title: string };
+  error?: string;
+  pending: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog
+      open={Boolean(deleting)}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <Dialog.Content>
+        <Dialog.Title>
+          {m.translation_delete_confirm({ title: deleting?.title ?? '' })}
+        </Dialog.Title>
+        <Dialog.Description>
+          {deleting?.id.startsWith('local-')
+            ? m.translation_delete_import()
+            : deleting?.id === 'web'
+              ? m.translation_delete_default()
+              : m.translation_delete()}
+        </Dialog.Description>
+        {error && <p role="alert">{error}</p>}
+        <Dialog.Actions>
+          <Dialog.Close>{m.annotation_cancel()}</Dialog.Close>
+          <Button disabled={pending} onClick={onConfirm}>
+            <Icon name="trash" />
+            {m.translation_delete()}
+          </Button>
+        </Dialog.Actions>
+      </Dialog.Content>
+    </Dialog>
   );
 }
 

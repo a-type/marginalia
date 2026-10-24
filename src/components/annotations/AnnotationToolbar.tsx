@@ -1,7 +1,6 @@
 import { Button, Icon } from '@a-type/ui';
 import { useDbClient } from '@tanstack/react-db';
 
-import { formatVerseAnchorName } from '#/lib/bible/verse';
 import { createHighlight } from '#/lib/highlights/create';
 import { highlightColors } from '#/lib/highlights/types';
 import { annotationPaneActions } from './annotationPaneState';
@@ -21,10 +20,7 @@ export function AnnotationToolbar() {
   if (!selectedVerse || paneOpen) return null;
 
   return (
-    <div
-      className={cls.toolbar}
-      style={{ positionAnchor: formatVerseAnchorName(selectedVerse) }}
-    >
+    <div className={cls.toolbar}>
       <Button
         size="small"
         emphasis="ghost"
