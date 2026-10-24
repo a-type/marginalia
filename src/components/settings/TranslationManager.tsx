@@ -144,11 +144,7 @@ function TranslationImportForm() {
                 ? m.translation_importing()
                 : m.translation_import()}
             </Button>
-            <Button
-              type="button"
-              emphasis="ghost"
-              onClick={cancelImport}
-            >
+            <Button type="button" emphasis="ghost" onClick={cancelImport}>
               {m.annotation_cancel()}
             </Button>
           </div>
