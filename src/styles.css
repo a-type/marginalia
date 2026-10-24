@@ -14,3 +14,7 @@ body {
 body > main {
   isolation: isolate;
 }
+
+:root {
+  interpolate-size: allow-keywords;
+}

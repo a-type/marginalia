@@ -1,0 +1,13 @@
+.root {
+  max-width: 40rem;
+  margin: auto;
+  padding: var(--m-sp-lg);
+}
+.root h1 {
+  font-size: var(--m-fs-lg);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--m-sp-sm);
+}

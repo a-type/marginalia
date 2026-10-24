@@ -67,6 +67,8 @@ Prefer clean code to preserving existing structures. Refactoring is good and enc
 
 Keep component prop dependencies light. If a component can get the same data from context or a query, have it get that data itself. This keeps components encapsulated and easy to move around.
 
+After implementing a working component structure, review each component for overall complexity and number of concerns. Refactor and break down components which do more than 2 distinct jobs. Tightly coupled components can live in the same file, loosely coupled ones can be split into different files.
+
 ## Styling
 
 The project uses CSS Modules for styling, with a CSS design system library called Arbor applied to a set of UI components in the `@a-type/ui` library.

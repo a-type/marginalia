@@ -131,10 +131,25 @@ development; use `pnpm build` followed by `pnpm start` to test installation on
 `http://127.0.0.1:3000` (or use HTTPS in production).
 
 The worker precaches built JavaScript, CSS, fonts, and install icons. HTML
-navigation, OAuth, API requests, and Bible downloads remain network-only; this
-does not yet provide an offline app shell or offline navigation. Updates take
-effect after all app tabs/windows are closed, without forcing a reload while
-someone is writing.
+navigation, OAuth, and API requests remain network-only, so this does not
+provide offline cold launch, reload, or direct navigation. Translation text
+already stored in the browser can be read while the app is open and its code is
+loaded. Browser-managed IndexedDB stores downloaded USFM and prepared verse
+text; storage can be evicted and is not a backup.
+
+WEB starts downloading in the background by default. Deleting WEB suppresses
+future automatic downloads until the user explicitly downloads it again. Other
+known translations are fetched a book at a time for ordinary reading; use
+Settings > Translations to download one for offline reading and local search.
+Search preparation is separate from downloading, can be retried without a
+network connection, and does not block reading. Search runs locally in a
+worker: unquoted words are ANDed, quoted text matches an exact token phrase,
+and matches stay within one verse. Results are ordered by the selected edition's
+book order. ZIP archives of USFM books and whole-Bible USFM files can be
+imported locally; partial editions are supported.
+
+Updates take effect after all app tabs/windows are closed, without forcing a
+reload while someone is writing.
 
 The icons are intentionally blank white squares. Replace `public/icon.svg` and
 run `pnpm pwa-assets` to regenerate the PNG install icons, Apple touch icon, and

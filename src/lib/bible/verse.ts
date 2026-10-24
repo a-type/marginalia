@@ -5,6 +5,18 @@ export type BookId = string;
  */
 export type VerseId = `${BookId}/${number}:${number}`;
 
+export function parseVerseLabel(label: string): number | undefined {
+  const match = /^([1-9]\d*)(?:[a-z]|-([1-9]\d*))?$/.exec(label);
+  if (!match) return undefined;
+  const verse = Number(match[1]);
+  const end = match[2] ? Number(match[2]) : verse;
+  return Number.isSafeInteger(verse) &&
+    Number.isSafeInteger(end) &&
+    end >= verse
+    ? verse
+    : undefined;
+}
+
 export function isBookId(value: string): value is BookId {
   return value.trim().length > 0 && !value.includes('/');
 }

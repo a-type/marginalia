@@ -18,6 +18,8 @@ export interface AnnotatedBibleChapterProps {
   manifest: TranslationManifest;
   source: string;
   translationId: string;
+  locationOpen: boolean;
+  onLocationOpenChange: (open: boolean) => void;
   className?: string;
 }
 
@@ -28,6 +30,8 @@ export function AnnotatedBibleChapter({
   manifest,
   source,
   translationId,
+  locationOpen,
+  onLocationOpenChange,
   className,
 }: AnnotatedBibleChapterProps) {
   return (
@@ -46,6 +50,8 @@ export function AnnotatedBibleChapter({
               chapter={location.chapter}
               manifest={manifest}
               translationId={translationId}
+              open={locationOpen}
+              onOpenChange={onLocationOpenChange}
               className={cls.location}
             />
             <Box gap>

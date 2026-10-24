@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
 
 import { BibleReader } from '#/components/bible/BibleReader';
+import { BibleRecovery } from '#/components/bible/BibleRecovery';
 import { parseBibleLocation } from '#/lib/bible/location';
 import {
   formatVerseSelection,
@@ -15,6 +16,11 @@ import {
 } from '#/lib/bible/source';
 
 export const Route = createFileRoute('/$translation/$book/$chapter')({
+  ssr: ({ params }) =>
+    params.status !== 'success' ||
+    !params.value.translation.startsWith('local-'),
+  errorComponent: BibleRecovery,
+  notFoundComponent: BibleRecovery,
   validateSearch: (search: Record<string, unknown>) => {
     const verse = parseVerseSelection(search.verses).at(0);
     const verses = verse ? formatVerseSelection([verse]) : undefined;

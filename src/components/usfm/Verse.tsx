@@ -1,6 +1,10 @@
 import { eq, useLiveQuery } from '@tanstack/react-db';
 
-import { formatVerseAnchorName, formatVerseId } from '#/lib/bible/verse';
+import {
+  formatVerseAnchorName,
+  formatVerseId,
+  parseVerseLabel,
+} from '#/lib/bible/verse';
 import { highlightCollectionOptions } from '#/lib/highlights/collections';
 import {
   useIsSelectedVerse,
@@ -13,7 +17,8 @@ import type { USFMNodeComponentProps } from './types';
 export function Verse({ argument, children }: USFMNodeComponentProps) {
   const bookId = useBookId();
   const chapterNumber = useChapterNumber();
-  const verseNumber = argument ? Number(argument) : 0;
+  const verseNumber = argument ? (parseVerseLabel(argument) ?? 0) : 0;
+  const isAnchor = Boolean(verseNumber && !/[b-z]$/.test(argument ?? ''));
   const verseId = formatVerseId(bookId, chapterNumber, verseNumber);
   const selected = useIsSelectedVerse(verseId);
   const includedInOpenAnnotation = useVerseIncludedInOpenAnnotation(verseId);
@@ -48,7 +53,7 @@ export function Verse({ argument, children }: USFMNodeComponentProps) {
     <VerseIdProvider verseId={verseId}>
       <span
         className={`usfm-verse${highlightColor ? ` @mode-${highlightColor}` : ''}`}
-        id={argument ? `verse-${verseId}` : undefined}
+        id={isAnchor ? `verse-${verseId}` : undefined}
         data-verse-id={verseId}
         data-selected={selected || undefined}
         data-annotated={includedInOpenAnnotation || undefined}
@@ -58,10 +63,12 @@ export function Verse({ argument, children }: USFMNodeComponentProps) {
         aria-pressed={selected}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
-        style={{ anchorName: formatVerseAnchorName(verseId) }}
+        style={{
+          anchorName: isAnchor ? formatVerseAnchorName(verseId) : undefined,
+        }}
       >
         {verseNumber && (
-          <sup className="usfm-verse-number @mode-denser">{verseNumber}</sup>
+          <sup className="usfm-verse-number @mode-denser">{argument}</sup>
         )}
         {children}
       </span>

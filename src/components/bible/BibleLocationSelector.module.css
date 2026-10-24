@@ -1,5 +1,58 @@
 .root {
   display: flex;
+  flex-direction: column;
+  gap: var(--m-sp-md);
+  min-width: 0;
+}
+.group {
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+.heading {
+  margin: 0 0 var(--m-sp-xs);
+  font-size: var(--m-prose-ambient-size);
+  line-height: var(--m-prose-ambient-lineHeight);
+}
+.options {
+  display: flex;
   flex-wrap: wrap;
-  gap: var(--m-sp-sm);
+  gap: var(--m-sp-xs);
+  min-width: 0;
+}
+.book {
+  min-width: min-content;
+  width: auto;
+  justify-content: center;
+  text-wrap: nowrap;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chapter {
+  justify-content: center;
+}
+.bookGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+
+  @media (min-width: 720px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+.chapterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 5ch);
+}
+.bookGrid,
+.chapterGrid {
+  gap: var(--m-sp-xs);
+  padding: var(--m-sp-sm);
+}
+.chapterScrollArea {
+  height: 20vh;
+}
+.bookScrollArea {
+  height: 40vh;
 }

@@ -1,11 +1,13 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
-import { routerWithDbClient } from '@tanstack/react-router-with-db';
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query';
+import { routerWithDbClient } from '@tanstack/react-router-with-db';
 import { getContext } from './integrations/tanstack-query/root-provider';
+import { initializeTranslations } from './queries/translations';
 import { routeTree } from './routeTree.gen';
 
 export function getRouter() {
   const context = getContext();
+  initializeTranslations(context.queryClient);
 
   const router = createTanStackRouter({
     routeTree,

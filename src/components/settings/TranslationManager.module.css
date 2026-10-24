@@ -1,0 +1,60 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-sp-md);
+  min-width: 0;
+}
+
+.root h2 {
+  font-size: var(--m-fs-lg);
+}
+.root h3 {
+  font-size: var(--m-fs-md);
+  margin: 0;
+}
+.root p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--m-sp-sm);
+  padding-block: var(--m-sp-md);
+  border-bottom: 1px solid var(--m-gray-light);
+}
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-sp-xs);
+  min-width: 0;
+  flex: 1 1 14rem;
+  overflow-wrap: anywhere;
+}
+.details progress {
+  width: 100%;
+  height: var(--m-sp-sm);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--m-sp-sm);
+}
+.file,
+.importForm,
+.importForm label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-sp-sm);
+  min-width: 0;
+}
+.file input {
+  max-width: 100%;
+}
