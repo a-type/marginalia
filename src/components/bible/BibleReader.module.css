@@ -29,11 +29,71 @@
 
 .content {
   grid-area: content;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--m-sp-sm);
   min-width: 0;
   min-height: 0;
   max-width: 65ch;
 }
 
+.readerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--m-sp-sm);
+  min-width: 0;
+  padding: 0 var(--m-sp-sm);
+}
+
+.swapStage {
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.view {
+  grid-area: 1 / 1;
+  min-width: 0;
+  min-height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(var(--m-sp-md));
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.view[data-active='true'] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition-delay: 120ms;
+}
+
+.chapter,
+.searchSurface {
+  height: 100%;
+  min-height: 0;
+}
+
+.searchSurface {
+  overflow-y: auto;
+}
+
+.annotationPane {
+  grid-area: annotation;
+}
+
 .menubar {
   grid-area: menubar;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view,
+  .view[data-active='true'] {
+    transform: none;
+    transition: none;
+  }
 }

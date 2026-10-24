@@ -46,6 +46,7 @@
   "translation_unavailable": "This translation is unavailable offline.",
   "translation_location_changed": "Moved to an available chapter in this translation.",
   "bible_search_title": "Search Bible",
+  "bible_search_close": "Close search",
   "bible_search_input": "Words or quoted phrase",
   "bible_search_loading": "Searching...",
   "bible_search_empty": "No matching verses",

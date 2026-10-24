@@ -6,55 +6,23 @@ import {
   bibleSearchQueryOptions,
   translationsQueryOptions,
 } from '#/queries/translations';
-import {
-  ActionBar,
-  ActionButton,
-  Button,
-  Dialog,
-  Icon,
-  Input,
-  Select,
-} from '@a-type/ui';
+import { ActionButton, Button, Icon, Input, Select } from '@a-type/ui';
 import { useDebouncedValue } from '@tanstack/react-pacer';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { getRouteApi, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
-import cls from './BibleSearchDialog.module.css';
+import { useNavigate } from '@tanstack/react-router';
+import { useEffect, useRef, useState } from 'react';
+import cls from './BibleSearch.module.css';
 
-const readerRoute = getRouteApi('/$translation/$book/$chapter');
-
-export function BibleSearchDialog() {
-  const [open, setOpen] = useState(false);
-  const { translationId } = readerRoute.useLoaderData();
-  return (
-    <Dialog open={open} onOpenChange={setOpen} disableSheet>
-      <Dialog.Trigger
-        render={<Button emphasis="ghost" />}
-        aria-label={m.bible_search_title()}
-        title={m.bible_search_title()}
-      >
-        <Icon name="search" />
-      </Dialog.Trigger>
-      <Dialog.Content width="lg" className={cls.dialog}>
-        <Dialog.Title>{m.bible_search_title()}</Dialog.Title>
-        {open && (
-          <BibleSearch
-            initialTranslation={translationId}
-            onSelect={() => setOpen(false)}
-          />
-        )}
-      </Dialog.Content>
-    </Dialog>
-  );
-}
-
-function BibleSearch({
+export function BibleSearch({
   initialTranslation,
+  isActive,
   onSelect,
 }: {
   initialTranslation: string;
+  isActive: boolean;
   onSelect: () => void;
 }) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const {
     translationId,
     bookId,
@@ -74,16 +42,24 @@ function BibleSearch({
     onSelectVerse,
     previousPage,
     nextPage,
-  } = useBibleSearch(initialTranslation, onSelect);
+  } = useBibleSearch(initialTranslation, isActive, onSelect);
+
+  useEffect(() => {
+    if (isActive)
+      rootRef.current
+        ?.querySelector<HTMLInputElement>('input[aria-label]')
+        ?.focus();
+  }, [isActive]);
+
   return (
-    <div className={cls.root}>
+    <div className={cls.root} ref={rootRef}>
+      <h2 className={cls.heading}>{m.bible_search_title()}</h2>
       <TranslationSelect
         value={translationId}
         installedOnly
         onValueChange={onTranslationChange}
       />
       <Input
-        autoFocus
         aria-label={m.bible_search_input()}
         placeholder={m.bible_search_input()}
         value={rawQuery}
@@ -91,8 +67,9 @@ function BibleSearch({
         onValueChange={onQueryChange}
       />
       {record && (
-        <ActionBar
+        <div
           className={cls.actionBar}
+          role="group"
           aria-label={m.bible_search_filters()}
         >
           <Select value={bookId} onValueChange={onBookChange}>
@@ -120,7 +97,7 @@ function BibleSearch({
               ))}
             </Select.Content>
           </Select>
-        </ActionBar>
+        </div>
       )}
       {!record && (
         <Button disabled={download.isPending} onClick={() => download.mutate()}>
@@ -221,12 +198,24 @@ function BibleSearch({
   );
 }
 
-function useBibleSearch(initialTranslation: string, onSelect: () => void) {
+function useBibleSearch(
+  initialTranslation: string,
+  isActive: boolean,
+  onSelect: () => void,
+) {
   const [translationId, setTranslationId] = useState(initialTranslation);
   const [bookId, setBookId] = useState('all');
   const [rawQuery, setRawQuery] = useState('');
   const [query] = useDebouncedValue(rawQuery, { wait: 300 });
   const [page, setPage] = useState(0);
+  useEffect(() => {
+    if (!isActive) return;
+    setTranslationId(initialTranslation);
+    setBookId('all');
+    setRawQuery('');
+    setPage(0);
+  }, [initialTranslation, isActive]);
+
   const translations = useQuery(translationsQueryOptions);
   const record = translations.data?.find(
     (translation) => translation.id === translationId,
@@ -276,7 +265,7 @@ function useBibleSearch(initialTranslation: string, onSelect: () => void) {
     setRawQuery(value);
     setPage(0);
   };
-  const onBookChange = (value: string | undefined) => {
+  const onBookChange = (value: string | null) => {
     if (!value) return;
     setBookId(value);
     setPage(0);

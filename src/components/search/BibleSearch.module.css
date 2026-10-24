@@ -1,32 +1,41 @@
-.dialog {
-  min-width: 0;
-  transition-property: opacity, transform;
-  height: min(80vh, calc(100vh - 2 * var(--m-sp-md)));
-}
-
 .root {
   display: flex;
   flex-direction: column;
   gap: var(--m-sp-md);
+  flex: 1 1 auto;
   min-width: 0;
+  width: 100%;
   padding: var(--m-sp-sm);
+}
+
+.root > button {
+  width: 100%;
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--m-fs-lg);
 }
 
 .actionBar {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: var(--m-sp-sm);
   min-width: 0;
+  width: 100%;
 }
-.actionBar > span {
-  flex: none;
+.actionBar > div {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
 }
 .searchInput {
   width: 100%;
 }
 .bookFilter {
-  width: --fn-literal(min(20rem, 100%));
+  flex: 1 1 auto;
   min-width: 0;
+  width: 100%;
 }
 .root p {
   overflow-wrap: anywhere;

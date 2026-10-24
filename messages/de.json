@@ -37,6 +37,7 @@
   "translation_unavailable": "Diese Übersetzung ist offline nicht verfügbar.",
   "translation_location_changed": "Zu einem verfügbaren Kapitel dieser Übersetzung gewechselt.",
   "bible_search_title": "Bibel durchsuchen",
+  "bible_search_close": "Suche schließen",
   "bible_search_input": "Wörter oder Phrase in Anführungszeichen",
   "bible_search_loading": "Suche läuft...",
   "bible_search_empty": "Keine passenden Verse",
