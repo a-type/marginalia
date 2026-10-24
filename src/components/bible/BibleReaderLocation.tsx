@@ -92,7 +92,7 @@ export function BibleReaderLocation({
     <div className={clsx(cls.root, className)}>
       <Popover open={open} onOpenChange={onOpenChange}>
         <Popover.Trigger
-          render={<Button className={cls.trigger} emphasis="ghost" />}
+          render={<Button className={cls.trigger} emphasis="default" />}
           aria-label={`${currentBookTitle}, ${m.bible_chapter_label()} ${chapter}`}
         >
           <span>
