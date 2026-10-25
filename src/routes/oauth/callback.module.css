@@ -1,0 +1,23 @@
+.root {
+  display: grid;
+  min-block-size: 100dvh;
+  place-items: center;
+  padding: var(--m-sp-lg);
+}
+
+.content {
+  max-inline-size: 32rem;
+}
+
+.content h1 {
+  margin-block: 0 var(--m-sp-sm);
+  font-size: var(--m-fs-lg);
+}
+
+.content p {
+  margin-block: 0 var(--m-sp-lg);
+}
+
+.returnLink {
+  text-underline-offset: 0.2em;
+}

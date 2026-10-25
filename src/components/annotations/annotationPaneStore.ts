@@ -139,6 +139,10 @@ export function useIsSelectedVerse(verseId: VerseId) {
 }
 
 export function useToggleVerseSelected(verseId: VerseId) {
+  const primarySelected = readerRoute.useSearch({
+    select: (search) =>
+      parseVerseSelection(search.verses).at(0) === parseVerseId(verseId).verse,
+  });
   const setSelectedNumber = useSetSelectedVerseNumber();
   return () => {
     const phase = annotationPaneStore.state.phase;
