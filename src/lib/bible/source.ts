@@ -14,7 +14,7 @@ import { getStoredBook, getTranslation } from './translations';
 
 export { defaultTranslationId, isTranslationId } from './manifests';
 export type { TranslationBook, TranslationManifest } from './manifests';
-const TRANSLATION_STORAGE_KEY = 'apostil:translation';
+const TRANSLATION_STORAGE_KEY = 'margins:translation';
 
 const getResourceOrigin = createIsomorphicFn()
   .client(() => window.location.origin)

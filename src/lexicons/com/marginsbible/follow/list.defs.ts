@@ -4,7 +4,7 @@
 
 import { l } from '@atproto/lex'
 
-const $nsid = 'com.apostilbible.profile.list'
+const $nsid = 'com.marginsbible.follow.list'
 
 type $nsid = typeof $nsid
 

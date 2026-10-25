@@ -3,30 +3,43 @@
  */
 
 import { l } from '@atproto/lex'
+import * as MarginsbibleAnnotation from './annotation.defs.js'
 
-const $nsid = 'com.apostilbible.commentary'
+const $nsid = 'com.marginsbible.highlight'
 
 type $nsid = typeof $nsid
 
 export { $nsid }
 
-/** A named collection of verse annotations */
+/** A color highlight on exactly one verse. Clients use a canonical verse-derived record key, so a repository has one highlight per verse. */
 type Main = {
-  $type: 'com.apostilbible.commentary'
+  $type: 'com.marginsbible.highlight'
+  verse: MarginsbibleAnnotation.VerseRef
 
   /**
-   * The name of the commentary. This is used to identify the commentary in the UI.
+   * The highlight color.
    */
-  name: string
+  color: string
+
+  /**
+   * Client-side creation time
+   */
+  createdAt: l.DatetimeString
 }
 
 export type { Main }
 
-/** A named collection of verse annotations */
-const main = /*#__PURE__*/ l.record<'tid', Main>(
-  'tid',
+/** A color highlight on exactly one verse. Clients use a canonical verse-derived record key, so a repository has one highlight per verse. */
+const main = /*#__PURE__*/ l.record<'any', Main>(
+  'any',
   $nsid,
-  /*#__PURE__*/ l.object({ name: /*#__PURE__*/ l.string() }),
+  /*#__PURE__*/ l.object({
+    verse: /*#__PURE__*/ l.ref<MarginsbibleAnnotation.VerseRef>(
+      (() => MarginsbibleAnnotation.verseRef) as any,
+    ),
+    color: /*#__PURE__*/ l.string(),
+    createdAt: /*#__PURE__*/ l.string({ format: 'datetime' }),
+  }),
 )
 
 export { main }

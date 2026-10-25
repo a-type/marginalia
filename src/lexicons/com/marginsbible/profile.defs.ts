@@ -4,15 +4,15 @@
 
 import { l } from '@atproto/lex'
 
-const $nsid = 'com.apostilbible.profile'
+const $nsid = 'com.marginsbible.profile'
 
 type $nsid = typeof $nsid
 
 export { $nsid }
 
-/** The profile for a Apostil account. */
+/** The profile for a Margins account. */
 type Main = {
-  $type: 'com.apostilbible.profile'
+  $type: 'com.marginsbible.profile'
   handle: l.HandleString
   displayName?: string
   avatar?: l.UriString
@@ -22,7 +22,7 @@ type Main = {
 
 export type { Main }
 
-/** The profile for a Apostil account. */
+/** The profile for a Margins account. */
 const main = /*#__PURE__*/ l.record<'literal:self', Main>(
   'literal:self',
   $nsid,

@@ -6,7 +6,7 @@ export interface BibleLocation {
   chapter: number;
 }
 
-const STORAGE_KEY = 'apostil:bible-location';
+const STORAGE_KEY = 'margins:bible-location';
 const defaultLocation: BibleLocation = { bookId: 'GEN', chapter: 1 };
 
 export function parseBibleLocation(

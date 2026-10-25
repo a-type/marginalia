@@ -3,41 +3,28 @@
  */
 
 import { l } from '@atproto/lex'
-import * as ApostilbibleAnnotation from './annotation.defs.js'
 
-const $nsid = 'com.apostilbible.highlight'
+const $nsid = 'com.marginsbible.follow'
 
 type $nsid = typeof $nsid
 
 export { $nsid }
 
-/** A color highlight on exactly one verse. Clients use a canonical verse-derived record key, so a repository has one highlight per verse. */
+/** A follow relationship. The record author is the follower. */
 type Main = {
-  $type: 'com.apostilbible.highlight'
-  verse: ApostilbibleAnnotation.VerseRef
-
-  /**
-   * The highlight color.
-   */
-  color: string
-
-  /**
-   * Client-side creation time
-   */
+  $type: 'com.marginsbible.follow'
+  subject: l.DidString
   createdAt: l.DatetimeString
 }
 
 export type { Main }
 
-/** A color highlight on exactly one verse. Clients use a canonical verse-derived record key, so a repository has one highlight per verse. */
-const main = /*#__PURE__*/ l.record<'any', Main>(
-  'any',
+/** A follow relationship. The record author is the follower. */
+const main = /*#__PURE__*/ l.record<'tid', Main>(
+  'tid',
   $nsid,
   /*#__PURE__*/ l.object({
-    verse: /*#__PURE__*/ l.ref<ApostilbibleAnnotation.VerseRef>(
-      (() => ApostilbibleAnnotation.verseRef) as any,
-    ),
-    color: /*#__PURE__*/ l.string(),
+    subject: /*#__PURE__*/ l.string({ format: 'did' }),
     createdAt: /*#__PURE__*/ l.string({ format: 'datetime' }),
   }),
 )

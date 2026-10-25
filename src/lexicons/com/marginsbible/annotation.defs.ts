@@ -3,9 +3,9 @@
  */
 
 import { l } from '@atproto/lex'
-import * as ApostilbibleCommentary from './commentary.defs.js'
+import * as MarginsbibleCommentary from './commentary.defs.js'
 
-const $nsid = 'com.apostilbible.annotation'
+const $nsid = 'com.marginsbible.annotation'
 
 type $nsid = typeof $nsid
 
@@ -13,12 +13,12 @@ export { $nsid }
 
 /** An individual comment on a group of verses */
 type Main = {
-  $type: 'com.apostilbible.annotation'
+  $type: 'com.marginsbible.annotation'
 
   /**
    * References a commentary (a named collection of annotations) if one is associated
    */
-  commentaryId?: ApostilbibleCommentary.Main
+  commentaryId?: MarginsbibleCommentary.Main
 
   /**
    * The IDs of the verses this comment is on
@@ -44,8 +44,8 @@ const main = /*#__PURE__*/ l.record<'tid', Main>(
   $nsid,
   /*#__PURE__*/ l.object({
     commentaryId: /*#__PURE__*/ l.optional(
-      /*#__PURE__*/ l.ref<ApostilbibleCommentary.Main>(
-        (() => ApostilbibleCommentary.main) as any,
+      /*#__PURE__*/ l.ref<MarginsbibleCommentary.Main>(
+        (() => MarginsbibleCommentary.main) as any,
       ),
     ),
     verses: /*#__PURE__*/ l.array(
@@ -76,7 +76,7 @@ export const $safeParse = /*#__PURE__*/ main.safeParse.bind(main)
 export const $validate = /*#__PURE__*/ main.validate.bind(main)
 export const $safeValidate = /*#__PURE__*/ main.safeValidate.bind(main)
 
-type VerseRef = { $type?: 'com.apostilbible.annotation#verseRef'; id: string }
+type VerseRef = { $type?: 'com.marginsbible.annotation#verseRef'; id: string }
 
 export type { VerseRef }
 

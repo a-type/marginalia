@@ -4,8 +4,8 @@ import { getOAuthClientMetadata } from './client-metadata';
 
 const expectedScope = [
   'atproto',
-  'repo?collection=com.apostilbible.annotation&collection=com.apostilbible.highlight&collection=com.apostilbible.profile&collection=com.apostilbible.follow&action=create&action=update',
-  'rpc?lxm=com.apostilbible.annotation.listForChapter&lxm=com.apostilbible.highlight.listForChapter&lxm=com.apostilbible.profile.list&lxm=com.apostilbible.profile.getForDids&lxm=com.apostilbible.follow.list&lxm=app.bsky.actor.getProfile&aud=*',
+  'repo?collection=com.marginsbible.annotation&collection=com.marginsbible.highlight&collection=com.marginsbible.profile&collection=com.marginsbible.follow&action=create&action=update',
+  'rpc?lxm=com.marginsbible.annotation.listForChapter&lxm=com.marginsbible.highlight.listForChapter&lxm=com.marginsbible.profile.list&lxm=com.marginsbible.profile.getForDids&lxm=com.marginsbible.follow.list&lxm=app.bsky.actor.getProfile&aud=*',
 ].join(' ');
 
 describe('OAuth client metadata', () => {
@@ -26,13 +26,13 @@ describe('OAuth client metadata', () => {
   });
 
   it('uses the published metadata URL as a production client ID', () => {
-    const metadata = getOAuthClientMetadata('https://apostil.example.com');
+    const metadata = getOAuthClientMetadata('https://margins.example.com');
 
     expect(metadata.client_id).toBe(
-      'https://apostil.example.com/oauth-client-metadata.json',
+      'https://margins.example.com/oauth-client-metadata.json',
     );
     expect(metadata.redirect_uris).toEqual([
-      'https://apostil.example.com/oauth/callback',
+      'https://margins.example.com/oauth/callback',
     ]);
   });
 });

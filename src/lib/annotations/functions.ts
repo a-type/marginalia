@@ -1,8 +1,8 @@
 import { TID } from '@atproto/common-web';
 import { z } from 'zod';
 
-import * as Annotation from '#/lexicons/com/apostilbible/annotation';
-import * as ListAnnotationsForChapter from '#/lexicons/com/apostilbible/annotation/listForChapter';
+import * as Annotation from '#/lexicons/com/marginsbible/annotation';
+import * as ListAnnotationsForChapter from '#/lexicons/com/marginsbible/annotation/listForChapter';
 import {
   getAuthenticatedHappyViewClient,
   getHappyViewSession,

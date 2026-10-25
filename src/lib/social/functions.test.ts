@@ -68,7 +68,7 @@ describe('current Bluesky profile and graph queries', () => {
     );
   });
 
-  it('seeds profile setup from HappyView when no Apostil profile exists', async () => {
+  it('seeds profile setup from HappyView when no Margins profile exists', async () => {
     const did = 'did:plc:abcdefghijklmnopqrstuvwx';
     const fetchHandler = vi.fn(
       async () =>
@@ -88,7 +88,7 @@ describe('current Bluesky profile and graph queries', () => {
 
     const { getProfileSetup } = await import('./functions');
 
-    await expect(getProfileSetup(did)).resolves.toEqual({
+    await expect(getProfileSetup()).resolves.toEqual({
       profile: null,
       seed: {
         handle: 'reader.example',
@@ -134,9 +134,9 @@ describe('current Bluesky profile and graph queries', () => {
     getHappyViewSession.mockResolvedValue({ did });
     fetchAllXrpcRecords.mockResolvedValue([
       {
-        uri: `at://${did}/com.apostilbible.profile/self`,
+        uri: `at://${did}/com.marginsbible.profile/self`,
         cid: 'bafyreitest',
-        $type: 'com.apostilbible.profile',
+        $type: 'com.marginsbible.profile',
         handle: 'reader.example',
         displayName: 'Reader',
         createdAt,
@@ -159,9 +159,9 @@ describe('current Bluesky profile and graph queries', () => {
 
     const { getProfileSetup } = await import('./functions');
 
-    await expect(
-      getProfileSetup('did:plc:abcdefghijklmnopqrstuvwx'),
-    ).rejects.toThrow('Invalid HappyView session');
+    await expect(getProfileSetup()).rejects.toThrow(
+      'Invalid HappyView session',
+    );
   });
 
   it('loads follows from the public Bluesky AppView without HappyView auth', async () => {
@@ -172,9 +172,9 @@ describe('current Bluesky profile and graph queries', () => {
     getHappyViewSession.mockResolvedValue({ did, fetchHandler });
     fetchAllXrpcRecords.mockResolvedValue([
       {
-        uri: `at://${did}/com.apostilbible.follow/self`,
+        uri: `at://${did}/com.marginsbible.follow/self`,
         cid: 'bafyreitest',
-        $type: 'com.apostilbible.follow',
+        $type: 'com.marginsbible.follow',
         subject: followedDid,
         createdAt: '2026-09-30T12:00:00.000Z',
       },
@@ -210,8 +210,8 @@ describe('current Bluesky profile and graph queries', () => {
     getHappyViewSession.mockResolvedValue({ did });
     fetchAllXrpcRecords.mockResolvedValue([
       {
-        uri: `at://${did}/com.apostilbible.follow/self`,
-        $type: 'com.apostilbible.follow',
+        uri: `at://${did}/com.marginsbible.follow/self`,
+        $type: 'com.marginsbible.follow',
         subject: followedDid,
         createdAt: '2026-09-30T12:00:00.000Z',
       },
@@ -219,8 +219,8 @@ describe('current Bluesky profile and graph queries', () => {
     fetchXrpcRecordPage.mockResolvedValue({
       records: [
         {
-          uri: `at://${followedDid}/com.apostilbible.profile/self`,
-          $type: 'com.apostilbible.profile',
+          uri: `at://${followedDid}/com.marginsbible.profile/self`,
+          $type: 'com.marginsbible.profile',
           handle: 'followed.example',
           createdAt: '2026-09-30T12:00:00.000Z',
         },

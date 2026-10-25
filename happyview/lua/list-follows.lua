@@ -1,4 +1,4 @@
-local follow_collection = "com.apostilbible.follow"
+local follow_collection = "com.marginsbible.follow"
 
 local function query_all(did)
   local records = {}

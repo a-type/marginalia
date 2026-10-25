@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { chromium } from 'playwright';
 
 const origin = process.env.BASE_URL ?? 'http://127.0.0.1:7656';
-const output = `${tmpdir()}/apostil-offline-verification`;
+const output = `${tmpdir()}/margins-offline-verification`;
 const browser = await chromium.launch();
 const context = await browser.newContext({
   viewport: { width: 1280, height: 900 },
@@ -21,7 +21,7 @@ context.on('request', (request) => {
 async function records() {
   return page.evaluate(async () => {
     const db = await new Promise((resolve, reject) => {
-      const request = indexedDB.open('apostil-translations');
+      const request = indexedDB.open('margins-translations');
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
@@ -44,13 +44,13 @@ async function waitReady(id) {
   await page.evaluate(
     (translationId) =>
       new Promise((resolve, reject) => {
-        const channel = new BroadcastChannel('apostil-translations');
+        const channel = new BroadcastChannel('margins-translations');
         const timeout = setTimeout(() => {
           channel.close();
           reject(new Error('Translation preparation timed out'));
         }, 120_000);
         const check = () => {
-          const opening = indexedDB.open('apostil-translations');
+          const opening = indexedDB.open('margins-translations');
           opening.onsuccess = () => {
             const db = opening.result;
             if (!db.objectStoreNames.contains('translations')) {

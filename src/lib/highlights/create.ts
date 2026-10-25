@@ -1,4 +1,4 @@
-import * as Highlight from '#/lexicons/com/apostilbible/highlight';
+import * as Highlight from '#/lexicons/com/marginsbible/highlight';
 import { getCurrentUserDid } from '#/lib/auth/functions';
 import type { DbClient } from '@tanstack/react-db';
 

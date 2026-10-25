@@ -1,14 +1,14 @@
 ---
 name: end-to-end-atproto-query
 description: >
-  Create or change an end-to-end ATProto query in Apostil. Use when adding a
+  Create or change an end-to-end ATProto query in Margins. Use when adding a
   query lexicon or wiring a query through HappyView Lua, provisioning, server
   functions, and TanStack React Query queryOptions.
 ---
 
 # End-to-End ATProto Query Workflow
 
-Use this workflow when a query must be available through Apostil's HappyView
+Use this workflow when a query must be available through Margins's HappyView
 XRPC service and consumed by the application. Keep the lexicon, Lua result,
 server function, and React Query result shape aligned.
 

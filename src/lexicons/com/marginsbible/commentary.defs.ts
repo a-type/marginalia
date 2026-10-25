@@ -4,29 +4,29 @@
 
 import { l } from '@atproto/lex'
 
-const $nsid = 'com.apostilbible.follow'
+const $nsid = 'com.marginsbible.commentary'
 
 type $nsid = typeof $nsid
 
 export { $nsid }
 
-/** A follow relationship. The record author is the follower. */
+/** A named collection of verse annotations */
 type Main = {
-  $type: 'com.apostilbible.follow'
-  subject: l.DidString
-  createdAt: l.DatetimeString
+  $type: 'com.marginsbible.commentary'
+
+  /**
+   * The name of the commentary. This is used to identify the commentary in the UI.
+   */
+  name: string
 }
 
 export type { Main }
 
-/** A follow relationship. The record author is the follower. */
+/** A named collection of verse annotations */
 const main = /*#__PURE__*/ l.record<'tid', Main>(
   'tid',
   $nsid,
-  /*#__PURE__*/ l.object({
-    subject: /*#__PURE__*/ l.string({ format: 'did' }),
-    createdAt: /*#__PURE__*/ l.string({ format: 'datetime' }),
-  }),
+  /*#__PURE__*/ l.object({ name: /*#__PURE__*/ l.string() }),
 )
 
 export { main }

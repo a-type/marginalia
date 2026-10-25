@@ -61,7 +61,7 @@ const listeners = new Set<() => void>();
 
 function getChannel() {
   if (!channel && typeof BroadcastChannel !== 'undefined') {
-    channel = new BroadcastChannel('apostil-translations');
+    channel = new BroadcastChannel('margins-translations');
     channel.onmessage = () => listeners.forEach((listener) => listener());
   }
   return channel;
@@ -82,7 +82,7 @@ function changed() {
 
 export function translationDatabase() {
   if (!database) {
-    database = openDB<TranslationDatabase>('apostil-translations', 1, {
+    database = openDB<TranslationDatabase>('margins-translations', 1, {
       upgrade(db) {
         db.createObjectStore('translations', { keyPath: 'id' });
         db.createObjectStore('books', {

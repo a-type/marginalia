@@ -26,7 +26,7 @@ function getHappyViewProxyPath(url: string | undefined) {
 
 function happyViewProxyPlugin(target: string) {
   return {
-    name: 'apostil-happyview-proxy',
+    name: 'margins-happyview-proxy',
     enforce: 'pre' as const,
     configureServer(server: ViteDevServer) {
       // Preserve the public Host header used to sign HappyView's DPoP htu.
@@ -106,8 +106,8 @@ const config = defineConfig(({ mode }) => {
         includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
         manifest: {
           id: '/',
-          name: 'Apostil Bible',
-          short_name: 'Apostil',
+          name: 'Margins Bible',
+          short_name: 'Margins',
           description: 'A Bible reader with decentralized social commentary.',
           start_url: '/',
           scope: '/',

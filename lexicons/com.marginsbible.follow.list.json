@@ -1,0 +1,10 @@
+{
+  "lexicon": 1,
+  "id": "com.marginsbible.follow.list",
+  "description": "Lists follow records.",
+  "defs": {
+    "main": {
+      "type": "query"
+    }
+  }
+}

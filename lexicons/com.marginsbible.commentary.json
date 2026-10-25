@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "com.apostilbible.commentary",
+  "id": "com.marginsbible.commentary",
   "description": "Defines a named collection of verse annotations.",
   "defs": {
     "main": {

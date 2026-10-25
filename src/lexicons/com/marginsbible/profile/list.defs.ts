@@ -4,7 +4,7 @@
 
 import { l } from '@atproto/lex'
 
-const $nsid = 'com.apostilbible.highlight.listForChapter'
+const $nsid = 'com.marginsbible.profile.list'
 
 type $nsid = typeof $nsid
 

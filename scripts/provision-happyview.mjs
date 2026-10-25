@@ -82,7 +82,7 @@ async function configureXrpcProxy() {
       nsids.some((pattern) => matchesNsidPattern(pattern, putRecordNsid)))
   ) {
     throw new Error(
-      `HappyView's XRPC proxy policy blocks ${putRecordNsid}, which Apostil needs to write records`,
+      `HappyView's XRPC proxy policy blocks ${putRecordNsid}, which Margins needs to write records`,
     );
   }
 
@@ -148,11 +148,11 @@ const lexicons = await Promise.all(
   })),
 );
 const recordOrder = new Map([
-  ['com.apostilbible.commentary', 0],
-  ['com.apostilbible.annotation', 1],
-  ['com.apostilbible.profile', 2],
-  ['com.apostilbible.follow', 3],
-  ['com.apostilbible.highlight', 4],
+  ['com.marginsbible.commentary', 0],
+  ['com.marginsbible.annotation', 1],
+  ['com.marginsbible.profile', 2],
+  ['com.marginsbible.follow', 3],
+  ['com.marginsbible.highlight', 4],
 ]);
 const recordLexicons = lexicons
   .filter(({ lexicon }) => lexicon.defs?.main?.type === 'record')
@@ -165,11 +165,11 @@ const queryLexicons = lexicons
   .filter(({ lexicon }) => lexicon.defs?.main?.type !== 'record')
   .sort((left, right) => left.lexicon.id.localeCompare(right.lexicon.id));
 const queryTargets = new Map([
-  ['com.apostilbible.annotation.listForChapter', 'com.apostilbible.annotation'],
-  ['com.apostilbible.follow.list', 'com.apostilbible.follow'],
-  ['com.apostilbible.highlight.listForChapter', 'com.apostilbible.highlight'],
-  ['com.apostilbible.profile.getForDids', 'com.apostilbible.profile'],
-  ['com.apostilbible.profile.list', 'com.apostilbible.profile'],
+  ['com.marginsbible.annotation.listForChapter', 'com.marginsbible.annotation'],
+  ['com.marginsbible.follow.list', 'com.marginsbible.follow'],
+  ['com.marginsbible.highlight.listForChapter', 'com.marginsbible.highlight'],
+  ['com.marginsbible.profile.getForDids', 'com.marginsbible.profile'],
+  ['com.marginsbible.profile.list', 'com.marginsbible.profile'],
 ]);
 
 for (const { lexicon } of [...recordLexicons, ...queryLexicons]) {
@@ -185,24 +185,24 @@ for (const { lexicon } of [...recordLexicons, ...queryLexicons]) {
 
 const scripts = [
   {
-    id: 'xrpc.query:com.apostilbible.annotation.listForChapter',
+    id: 'xrpc.query:com.marginsbible.annotation.listForChapter',
     file: 'list-annotations-for-chapter.lua',
     description: 'Lists chapter annotations from the caller and followed DIDs.',
   },
   {
-    id: 'xrpc.query:com.apostilbible.follow.list',
+    id: 'xrpc.query:com.marginsbible.follow.list',
     file: 'list-follows.lua',
     description: 'Lists follow records created by the authenticated caller.',
   },
   {
-    id: 'xrpc.query:com.apostilbible.highlight.listForChapter',
+    id: 'xrpc.query:com.marginsbible.highlight.listForChapter',
     file: 'list-highlights-for-chapter.lua',
     description: 'Lists chapter highlights for the authenticated caller.',
   },
   {
-    id: 'xrpc.query:com.apostilbible.profile.getForDids',
+    id: 'xrpc.query:com.marginsbible.profile.getForDids',
     file: 'list-profiles-for-dids.lua',
-    description: 'Returns indexed Apostil profiles for multiple DIDs.',
+    description: 'Returns indexed Margins profiles for multiple DIDs.',
   },
 ];
 

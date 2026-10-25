@@ -1,7 +1,7 @@
-name: apostil
+name: margins
 
 x-app-image: &app-image
-  image: apostil-app
+  image: margins-app
   build:
     context: .
     args:
