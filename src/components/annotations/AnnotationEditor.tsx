@@ -1,4 +1,4 @@
-import { Button, FormikForm, TextAreaField } from '@a-type/ui';
+import { Box, Button, FormikForm, TextAreaField } from '@a-type/ui';
 import { useDbClient } from '@tanstack/react-db';
 
 import { createAnnotation } from '#/lib/annotations/create';
@@ -62,7 +62,7 @@ export function AnnotationEditor({
         className={cls.commentField}
       />
       <FormikForm.Error />
-      <div className={cls.actions}>
+      <Box full="width" items="center" justify="between" gap="sm">
         <Button
           type="button"
           aria-pressed={addingVerses}
@@ -72,14 +72,15 @@ export function AnnotationEditor({
             ? m.annotation_finish_adding_verses()
             : m.annotation_add_more_verses()}
         </Button>
-        <span className={cls.spacer} />
-        <Button type="button" onClick={onCancel}>
-          {m.annotation_cancel()}
-        </Button>
-        <FormikForm.SubmitButton>
-          {m.annotation_submit()}
-        </FormikForm.SubmitButton>
-      </div>
+        <Box items="center" gap="sm">
+          <Button type="button" onClick={onCancel}>
+            {m.annotation_cancel()}
+          </Button>
+          <FormikForm.SubmitButton>
+            {m.annotation_submit()}
+          </FormikForm.SubmitButton>
+        </Box>
+      </Box>
     </FormikForm>
   );
 }

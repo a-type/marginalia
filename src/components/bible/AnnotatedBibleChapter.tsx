@@ -34,8 +34,8 @@ export function AnnotatedBibleChapter({
       <ScrollArea direction="vertical" className={cls.scrollArea}>
         <div className={cls.chapterContent}>
           {header}
-          <Box gap>
-            <Box p className="min-w-0">
+          <Box gap className={cls.verseRow}>
+            <Box p className={`${cls.text} min-w-0`}>
               <BookIdProvider bookId={location.bookId}>
                 <USFMRenderer usfm={source} chapter={location.chapter} />
               </BookIdProvider>

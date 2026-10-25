@@ -55,6 +55,7 @@ export function AppShell({
           border
           full
           col
+          overflow="clip"
         >
           {children}
         </Box>

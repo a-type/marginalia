@@ -1,4 +1,6 @@
 .root {
+  --annotation-gutter-width: --fn-literal(200px);
+
   height: 100dvh;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -16,13 +18,14 @@
   display: flex;
   align-items: center;
   gap: var(--m-sp-md);
-  width: min(100%, 65ch);
+  width: min(100%, calc(65ch + var(--annotation-gutter-width)));
   min-width: 0;
   margin-inline: auto;
 }
 
 .tabs {
   flex: 0 1 auto;
+  border-radius: var(--m-rd);
   min-width: 0;
   & * {
     border-radius: inherit;
@@ -40,7 +43,7 @@
 
 .panel {
   display: flex;
-  width: min(100%, 65ch);
+  width: min(100%, calc(65ch + var(--annotation-gutter-width)));
   min-width: 0;
   min-height: 0;
   margin-inline: auto;

@@ -1,9 +1,14 @@
 .root {
   height: 0;
   overflow: clip;
+  padding: var(--m-sp);
   pointer-events: none;
   @apply --mx-bg(inherit);
-  transition: height var(--m-dur) var(--m-ease);
+  transition:
+    height var(--m-dur) var(--m-ease),
+    padding var(--m-dur) var(--m-ease);
+
+  border-top: 1px solid var(--m-gray);
 
   &[data-open] {
     height: min(--fn-literal(12rem), 35vh);
@@ -16,6 +21,12 @@
 
   &[data-empty] {
     height: --fn-literal(0px);
+    padding: 0;
+  }
+
+  &[aria-hidden='true'] {
+    height: 0;
+    padding: 0;
   }
 }
 
@@ -26,7 +37,6 @@
 }
 
 .empty {
-  max-width: 800px;
   margin-inline: auto;
   justify-content: flex-end;
 }

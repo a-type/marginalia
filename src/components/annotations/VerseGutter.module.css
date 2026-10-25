@@ -1,7 +1,18 @@
 .gutter {
-  width: --fn-literal(32px);
-  flex-shrink: 0;
-  overflow: hidden;
+  width: clamp(
+    --fn-literal(32px),
+    calc(100% - 65ch - var(--m-sp-md)),
+    var(--annotation-gutter-width)
+  );
+  flex: 0 0 auto;
+  container-name: annotations-margin;
+  container-type: inline-size;
+  @apply --mx-bg(var(--m-gray-wash));
+  box-shadow:
+    inset 0px 10px 20px var(--m-gray-paper),
+    inset 0px -10px 20px var(--m-gray-paper);
+  padding-inline-start: var(--m-sp-sm);
+  padding-inline-end: var(--m-sp-md);
 }
 
 .controls,
@@ -12,7 +23,23 @@
   z-index: 1;
   display: flex;
   flex-direction: column;
+  width: 100cqi;
   gap: var(--m-sp-xs);
+  min-width: unset;
+  min-height: unset;
+
+  /* Synthetic touch target since this button can get very small */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    right: 0;
+    bottom: 0;
+    min-width: 38px;
+    min-height: 38px;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .controls {
@@ -27,10 +54,72 @@
   cursor: pointer;
 }
 
+.dots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-sp-xs);
+}
+
+.excerpts {
+  display: none;
+  flex-direction: column;
+  gap: var(--m-sp-xs);
+}
+
+.excerpt {
+  box-sizing: border-box;
+  justify-content: flex-start;
+  gap: var(--m-sp-xs);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-align: start;
+  opacity: 0.5;
+
+  &:hover,
+  &:focus {
+    opacity: 1;
+  }
+}
+
+.authorAvatar {
+  flex: 0 0 auto;
+}
+
+.excerptReference {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-weight: var(--m-fw-bold);
+}
+
+.excerptText {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .indicator {
   width: var(--m-sp-md);
   height: var(--m-sp-md);
   translate: 0 0.2rem;
   border-radius: 50%;
-  background: var(--m-tint-heavy);
+  background: var(--m-tint-wash);
+  border: 1px solid var(--m-tint-heavy);
+}
+
+@container annotations-margin (min-width: 120px) {
+  .indicators {
+    align-items: stretch;
+  }
+
+  .dots {
+    display: none;
+  }
+
+  .excerpts {
+    display: flex;
+  }
 }

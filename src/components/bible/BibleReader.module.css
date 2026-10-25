@@ -1,7 +1,6 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: var(--m-sp-md);
   height: 100%;
   min-height: 0;
 }
@@ -9,7 +8,7 @@
 .content {
   flex: 1 1 0;
   width: 100%;
-  max-width: 65ch;
+  max-width: calc(65ch + var(--annotation-gutter-width));
   min-height: 0;
   min-width: 0;
   margin-inline: auto;
@@ -36,7 +35,6 @@
 }
 
 .annotationPane {
-  max-width: 65ch;
   margin-inline: auto;
   flex: 0 0 auto;
 }

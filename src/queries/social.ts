@@ -4,6 +4,7 @@ import {
   getCurrentBlueskyProfile,
   getCurrentProfile,
   getProfileSetup,
+  getProfilesForDids,
   listFollowedProfiles,
   listFollowSuggestions,
   searchBlueskyActors,
@@ -36,6 +37,14 @@ export const currentActorProfileQueryOptions = () =>
     queryKey: ['social', 'actor-profile'],
     queryFn: getCurrentBlueskyProfile,
   });
+
+export const profilesForDidsQueryOptions = (dids: readonly string[]) => {
+  const uniqueDids = [...new Set(dids)].sort();
+  return queryOptions({
+    queryKey: ['social', 'profiles-for-dids', uniqueDids],
+    queryFn: () => getProfilesForDids({ data: { dids: uniqueDids } }),
+  });
+};
 
 export const blueskyActorSearchQueryOptions = (
   input: SearchBlueskyActorsInput,

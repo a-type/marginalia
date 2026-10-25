@@ -16,3 +16,14 @@
   flex-direction: column;
   min-height: 100%;
 }
+
+.verseRow {
+  width: 100%;
+  min-width: 0;
+}
+
+.text {
+  flex: 1 1 65ch;
+  max-width: 65ch;
+  min-width: 0;
+}

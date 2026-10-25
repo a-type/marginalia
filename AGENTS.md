@@ -55,9 +55,11 @@ Bible source files under `src/data/usfm-source/` are imported as raw text. Avoid
 
 Follow all React recommended practices and rules consistently.
 
-- Do not use `useEffect` for data fetching. Use React Query (with route loader preloading).
-- Avoid `useEffect` in general.
-- Never duplicate state. Use derived state as needed.
+Do not use `useEffect` for data fetching. Use React Query (with route loader preloading).
+
+Avoid `useEffect` in general.
+
+Never duplicate state. Use derived state as needed.
 
 React Compiler is in use in this project. Refrain from adding memoization and rely on the Compiler.
 
@@ -69,6 +71,8 @@ Keep component prop dependencies light. If a component can get the same data fro
 
 After implementing a working component structure, review each component for overall complexity and number of concerns. Refactor and break down components which do more than 2 distinct jobs. Tightly coupled components can live in the same file, loosely coupled ones can be split into different files.
 
+Import design system components from `@a-type/ui` for semantic components. It has most common components.
+
 ## Styling
 
 The project uses CSS Modules for styling, with a CSS design system library called Arbor applied to a set of UI components in the `@a-type/ui` library.
@@ -76,6 +80,13 @@ The project uses CSS Modules for styling, with a CSS design system library calle
 - Internal for a component should be placed in a CSS Module file with the same name alongside it.
 - Styles applied externally to other components rendered as children should live in the module file of the parent which is applying them.
 - Import `clsx` from `@a-type/ui` to combine class names
+- Use design system tokens (`--m-...`) for every applicable styling:
+  - `--m-p` tokens for padding
+    - `--m-tint` for primary color range
+    - `--m-rd` for radius
+    - `--m-dur` for duration
+    - `--m-ease` for easing
+      And so on.
 
 ## Testing
 

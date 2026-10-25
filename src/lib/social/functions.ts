@@ -34,6 +34,10 @@ const followInputSchema = z.object({
   subject: z.string().refine(isValidDid, 'Invalid DID'),
 });
 
+const profilesForDidsInputSchema = z.object({
+  dids: z.array(z.string().refine(isValidDid, 'Invalid DID')).max(500),
+});
+
 const actorProfileSchema = z
   .object({
     did: z.string().refine(isValidDid),
@@ -246,6 +250,13 @@ async function getProfilesByDids(
   }
 
   return profiles;
+}
+
+export async function getProfilesForDids({ data }: { data: unknown }) {
+  const { dids } = profilesForDidsInputSchema.parse(data);
+  const session = await getHappyViewSession();
+  if (!session) return [];
+  return getProfilesByDids(session, dids);
 }
 
 async function getFollowedDids(session: HappyViewSession, authorDid: string) {

@@ -242,4 +242,46 @@ describe('current Bluesky profile and graph queries', () => {
       { dids: followedDid },
     );
   });
+
+  it('loads a validated batch of annotation author profiles for signed-in users', async () => {
+    const accountDid = 'did:plc:abcdefghijklmnopqrstuvwx';
+    const authorDid = 'did:plc:zyxwvutsrqponmlkjihgfedcba';
+    getHappyViewSession.mockResolvedValue({ did: accountDid });
+    fetchXrpcRecordPage.mockResolvedValue({
+      records: [
+        {
+          uri: `at://${authorDid}/com.marginsbible.profile/self`,
+          cid: 'bafyreitest',
+          $type: 'com.marginsbible.profile',
+          handle: 'author.example',
+          avatar: 'https://cdn.example/author.jpg',
+          createdAt: '2026-09-30T12:00:00.000Z',
+        },
+      ],
+    });
+    parseAtRecordUri.mockReturnValue({ authorDid, rkey: 'self' });
+
+    const { getProfilesForDids } = await import('./functions');
+
+    await expect(
+      getProfilesForDids({ data: { dids: [authorDid] } }),
+    ).resolves.toMatchObject([{ authorDid, handle: 'author.example' }]);
+    expect(fetchXrpcRecordPage).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.any(String),
+      { dids: authorDid },
+    );
+  });
+
+  it('does not request annotation author profiles without a session', async () => {
+    getHappyViewSession.mockResolvedValue(null);
+    const authorDid = 'did:plc:zyxwvutsrqponmlkjihgfedcba';
+
+    const { getProfilesForDids } = await import('./functions');
+
+    await expect(
+      getProfilesForDids({ data: { dids: [authorDid] } }),
+    ).resolves.toEqual([]);
+    expect(fetchXrpcRecordPage).not.toHaveBeenCalled();
+  });
 });
