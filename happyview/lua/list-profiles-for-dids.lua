@@ -1,5 +1,32 @@
 local profile_collection = "com.marginsbible.profile"
 
+local function query_all(did)
+  local records = {}
+  local request = {
+    collection = profile_collection,
+    did = did,
+    limit = 100,
+  }
+  local cursors = {}
+
+  while true do
+    local page = db.query(request)
+    for _, record in ipairs(page.records) do
+      table.insert(records, record)
+    end
+    if not page.cursor then
+      break
+    end
+    if cursors[page.cursor] then
+      error("HappyView returned a repeated record cursor")
+    end
+    cursors[page.cursor] = true
+    request.cursor = page.cursor
+  end
+
+  return records
+end
+
 function handle()
   local dids = {}
   local seen = {}
@@ -20,41 +47,26 @@ function handle()
     return { records = toarray({}) }
   end
 
-  local bindings = { profile_collection }
-  local placeholders = {}
-  for _, did in ipairs(dids) do
-    table.insert(bindings, did)
-    table.insert(placeholders, "$" .. #bindings)
-  end
-
-  local rows = db.raw(
-    "SELECT uri, record FROM happyview_records WHERE collection = $1 AND did IN (" ..
-      table.concat(placeholders, ", ") ..
-      ")",
-    bindings
-  )
   local records = {}
-  for _, row in ipairs(rows) do
-    local record = row.record
-    if type(record) == "string" then
-      record = json.decode(record)
-    end
-    if type(record) == "table" and type(row.uri) == "string" then
-      local profile = {
-        uri = row.uri,
-        handle = record.handle,
-        createdAt = record.createdAt,
-      }
-      if type(record.displayName) == "string" then
-        profile.displayName = record.displayName
+  for _, did in ipairs(dids) do
+    for _, record in ipairs(query_all(did)) do
+      if type(record) == "table" and type(record.uri) == "string" then
+        local profile = {
+          uri = record.uri,
+          handle = record.handle,
+          createdAt = record.createdAt,
+        }
+        if type(record.displayName) == "string" then
+          profile.displayName = record.displayName
+        end
+        if type(record.avatar) == "string" then
+          profile.avatar = record.avatar
+        end
+        if type(record.description) == "string" then
+          profile.description = record.description
+        end
+        table.insert(records, profile)
       end
-      if type(record.avatar) == "string" then
-        profile.avatar = record.avatar
-      end
-      if type(record.description) == "string" then
-        profile.description = record.description
-      end
-      table.insert(records, profile)
     end
   end
 

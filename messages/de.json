@@ -5,6 +5,7 @@
   "oauth_callback_failed_title": "Die Anmeldung konnte nicht abgeschlossen werden.",
   "oauth_callback_failed_description": "Beim Verbinden deines Kontos ist ein Fehler aufgetreten. Kehre zur App zurück und versuche es erneut.",
   "oauth_callback_return": "Zurück zu Margins",
+  "login_continue_as": "Weiter als {handle}",
   "example_message": "Willkommen in deiner i18n-App.",
   "language_label": "Sprache",
   "current_locale": "Aktuelle Sprache: {locale}",

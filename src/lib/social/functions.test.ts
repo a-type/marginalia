@@ -251,8 +251,6 @@ describe('current Bluesky profile and graph queries', () => {
       records: [
         {
           uri: `at://${authorDid}/com.marginsbible.profile/self`,
-          cid: 'bafyreitest',
-          $type: 'com.marginsbible.profile',
           handle: 'author.example',
           avatar: 'https://cdn.example/author.jpg',
           createdAt: '2026-09-30T12:00:00.000Z',

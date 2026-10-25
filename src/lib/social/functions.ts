@@ -69,6 +69,7 @@ const followsResponseSchema = z
 
 const profileRecordSchema = z
   .object({
+    $type: z.literal(Profile.$nsid).optional(),
     uri: z.string(),
     cid: z.string().nullish(),
     handle: z.string(),
@@ -199,7 +200,10 @@ function parseProfile(candidate: unknown): SocialProfile | null {
 
   let record: Profile.Main;
   try {
-    record = Profile.$parse(result.data);
+    record = Profile.$parse({
+      ...result.data,
+      $type: result.data.$type ?? Profile.$nsid,
+    });
   } catch (error) {
     logger.warn(
       'Skipping invalid HappyView profile record',
