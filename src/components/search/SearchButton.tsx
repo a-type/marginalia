@@ -15,14 +15,15 @@ import { useState } from 'react';
 import { FollowSuggestions } from '../auth/FollowSuggestions';
 import { FollowButton } from './FollowButton';
 
-export function SearchButton(props: ButtonProps) {
+export function SearchButton({ children, ...props }: ButtonProps) {
   return (
     <Dialog disableSheet>
       <Dialog.Trigger
         render={<Button emphasis="ghost" {...props} />}
-        aria-label={m.antsy_sunny_iguana_dial()}
+        aria-label={children ? undefined : m.antsy_sunny_iguana_dial()}
       >
         <Icon name="add_person" />
+        {children}
       </Dialog.Trigger>
       <Dialog.Content>
         <Dialog.Title>{m.awake_jumpy_racoon_absorb()}</Dialog.Title>

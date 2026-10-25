@@ -11,6 +11,16 @@
   border-radius: var(--m-rd-sm);
   background: var(--m-bg);
   box-shadow: var(--m-shadow-md);
+  transition:
+    opacity var(--m-dur) var(--m-ease),
+    transform var(--m-dur) var(--m-ease);
+
+  @starting-style {
+    & {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
 }
 
 .swatch {

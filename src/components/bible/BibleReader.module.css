@@ -1,99 +1,42 @@
 .root {
-  height: 100dvh;
-  @apply --mx-bg(var(--m-gray-wash));
-
-  padding: var(--m-sp-sm);
-  gap: var(--m-sp-md);
-
-  display: grid;
-  grid-template-areas: 'menubar' 'pane' 'content' 'annotation';
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-
-  @media (min-width: 900px) {
-    padding: var(--m-sp-lg);
-    grid-template-areas: 'g1 menubar content g2' 'g1 pane content g2' 'g1 pane annotation g2';
-    grid-template-columns: 1fr 20rem minmax(300px, 800px) 1fr;
-    grid-template-rows: auto minmax(0, 1fr) auto;
-  }
-}
-
-.pane {
-  grid-area: pane;
-  position: sticky;
-  top: 0;
-  align-self: start;
-  min-width: 0;
-  gap: var(--m-sp-md);
-}
-
-.content {
-  grid-area: content;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: var(--m-sp-sm);
-  min-width: 0;
-  min-height: 0;
-  max-width: 65ch;
-}
-
-.readerHeader {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--m-sp-sm);
-  min-width: 0;
-  padding: 0 var(--m-sp-sm);
-}
-
-.swapStage {
-  display: grid;
-  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
-  min-width: 0;
-  min-height: 0;
-}
-
-.view {
-  grid-area: 1 / 1;
-  min-width: 0;
-  min-height: 0;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(var(--m-sp-md));
-  transition:
-    opacity 180ms ease,
-    transform 180ms ease;
-}
-
-.view[data-active='true'] {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-  transition-delay: 120ms;
-}
-
-.chapter,
-.searchSurface {
+  flex-direction: column;
+  gap: var(--m-sp-md);
   height: 100%;
   min-height: 0;
 }
 
-.searchSurface {
-  overflow-y: auto;
+.content {
+  flex: 1 1 0;
+  width: 100%;
+  max-width: 65ch;
+  min-height: 0;
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.readerHeader {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: var(--m-sp-sm);
+}
+
+.chapter,
+.annotationPane {
+  width: 100%;
+}
+
+.chapter {
+  height: 100%;
+  min-height: 0;
 }
 
 .annotationPane {
-  grid-area: annotation;
-}
-
-.menubar {
-  grid-area: menubar;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .view,
-  .view[data-active='true'] {
-    transform: none;
-    transition: none;
-  }
+  max-width: 65ch;
+  margin-inline: auto;
+  flex: 0 0 auto;
 }

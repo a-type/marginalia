@@ -1,4 +1,5 @@
 import { Box, clsx, ScrollArea } from '@a-type/ui';
+import type { ReactNode } from 'react';
 
 import { AnnotationToolbar } from '#/components/annotations/AnnotationToolbar';
 import type { AnnotationWithVerses } from '#/components/annotations/useChapterAnnotations';
@@ -15,6 +16,7 @@ export interface AnnotatedBibleChapterProps {
   manifest: TranslationManifest;
   source: string;
   translationId: string;
+  header?: ReactNode;
   className?: string;
 }
 
@@ -24,18 +26,14 @@ export function AnnotatedBibleChapter({
   manifest,
   source,
   translationId,
+  header,
   className,
 }: AnnotatedBibleChapterProps) {
   return (
-    <Box
-      surface="ambient"
-      elevated="md"
-      full="width"
-      border
-      className={clsx(cls.root, className)}
-    >
+    <Box className={clsx(cls.root, className)}>
       <ScrollArea direction="vertical" className={cls.scrollArea}>
         <div className={cls.chapterContent}>
+          {header}
           <Box gap>
             <Box p className="min-w-0">
               <BookIdProvider bookId={location.bookId}>

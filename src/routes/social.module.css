@@ -1,0 +1,14 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: var(--m-sp-md);
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--m-surface-p);
+}
+
+.followButton {
+  width: 100%;
+  justify-content: center;
+}

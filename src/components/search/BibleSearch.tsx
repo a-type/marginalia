@@ -20,7 +20,7 @@ export function BibleSearch({
 }: {
   initialTranslation: string;
   isActive: boolean;
-  onSelect: () => void;
+  onSelect?: () => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const {
@@ -201,7 +201,7 @@ export function BibleSearch({
 function useBibleSearch(
   initialTranslation: string,
   isActive: boolean,
-  onSelect: () => void,
+  onSelect?: () => void,
 ) {
   const [translationId, setTranslationId] = useState(initialTranslation);
   const [bookId, setBookId] = useState('all');
@@ -249,7 +249,7 @@ function useBibleSearch(
         },
         search: { verses: String(verse.verse) },
       });
-      onSelect();
+      onSelect?.();
     },
   });
   const shown =

@@ -1,4 +1,3 @@
-import { Box, Button, Icon } from '@a-type/ui';
 import { useDbClient } from '@tanstack/react-db';
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
@@ -8,7 +7,6 @@ import { AnnotationPane } from '#/components/annotations/AnnotationPane';
 import { useResetAnnotationPaneOnRouteChange } from '#/components/annotations/annotationPaneStore';
 import { useChapterAnnotations } from '#/components/annotations/useChapterAnnotations';
 import { useHighlightSync } from '#/components/annotations/useChapterHighlights';
-import { UserMenu } from '#/components/auth/UserMenu';
 import type { ChapterAnnotationSnapshot } from '#/lib/annotations/collections';
 import { reconcileChapterAnnotations } from '#/lib/annotations/reconcile';
 import type { BibleLocation } from '#/lib/bible/location';
@@ -18,12 +16,9 @@ import { storeTranslationId } from '#/lib/bible/source';
 import { formatVerseId } from '#/lib/bible/verse';
 import type { ChapterHighlightSnapshot } from '#/lib/highlights/collections';
 import { reconcileChapterHighlights } from '#/lib/highlights/reconcile';
-import { m } from '#/paraglide/messages';
 import { chapterAnnotationsQueryOptions } from '#/queries/annotations';
 import { chapterHighlightsQueryOptions } from '#/queries/highlights';
 import { currentUserDidQueryOptions } from '#/queries/user';
-import { BibleSearch } from '../search/BibleSearch';
-import { SearchButton } from '../search/SearchButton';
 import { AnnotatedBibleChapter } from './AnnotatedBibleChapter';
 import cls from './BibleReader.module.css';
 import { BibleReaderLocation } from './BibleReaderLocation';
@@ -42,7 +37,6 @@ export function BibleReader() {
     select: (search) => search.verses,
   });
   const [locationOpen, setLocationOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const { accountDid, annotations } = useBibleReaderData(location);
 
   useResetAnnotationPaneOnRouteChange();
@@ -50,79 +44,32 @@ export function BibleReader() {
   useStoreBibleReaderLocation(location, translationId);
 
   return (
-    <main className={cls.root}>
-      <Box className={cls.pane} items="center"></Box>
-      <Box className={cls.menubar} items="center">
-        <UserMenu />
-        <SearchButton />
-      </Box>
+    <div className={cls.root}>
       <section className={cls.content}>
-        <div className={cls.readerHeader}>
-          <BibleReaderLocation
-            bookId={location.bookId}
-            chapter={location.chapter}
-            manifest={manifest}
-            translationId={translationId}
-            open={locationOpen}
-            onOpenChange={setLocationOpen}
-          />
-          <Button
-            emphasis={searchOpen ? 'light' : 'default'}
-            aria-label={
-              searchOpen ? m.bible_search_close() : m.bible_search_title()
-            }
-            aria-pressed={searchOpen}
-            title={searchOpen ? m.bible_search_close() : m.bible_search_title()}
-            onClick={() => {
-              setLocationOpen(false);
-              setSearchOpen((open) => !open);
-            }}
-          >
-            <Icon name={searchOpen ? 'x' : 'search'} />
-            {searchOpen && <span>{m.bible_search_close()}</span>}
-          </Button>
-        </div>
-        <div className={cls.swapStage}>
-          <div
-            className={cls.view}
-            data-active={!searchOpen}
-            aria-hidden={searchOpen}
-            inert={searchOpen}
-          >
-            <AnnotatedBibleChapter
-              key={`${translationId}/${location.bookId}/${location.chapter}`}
-              className={cls.chapter}
-              annotations={annotations}
-              location={location}
-              manifest={manifest}
-              source={source}
-              translationId={translationId}
-            />
-          </div>
-          <div
-            className={cls.view}
-            data-active={searchOpen}
-            aria-hidden={!searchOpen}
-            inert={!searchOpen}
-          >
-            <Box
-              surface="ambient"
-              elevated="md"
-              full="width"
-              border
-              className={cls.searchSurface}
-            >
-              <BibleSearch
-                initialTranslation={translationId}
-                isActive={searchOpen}
-                onSelect={() => setSearchOpen(false)}
+        <AnnotatedBibleChapter
+          key={`${translationId}/${location.bookId}/${location.chapter}`}
+          className={cls.chapter}
+          header={
+            <div className={cls.readerHeader}>
+              <BibleReaderLocation
+                bookId={location.bookId}
+                chapter={location.chapter}
+                manifest={manifest}
+                translationId={translationId}
+                open={locationOpen}
+                onOpenChange={setLocationOpen}
               />
-            </Box>
-          </div>
-        </div>
+            </div>
+          }
+          annotations={annotations}
+          location={location}
+          manifest={manifest}
+          source={source}
+          translationId={translationId}
+        />
       </section>
       <AnnotationPane accountDid={accountDid} className={cls.annotationPane} />
-    </main>
+    </div>
   );
 }
 

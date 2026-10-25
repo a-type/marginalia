@@ -1,0 +1,84 @@
+.root {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  gap: var(--m-sp-md);
+  padding: var(--m-sp-sm);
+  @apply --mx-bg(var(--m-gray-wash));
+
+  @media (min-width: 900px) {
+    padding: var(--m-sp-lg);
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--m-sp-md);
+  width: min(100%, 65ch);
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.tabs {
+  flex: 0 1 auto;
+  min-width: 0;
+  & * {
+    border-radius: inherit;
+  }
+}
+
+.tab {
+  border-radius: inherit;
+}
+
+.userMenu {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+.panel {
+  display: flex;
+  width: min(100%, 65ch);
+  min-width: 0;
+  min-height: 0;
+  margin-inline: auto;
+}
+
+.main {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  view-transition-name: app-content;
+}
+
+::view-transition-old(app-content) {
+  animation: pane-fade-out var(--m-dur) var(--m-ease) both;
+}
+
+::view-transition-new(app-content) {
+  animation: pane-fade-in var(--m-dur) var(--m-ease) both;
+}
+
+@keyframes pane-fade-out {
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pane-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(app-content),
+  ::view-transition-old(app-content),
+  ::view-transition-new(app-content) {
+    animation-duration: 1ms;
+  }
+}

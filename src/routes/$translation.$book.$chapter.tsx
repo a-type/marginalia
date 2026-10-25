@@ -1,5 +1,6 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
 
+import { AppShell } from '#/components/app/AppShell';
 import { BibleReader } from '#/components/bible/BibleReader';
 import { BibleRecovery } from '#/components/bible/BibleRecovery';
 import { parseBibleLocation } from '#/lib/bible/location';
@@ -50,5 +51,13 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
       translationId: params.translation,
     };
   },
-  component: BibleReader,
+  component: ReaderPage,
 });
+
+function ReaderPage() {
+  return (
+    <AppShell activeTab="read">
+      <BibleReader />
+    </AppShell>
+  );
+}

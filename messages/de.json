@@ -90,5 +90,9 @@
   "social_lookup_submit": "Konto finden",
   "social_suggestions_title": "Von Bluesky",
   "social_follow": "Folgen",
-  "social_following": "Folge ich"
+  "social_following": "Folge ich",
+  "app_navigation_label": "Hauptbereiche",
+  "app_tab_read": "Lesen",
+  "app_tab_search": "Suchen",
+  "app_tab_social": "Soziales"
 }
