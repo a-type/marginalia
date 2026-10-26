@@ -1,8 +1,14 @@
 import { clsx } from '@a-type/ui';
 import { useDbClient } from '@tanstack/react-db';
+import { useMutation } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
+import {
+  getAnnotationCollections,
+  type AnnotationRecord,
+} from '#/lib/annotations/collections';
+import { deleteAnnotation } from '#/lib/annotations/functions';
 import { requestAnnotationSync } from '#/lib/annotations/sync';
 import { requestHighlightSync } from '#/lib/highlights/sync';
 import { AnnotationEditor } from './AnnotationEditor';
@@ -44,6 +50,25 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
     annotationPaneActions.reset();
     setSelectedNumber();
   };
+  const deleteMutation = useMutation({
+    networkMode: 'always',
+    mutationFn: async (annotation: AnnotationRecord) => {
+      if (!annotation.uri) throw new Error('Annotation URI is unavailable');
+      await deleteAnnotation({ data: { uri: annotation.uri } });
+
+      const { annotations } = getAnnotationCollections(dbClient);
+      const transaction = dbClient.createTransaction({
+        mutationFn: async ({ transaction: pendingTransaction }) => {
+          await annotations.utils.acceptMutations(pendingTransaction);
+        },
+      });
+      transaction.mutate(() => {
+        annotations.delete(annotation.id);
+      });
+      await transaction.isPersisted.promise;
+    },
+    onSuccess: handleClose,
+  });
 
   const selectedVerseAnnotations = usePrimarySelectedVerseAnnotations();
   const {
@@ -92,6 +117,22 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
           annotation={openAnnotation}
           onAdd={openEditor}
           onClose={handleClose}
+          onDelete={
+            accountDid &&
+            openAnnotation.authorDid === accountDid &&
+            openAnnotation.uri
+              ? () => deleteMutation.mutate(openAnnotation)
+              : undefined
+          }
+          deletePending={
+            deleteMutation.isPending &&
+            deleteMutation.variables.id === openAnnotation.id
+          }
+          deleteError={
+            deleteMutation.variables?.id === openAnnotation.id
+              ? deleteMutation.error?.message
+              : undefined
+          }
           onPrevious={
             selectedVerseAnnotations.length > 1
               ? () => handleOpenAnnotation(previousAnnotation?.id)

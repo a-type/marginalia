@@ -7,6 +7,11 @@ const lexiconsDirectory = join(projectRoot, 'lexicons');
 const scriptsDirectory = join(projectRoot, 'happyview', 'lua');
 const baseUrl = process.env.HAPPYVIEW_BASE_URL?.replace(/\/+$/, '');
 const adminKey = process.env.HAPPYVIEW_ADMIN_KEY;
+const clientScopes = [
+  'atproto',
+  'repo?collection=com.marginsbible.annotation&collection=com.marginsbible.highlight&collection=com.marginsbible.profile&collection=com.marginsbible.follow&action=create&action=update&action=delete',
+  'rpc?lxm=com.marginsbible.annotation.listForChapter&lxm=com.marginsbible.annotation.listMine&lxm=com.marginsbible.highlight.listForChapter&lxm=com.marginsbible.profile.list&lxm=com.marginsbible.profile.getForDids&lxm=com.marginsbible.follow.list&lxm=app.bsky.actor.getProfile&aud=*',
+].join(' ');
 
 if (!baseUrl) {
   throw new Error(
@@ -120,20 +125,118 @@ async function waitForHappyView() {
 }
 
 async function post(path, body) {
-  const response = await fetch(`${baseUrl}${path}`, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${adminKey}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(body),
+  return requestJsonApi(path, 'POST', body);
+}
+
+function getAppClientMetadata() {
+  const configuredUrl = process.env.APP_URL;
+  if (!configuredUrl) {
+    throw new Error('APP_URL must be set to the app public origin');
+  }
+
+  let url;
+  try {
+    url = new URL(configuredUrl);
+  } catch (error) {
+    throw new Error('APP_URL must be a valid public origin', { cause: error });
+  }
+
+  const isLocal = url.hostname === '127.0.0.1' || url.hostname === 'localhost';
+  if (
+    url.pathname !== '/' ||
+    url.search ||
+    url.hash ||
+    (url.protocol !== 'https:' && !(url.protocol === 'http:' && isLocal))
+  ) {
+    throw new Error('APP_URL must be an HTTPS origin (or a local HTTP origin)');
+  }
+
+  const origin = url.origin;
+  const redirectUri = new URL('/oauth/callback', origin).href;
+  const clientIdUrl = isLocal
+    ? getLoopbackClientId(redirectUri)
+    : new URL('/oauth-client-metadata.json', origin).href;
+
+  return { origin, redirectUri, clientIdUrl };
+}
+
+function getLoopbackClientId(redirectUri) {
+  const clientId = new URL('http://localhost/');
+  clientId.searchParams.set('redirect_uri', redirectUri);
+  clientId.searchParams.set('scope', clientScopes);
+  return clientId.href;
+}
+
+async function configureApiClient() {
+  const clientKey = process.env.VITE_HAPPYVIEW_CLIENT_KEY?.trim();
+  if (clientKey) {
+    const clients = await getJson('/admin/api-clients');
+    if (!Array.isArray(clients)) {
+      throw new Error('HappyView returned an invalid API client list');
+    }
+
+    const client = clients.find(
+      (candidate) => candidate?.client_key === clientKey,
+    );
+    if (!client) {
+      throw new Error(
+        'VITE_HAPPYVIEW_CLIENT_KEY is set, but no HappyView API client matches it. Check the key or unset it to provision a new client.',
+      );
+    }
+    if (typeof client.id !== 'string') {
+      throw new Error('The matching HappyView API client has no valid ID');
+    }
+
+    if (client.scopes !== clientScopes) {
+      const clientPath = `/admin/api-clients/${encodeURIComponent(client.id)}`;
+      await requestJsonApi(clientPath, 'PUT', { scopes: clientScopes });
+      const updatedClient = await getJson(clientPath);
+      if (updatedClient.scopes !== clientScopes) {
+        throw new Error(
+          'HappyView did not apply the requested API client scopes',
+        );
+      }
+      console.info(`Updated scopes for HappyView API client ${client.name}.`);
+    } else {
+      console.info(
+        `HappyView API client ${client.name} scopes are up to date.`,
+      );
+    }
+    return;
+  }
+
+  const { origin, redirectUri, clientIdUrl } = getAppClientMetadata();
+  const responseBody = await post('/admin/api-clients', {
+    name: 'Margins Bible',
+    client_id_url: clientIdUrl,
+    client_uri: origin,
+    redirect_uris: [redirectUri],
+    client_type: 'public',
+    allowed_origins: [origin],
+    scopes: clientScopes,
   });
-  const responseBody = await response.text();
-  if (!response.ok) {
+
+  let createdClient;
+  try {
+    createdClient = JSON.parse(responseBody);
+  } catch (error) {
     throw new Error(
-      `HappyView ${path} failed (${response.status}): ${responseBody}`,
+      'HappyView returned invalid JSON when creating the API client',
+      {
+        cause: error,
+      },
     );
   }
+  if (typeof createdClient.client_key !== 'string') {
+    throw new Error(
+      'HappyView created an API client without returning its client key',
+    );
+  }
+
+  console.info('Created the Margins Bible HappyView API client.');
+  console.info(
+    `Set this public key in the app environment: VITE_HAPPYVIEW_CLIENT_KEY=${createdClient.client_key}`,
+  );
 }
 
 await waitForHappyView();
@@ -220,6 +323,8 @@ for (const script of scripts) {
     description: script.description,
   });
 }
+
+await configureApiClient();
 
 console.info(
   `Provisioned ${lexicons.length} lexicons and ${scripts.length} Lua scripts in HappyView.`,

@@ -1,14 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { fetchXrpcRecordPage, getHappyViewSession, parseAtRecordUri } =
-  vi.hoisted(() => ({
-    fetchXrpcRecordPage: vi.fn(),
-    getHappyViewSession: vi.fn(),
-    parseAtRecordUri: vi.fn(),
-  }));
+const {
+  fetchXrpcRecordPage,
+  getAuthenticatedHappyViewClient,
+  getHappyViewSession,
+  parseAtRecordUri,
+} = vi.hoisted(() => ({
+  fetchXrpcRecordPage: vi.fn(),
+  getAuthenticatedHappyViewClient: vi.fn(),
+  getHappyViewSession: vi.fn(),
+  parseAtRecordUri: vi.fn(),
+}));
 
 vi.mock('#/lib/atproto/client', () => ({
-  getAuthenticatedHappyViewClient: vi.fn(),
+  getAuthenticatedHappyViewClient,
   getHappyViewSession,
 }));
 
@@ -20,6 +25,7 @@ vi.mock('#/lib/atproto/xrpc', () => ({
 describe('chapter annotation records', () => {
   beforeEach(() => {
     fetchXrpcRecordPage.mockReset();
+    getAuthenticatedHappyViewClient.mockReset();
     getHappyViewSession.mockReset();
     parseAtRecordUri.mockReset();
   });
@@ -103,5 +109,52 @@ describe('chapter annotation records', () => {
     const page = await listMyAnnotationsPage({ data: {} });
 
     expect(page.annotations).toEqual([]);
+  });
+
+  it('deletes an owned annotation through the authenticated repo xrpc', async () => {
+    const did = 'did:plc:abcdefghijklmnopqrstuvwx';
+    const deleteRecord = vi.fn();
+    getAuthenticatedHappyViewClient.mockResolvedValue({
+      session: { did },
+      client: { deleteRecord },
+    });
+    parseAtRecordUri.mockReturnValue({ authorDid: did, rkey: 'rkey' });
+
+    const { deleteAnnotation } = await import('./functions');
+    await deleteAnnotation({
+      data: {
+        uri: `at://${did}/com.marginsbible.annotation/rkey`,
+      },
+    });
+
+    expect(deleteRecord).toHaveBeenCalledWith(
+      'com.marginsbible.annotation',
+      'rkey',
+      { repo: did },
+    );
+  });
+
+  it('rejects deleting an annotation owned by another account', async () => {
+    const did = 'did:plc:abcdefghijklmnopqrstuvwx';
+    const deleteRecord = vi.fn();
+    getAuthenticatedHappyViewClient.mockResolvedValue({
+      session: { did },
+      client: { deleteRecord },
+    });
+    parseAtRecordUri.mockReturnValue({
+      authorDid: 'did:plc:zyxwvutsrqponmlkjihgfedc',
+      rkey: 'rkey',
+    });
+
+    const { deleteAnnotation } = await import('./functions');
+    await expect(
+      deleteAnnotation({
+        data: {
+          uri: `at://${did}/com.marginsbible.annotation/rkey`,
+        },
+      }),
+    ).rejects.toMatchObject({ code: 40300 });
+
+    expect(deleteRecord).not.toHaveBeenCalled();
   });
 });

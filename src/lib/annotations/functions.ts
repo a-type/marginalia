@@ -12,6 +12,7 @@ import { fetchXrpcRecordPage, parseAtRecordUri } from '#/lib/atproto/xrpc';
 import type { BibleLocation } from '#/lib/bible/location';
 import type { VerseId } from '#/lib/bible/verse';
 import { isBookId, isValidVerseId, parseVerseId } from '#/lib/bible/verse';
+import { AppError } from '#/lib/error';
 import { logger } from '#/logger';
 import type {
   AnnotationRecord,
@@ -72,6 +73,25 @@ export async function uploadAnnotation({
     uri: response.body.uri,
     cid: response.body.cid,
   };
+}
+
+export async function deleteAnnotation({ data }: { data: { uri: string } }) {
+  const uriParts = parseAtRecordUri(data.uri, Annotation.$nsid);
+  if (!uriParts) {
+    throw new AppError(AppError.Code.BadRequest, 'Invalid annotation URI');
+  }
+
+  const { session, client } = await getAuthenticatedHappyViewClient();
+  if (uriParts.authorDid !== session.did) {
+    throw new AppError(
+      AppError.Code.Forbidden,
+      "Cannot delete another account's annotation",
+    );
+  }
+
+  await client.deleteRecord(Annotation.$nsid, uriParts.rkey, {
+    repo: session.did,
+  });
 }
 
 export async function listChapterAnnotations({
