@@ -40,7 +40,7 @@ it.each([
     });
     storage.listTranslations.mockResolvedValue([
       {
-        id: 'web',
+        id: 'web-p',
         origin: 'remote',
         sourceStatus,
         searchStatus,
@@ -56,7 +56,7 @@ it.each([
     expect(postMessage).toHaveBeenCalledTimes(recoveredCalls);
     if (recoveredCalls)
       expect(postMessage).toHaveBeenLastCalledWith(
-        expect.objectContaining({ action: 'install', translationId: 'web' }),
+        expect.objectContaining({ action: 'install', translationId: 'web-p' }),
       );
   },
 );

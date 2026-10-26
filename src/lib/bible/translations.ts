@@ -1,8 +1,7 @@
 import { AppError } from '#/lib/error';
 import type { DBSchema, IDBPDatabase } from 'idb';
 import { openDB } from 'idb';
-import type { TranslationManifest } from './manifests';
-import { defaultTranslationId } from './manifests';
+import { defaultTranslationId, type TranslationManifest } from './manifests';
 import type { SearchVerse } from './search';
 import { corpusVersion } from './search';
 

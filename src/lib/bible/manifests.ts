@@ -2,9 +2,11 @@ import { AppError } from '#/lib/error';
 import type { BookId } from './verse';
 import { isBookId } from './verse';
 
-export const defaultTranslationId = 'web';
+export const defaultTranslationId = 'web-p';
+
 export const knownTranslations = [
-  { id: 'web', title: 'World English Bible (Catholic)' },
+  { id: 'web-p', title: 'World English Bible (Protestant)' },
+  { id: 'web-c', title: 'World English Bible (Catholic)' },
   { id: 'net', title: 'New English Translation' },
 ];
 

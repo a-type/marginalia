@@ -1,6 +1,5 @@
 import { AppError } from '#/lib/error';
-import type { TranslationManifest } from './manifests';
-import { defaultTranslationId } from './manifests';
+import { defaultTranslationId, type TranslationManifest } from './manifests';
 import type { SearchVerse } from './search';
 import {
   cancelTranslation,

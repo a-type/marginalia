@@ -129,7 +129,7 @@ try {
   await mkdir(output, { recursive: true });
   await page.goto(`${origin}/web/GEN/1`);
   await page.getByRole('button', { name: /, Chapter 1$/ }).waitFor();
-  await waitReady('web');
+  await waitReady('web-p');
   await page.setViewportSize({ width: 375, height: 850 });
   await openLocation();
   const bookGroup = page.getByRole('group', { name: 'Book', exact: true });
@@ -246,7 +246,7 @@ try {
       });
     const results = [];
     try {
-      for (const id of ['web', 'net']) {
+      for (const id of ['web-p', 'net']) {
         const cold = await search(id, 'light');
         const samples = [];
         for (let iteration = 0; iteration < 6; iteration++) {
@@ -429,7 +429,7 @@ try {
   await page.reload();
   await page.getByRole('button', { name: /, Chapter \d+$/ }).waitFor();
   assert.equal(
-    (await records()).some((record) => record.id === 'web'),
+    (await records()).some((record) => record.id === 'web-p'),
     false,
   );
   assert.deepEqual(failures, []);

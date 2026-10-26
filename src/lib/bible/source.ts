@@ -12,7 +12,7 @@ import {
 } from './manifests';
 import { getStoredBook, getTranslation } from './translations';
 
-export { defaultTranslationId, isTranslationId } from './manifests';
+export { isTranslationId } from './manifests';
 export type { TranslationBook, TranslationManifest } from './manifests';
 const TRANSLATION_STORAGE_KEY = 'margins:translation';
 

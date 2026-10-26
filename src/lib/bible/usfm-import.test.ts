@@ -49,7 +49,7 @@ describe('USFM imports', () => {
     ).rejects.toThrow('Unsafe');
   });
   it('validates and prepares the shipped translation corpora', async () => {
-    for (const translation of ['web', 'net']) {
+    for (const translation of ['web-p', 'net']) {
       const manifest: TranslationManifest = JSON.parse(
         await readFile(`public/usfm/${translation}/manifest.json`, 'utf8'),
       );

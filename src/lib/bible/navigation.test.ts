@@ -4,8 +4,8 @@ import { getAdjacentChapter } from './navigation';
 import type { TranslationManifest } from './source';
 
 const manifest: TranslationManifest = {
-  id: 'web',
-  title: 'World English Bible',
+  id: 'web-p',
+  title: 'World English Bible (Protestant)',
   books: [
     { id: 'GEN', title: 'Genesis', chapters: 50, source: 'gen.usfm' },
     { id: 'EXO', title: 'Exodus', chapters: 40, source: 'exo.usfm' },

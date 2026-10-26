@@ -1,5 +1,5 @@
 import type { TranslationManifest } from '#/lib/bible/manifests';
-import { knownTranslations } from '#/lib/bible/manifests';
+import { defaultTranslationId, knownTranslations } from '#/lib/bible/manifests';
 import {
   downloadTranslation,
   importTranslation,
@@ -258,7 +258,7 @@ function TranslationDeletionDialog({
         <Dialog.Description>
           {deleting?.id.startsWith('local-')
             ? m.translation_delete_import()
-            : deleting?.id === 'web'
+            : deleting?.id === defaultTranslationId
               ? m.translation_delete_default()
               : m.translation_delete()}
         </Dialog.Description>

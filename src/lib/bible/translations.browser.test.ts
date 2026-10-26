@@ -14,21 +14,21 @@ import {
 } from './translations';
 
 afterEach(async () => {
-  await deleteTranslation('web', false);
+  await deleteTranslation('web-p', false);
 });
 const manifest = {
-  id: 'web',
+  id: 'web-p',
   title: 'Test',
   books: [{ id: 'GEN', title: 'Genesis', chapters: 1, source: 'GEN.usfm' }],
 };
 
 it('does not recreate a deleted translation when its manifest arrives late', async () => {
-  const epoch = await translationEpoch('web');
-  await deleteTranslation('web');
+  const epoch = await translationEpoch('web-p');
+  await deleteTranslation('web-p');
   await expect(
     beginTranslation(manifest, 'remote', 'late-request', true, epoch),
   ).rejects.toThrow('canceled');
-  expect(await getTranslation('web')).toBeUndefined();
+  expect(await getTranslation('web-p')).toBeUndefined();
   expect(await defaultDownloadSuppressed()).toBe(true);
 });
 
@@ -41,11 +41,11 @@ it('persists source independently of search readiness and prevents late writes a
   ))!;
   await saveBook(record, 'GEN', '\\c 1\n\\v 1 Text');
   await updateTranslation(record, { sourceStatus: 'ready' });
-  expect((await getTranslation('web'))?.searchStatus).toBe('queued');
-  expect((await getStoredBook('web', 'GEN'))?.source).toContain('Text');
-  await deleteTranslation('web');
+  expect((await getTranslation('web-p'))?.searchStatus).toBe('queued');
+  expect((await getStoredBook('web-p', 'GEN'))?.source).toContain('Text');
+  await deleteTranslation('web-p');
   await expect(saveBook(record, 'GEN', 'Late')).rejects.toThrow('canceled');
-  expect(await getStoredBook('web', 'GEN')).toBeUndefined();
+  expect(await getStoredBook('web-p', 'GEN')).toBeUndefined();
   expect(await defaultDownloadSuppressed()).toBe(true);
   expect(
     await beginTranslation(manifest, 'remote', 'automatic'),
@@ -60,7 +60,7 @@ it('serializes ownership, resumes stored books and cancels stale preparation', a
     await beginTranslation(manifest, 'remote', 'second', true),
   ).toBeUndefined();
   await saveBook(record, 'GEN', 'Source');
-  await cancelTranslation('web');
+  await cancelTranslation('web-p');
   await expect(savePreparedBook(record, 'GEN', [])).rejects.toThrow('canceled');
   const resumed = (await beginTranslation(manifest, 'remote', 'second', true))!;
   expect(resumed.downloaded).toBe(1);
@@ -68,5 +68,5 @@ it('serializes ownership, resumes stored books and cancels stale preparation', a
     { id: 'GEN/1:1', label: '1', text: 'Text' },
   ]);
   await updateTranslation(resumed, { searchStatus: 'ready', corpusVersion });
-  expect((await getTranslation('web'))?.prepared).toBe(1);
+  expect((await getTranslation('web-p'))?.prepared).toBe(1);
 });
