@@ -63,6 +63,9 @@
   z-index: 1;
   background: var(--m-tint-paper);
   box-shadow: 0 0 0 var(--m-sp-xs) var(--m-tint-paper);
+  text-decoration: underline;
+  text-decoration-color: var(--m-tint-heavy);
+  text-underline-offset: 0.15em;
 }
 
 .usfm-verse[role='button'] {
