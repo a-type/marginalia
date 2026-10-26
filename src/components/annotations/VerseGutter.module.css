@@ -1,4 +1,5 @@
 .gutter {
+  position: relative;
   width: clamp(
     --fn-literal(32px),
     calc(100% - 65ch - var(--m-sp-md)),
@@ -8,11 +9,27 @@
   container-name: annotations-margin;
   container-type: inline-size;
   @apply --mx-bg(var(--m-gray-wash));
-  box-shadow:
-    inset 0px 10px 20px var(--m-gray-paper),
-    inset 0px -10px 20px var(--m-gray-paper);
   padding-inline-start: var(--m-sp-sm);
   padding-inline-end: var(--m-sp-md);
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    height: 20px;
+    pointer-events: none;
+  }
+
+  &::before {
+    top: 0;
+    background: linear-gradient(to bottom, var(--m-gray-paper), transparent);
+  }
+
+  &::after {
+    bottom: 0;
+    background: linear-gradient(to top, var(--m-gray-paper), transparent);
+  }
 }
 
 .controls,
