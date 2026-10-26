@@ -2,8 +2,8 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 
 import { BibleRecovery } from '#/components/bible/BibleRecovery';
 import { readStoredBibleLocation } from '#/lib/bible/location';
+import { defaultTranslationId } from '#/lib/bible/manifests';
 import {
-  defaultTranslationId,
   fetchTranslationManifest,
   readStoredTranslationId,
 } from '#/lib/bible/source';
