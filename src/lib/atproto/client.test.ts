@@ -23,7 +23,7 @@ vi.mock('./client-metadata', () => ({
     redirect_uris: ['http://127.0.0.1:7654/oauth/callback'],
   }),
   oauthScope:
-    'atproto repo?collection=com.marginsbible.annotation&collection=com.marginsbible.highlight&collection=com.marginsbible.profile&collection=com.marginsbible.follow&action=create&action=update rpc?lxm=com.marginsbible.annotation.listForChapter&lxm=com.marginsbible.highlight.listForChapter&lxm=com.marginsbible.profile.list&lxm=com.marginsbible.profile.getForDids&lxm=com.marginsbible.follow.list&lxm=app.bsky.actor.getProfile&aud=*',
+    'atproto repo?collection=com.marginsbible.annotation&collection=com.marginsbible.highlight&collection=com.marginsbible.profile&collection=com.marginsbible.follow&action=create&action=update rpc?lxm=com.marginsbible.annotation.listForChapter&lxm=com.marginsbible.annotation.listMine&lxm=com.marginsbible.highlight.listForChapter&lxm=com.marginsbible.profile.list&lxm=com.marginsbible.profile.getForDids&lxm=com.marginsbible.follow.list&lxm=app.bsky.actor.getProfile&aud=*',
 }));
 
 describe('HappyView OAuth callback initialization', () => {

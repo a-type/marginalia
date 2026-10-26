@@ -24,10 +24,7 @@ import cls from './BibleReader.module.css';
 import { BibleReaderLocation } from './BibleReaderLocation';
 
 const readerRoute = getRouteApi('/$translation/$book/$chapter');
-const emptyChapterAnnotations: ChapterAnnotationSnapshot = {
-  annotations: [],
-  annotationVerses: [],
-};
+const emptyChapterAnnotations: ChapterAnnotationSnapshot = { annotations: [] };
 const emptyChapterHighlights: ChapterHighlightSnapshot = { highlights: [] };
 
 export function BibleReader() {
@@ -88,7 +85,7 @@ function useBibleReaderData(location: BibleLocation) {
     ...chapterHighlightsQueryOptions(location),
     enabled: typeof window !== 'undefined' && userDidQuery.isSuccess,
   });
-  const annotations = useChapterAnnotations(accountDid, location);
+  const annotations = useChapterAnnotations(location);
   useHighlightSync(accountDid);
   useReconcileChapterAnnotations({
     accountDid,
@@ -156,7 +153,7 @@ function useReconcileChapterAnnotations({
 }) {
   useEffect(() => {
     if (!userQueryIsSuccess) return;
-    if (accountDid && !queryIsSuccess) return;
+    if (!accountDid || !queryIsSuccess) return;
     void reconcileChapterAnnotations(
       dbClient,
       location,

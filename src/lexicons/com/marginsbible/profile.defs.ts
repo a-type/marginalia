@@ -10,7 +10,7 @@ type $nsid = typeof $nsid
 
 export { $nsid }
 
-/** The profile for a Margins account. */
+/** The profile for an account. */
 type Main = {
   $type: 'com.marginsbible.profile'
   handle: l.HandleString
@@ -22,7 +22,7 @@ type Main = {
 
 export type { Main }
 
-/** The profile for a Margins account. */
+/** The profile for an account. */
 const main = /*#__PURE__*/ l.record<'literal:self', Main>(
   'literal:self',
   $nsid,

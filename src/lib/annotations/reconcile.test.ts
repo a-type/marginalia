@@ -3,11 +3,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import type {
   AnnotationRecord,
-  AnnotationVerseRecord,
   ChapterAnnotationSnapshot,
 } from './collections';
 import {
-  formatAnnotationVerseRecordId,
+  ensureAnnotationCollectionReady,
   getAnnotationCollections,
 } from './collections';
 import { reconcileChapterAnnotations } from './reconcile';
@@ -26,26 +25,12 @@ function annotation(
     authorDid: id.startsWith('at://') ? 'did:plc:author' : null,
     bookId: 'GEN',
     chapter: 1,
+    chapterKeys: ['GEN/1'],
+    verses: ['GEN/1:1'],
     comment: id,
     createdAt: '2026-09-04T00:00:00.000Z',
     status,
     syncError: null,
-  };
-}
-
-function annotationVerse(
-  annotationId: string,
-  verse: number,
-): AnnotationVerseRecord {
-  const verseId = `GEN/1:${verse}` as const;
-  return {
-    id: formatAnnotationVerseRecordId(annotationId, verseId),
-    annotationId,
-    verseId,
-    bookId: 'GEN',
-    chapter: 1,
-    verse,
-    ordinal: 0,
   };
 }
 
@@ -58,32 +43,27 @@ describe('reconcileChapterAnnotations', () => {
     const dbClient = new DbClient();
     clients.push(dbClient);
     const collections = getAnnotationCollections(dbClient);
-    await Promise.all([
-      collections.annotations.preload(),
-      collections.annotationVerses.preload(),
-    ]);
+    await ensureAnnotationCollectionReady(collections.annotations);
 
-    const stale = annotation(
-      'at://did:plc:old/com.marginsbible.annotation/old',
-      'synced',
-    );
+    const stale = {
+      ...annotation(
+        'at://did:plc:old/com.marginsbible.annotation/old',
+        'synced',
+      ),
+      verses: ['GEN/1:1'] as AnnotationRecord['verses'],
+    };
     const pending = annotation('local:pending', 'pending');
-    await Promise.all([
-      collections.annotations.insert([stale, pending]).isPersisted.promise,
-      collections.annotationVerses.insert([
-        annotationVerse(stale.id, 1),
-        annotationVerse(pending.id, 2),
-      ]).isPersisted.promise,
-    ]);
+    await collections.annotations.insert([stale, pending]).isPersisted.promise;
 
-    const remote = annotation(
-      'at://did:plc:new/com.marginsbible.annotation/new',
-      'synced',
-    );
-    const remoteVerse = annotationVerse(remote.id, 3);
+    const remote = {
+      ...annotation(
+        'at://did:plc:new/com.marginsbible.annotation/new',
+        'synced',
+      ),
+      verses: ['GEN/1:3'] as AnnotationRecord['verses'],
+    };
     const snapshot: ChapterAnnotationSnapshot = {
       annotations: [remote],
-      annotationVerses: [remoteVerse],
     };
 
     await reconcileChapterAnnotations(
@@ -96,36 +76,70 @@ describe('reconcileChapterAnnotations', () => {
       expect.arrayContaining([pending.id, remote.id]),
     );
     expect(collections.annotations.has(stale.id)).toBe(false);
-    expect(
-      collections.annotationVerses.has(annotationVerse(pending.id, 2).id),
-    ).toBe(true);
-    expect(collections.annotationVerses.has(remoteVerse.id)).toBe(true);
-    expect(
-      collections.annotationVerses.has(annotationVerse(stale.id, 1).id),
-    ).toBe(false);
+    expect(collections.annotations.get(remote.id)?.verses).toEqual(['GEN/1:3']);
   });
 
-  it('does not remove synced rows from another chapter', async () => {
+  it('removes stale chapter verses but preserves the rest of an annotation', async () => {
     const dbClient = new DbClient();
     clients.push(dbClient);
     const collections = getAnnotationCollections(dbClient);
-    await collections.annotations.preload();
+    await ensureAnnotationCollectionReady(collections.annotations);
 
     const otherChapter = {
       ...annotation(
         'at://did:plc:other/com.marginsbible.annotation/other',
         'synced',
       ),
-      chapter: 2,
+      verses: ['GEN/1:1', 'GEN/2:1'] as AnnotationRecord['verses'],
+      chapterKeys: ['GEN/1', 'GEN/2'],
     };
     await collections.annotations.insert(otherChapter).isPersisted.promise;
 
     await reconcileChapterAnnotations(
       dbClient,
       { bookId: 'GEN', chapter: 1 },
-      { annotations: [], annotationVerses: [] },
+      { annotations: [] },
     );
 
     expect(collections.annotations.has(otherChapter.id)).toBe(true);
+    expect(collections.annotations.get(otherChapter.id)).toMatchObject({
+      chapter: 2,
+      verses: ['GEN/2:1'],
+    });
+  });
+
+  it('preserves verses from other chapters when reconciling a chapter subset', async () => {
+    const dbClient = new DbClient();
+    clients.push(dbClient);
+    const collections = getAnnotationCollections(dbClient);
+    await ensureAnnotationCollectionReady(collections.annotations);
+
+    const existing = {
+      ...annotation(
+        'at://did:plc:author/com.marginsbible.annotation/multi',
+        'synced',
+      ),
+      verses: ['GEN/1:1', 'GEN/2:4'] as AnnotationRecord['verses'],
+      chapterKeys: ['GEN/1', 'GEN/2'],
+    };
+    await collections.annotations.insert(existing).isPersisted.promise;
+
+    await reconcileChapterAnnotations(
+      dbClient,
+      { bookId: 'GEN', chapter: 1 },
+      {
+        annotations: [
+          {
+            ...existing,
+            verses: ['GEN/1:2'] as AnnotationRecord['verses'],
+          },
+        ],
+      },
+    );
+
+    expect(collections.annotations.get(existing.id)?.verses).toEqual([
+      'GEN/1:2',
+      'GEN/2:4',
+    ]);
   });
 });

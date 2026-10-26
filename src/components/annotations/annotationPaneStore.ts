@@ -1,11 +1,16 @@
-import { and, eq, useDbClient, useLiveQuery } from '@tanstack/react-db';
+import {
+  and,
+  eq,
+  inArray,
+  useDbClient,
+  useLiveQuery,
+} from '@tanstack/react-db';
 import { getRouteApi } from '@tanstack/react-router';
 import { useStore } from '@tanstack/react-store';
 import { useEffect } from 'react';
 
 import {
   annotationCollectionOptions,
-  annotationVerseCollectionOptions,
   getAnnotationCollections,
 } from '#/lib/annotations/collections';
 import {
@@ -166,18 +171,13 @@ export function useVerseAnnotations(verseId: VerseId | null) {
     query: (query) => {
       if (!verseId) return undefined;
       return query
-        .from({ annotationVerse: annotationVerseCollectionOptions })
-        .innerJoin(
-          { annotation: annotationCollectionOptions },
-          ({ annotation, annotationVerse }) =>
-            eq(annotation.id, annotationVerse.annotationId),
-        )
-        .where(({ annotationVerse }) => eq(annotationVerse.verseId, verseId))
+        .from({ annotation: annotationCollectionOptions })
+        .where(({ annotation }) => inArray(verseId, annotation.verses))
         .orderBy(({ annotation }) => annotation.createdAt, 'desc')
         .select(({ annotation }) => ({ ...annotation }));
     },
   });
-  return data ?? [];
+  return verseId ? (data ?? []) : [];
 }
 
 export function usePrimarySelectedVerseAnnotations() {
@@ -190,18 +190,12 @@ export function useAnnotationVerseIds(annotationId: string | null) {
     query: (query) => {
       if (!annotationId) return undefined;
       return query
-        .from({ annotationVerse: annotationVerseCollectionOptions })
-        .where(({ annotationVerse }) =>
-          eq(annotationVerse.annotationId, annotationId),
-        )
-        .orderBy(({ annotationVerse }) => annotationVerse.ordinal)
-        .select(({ annotationVerse }) => ({
-          id: annotationVerse.id,
-          verseId: annotationVerse.verseId,
-        }));
+        .from({ annotation: annotationCollectionOptions })
+        .where(({ annotation }) => eq(annotation.id, annotationId))
+        .select(({ annotation }) => ({ verses: annotation.verses }));
     },
   });
-  return (data ?? []).map((annotationVerse) => annotationVerse.verseId);
+  return data?.[0]?.verses ?? [];
 }
 
 export function useVerseIncludedInOpenAnnotation(verseId: VerseId) {
@@ -212,14 +206,14 @@ export function useVerseIncludedInOpenAnnotation(verseId: VerseId) {
     query: (query) => {
       if (!annotationId) return undefined;
       return query
-        .from({ annotationVerse: annotationVerseCollectionOptions })
-        .where(({ annotationVerse }) =>
+        .from({ annotation: annotationCollectionOptions })
+        .where(({ annotation }) =>
           and(
-            eq(annotationVerse.annotationId, annotationId),
-            eq(annotationVerse.verseId, verseId),
+            eq(annotation.id, annotationId),
+            inArray(verseId, annotation.verses),
           ),
         )
-        .select(({ annotationVerse }) => ({ id: annotationVerse.id }));
+        .select(({ annotation }) => ({ verses: annotation.verses }));
     },
   });
   return (data?.length ?? 0) > 0;

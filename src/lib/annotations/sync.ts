@@ -2,10 +2,12 @@ import type { DbClient } from '@tanstack/react-db';
 
 import * as Annotation from '#/lexicons/com/marginsbible/annotation';
 import {
-  formatAnnotationVerseRecordId,
+  ensureAnnotationCollectionReady,
   getAnnotationCollections,
 } from './collections';
-import { uploadAnnotation } from './functions';
+import { listMyAnnotationsPage, uploadAnnotation } from './functions';
+import { readAnnotationLastSeen, writeAnnotationLastSeen } from './indexeddb';
+import { cacheAnnotationSnapshot } from './reconcile';
 
 const activeSyncs = new WeakMap<DbClient, Promise<void>>();
 
@@ -13,10 +15,8 @@ async function synchronizeAnnotations(dbClient: DbClient, ownerDid: string) {
   if (!navigator.onLine) return;
 
   const collections = getAnnotationCollections(dbClient);
-  await Promise.all([
-    collections.annotations.preload(),
-    collections.annotationVerses.preload(),
-  ]);
+  await ensureAnnotationCollectionReady(collections.annotations);
+  await collections.annotations.utils.loadAll();
 
   for (const annotation of [...collections.annotations.values()]) {
     if (annotation.authorDid !== null || annotation.status !== 'pending') {
@@ -24,32 +24,18 @@ async function synchronizeAnnotations(dbClient: DbClient, ownerDid: string) {
     }
 
     const claimedId = `at://${ownerDid}/${Annotation.$nsid}/${annotation.rkey}`;
-    const verses = [...collections.annotationVerses.values()].filter(
-      (annotationVerse) => annotationVerse.annotationId === annotation.id,
-    );
     const transaction = dbClient.createTransaction({
       mutationFn: async ({ transaction: pendingTransaction }) => {
-        collections.annotations.utils.acceptMutations(pendingTransaction);
-        collections.annotationVerses.utils.acceptMutations(pendingTransaction);
+        await collections.annotations.utils.acceptMutations(pendingTransaction);
       },
     });
     transaction.mutate(() => {
-      collections.annotationVerses.delete(
-        verses.map((annotationVerse) => annotationVerse.id),
-      );
       collections.annotations.delete(annotation.id);
       collections.annotations.insert({
         ...annotation,
         id: claimedId,
         authorDid: ownerDid,
       });
-      collections.annotationVerses.insert(
-        verses.map((annotationVerse) => ({
-          ...annotationVerse,
-          id: formatAnnotationVerseRecordId(claimedId, annotationVerse.verseId),
-          annotationId: claimedId,
-        })),
-      );
     });
     await transaction.isPersisted.promise;
   }
@@ -59,17 +45,11 @@ async function synchronizeAnnotations(dbClient: DbClient, ownerDid: string) {
       annotation.authorDid === ownerDid && annotation.status === 'pending',
   );
   for (const annotation of pending) {
-    const verses = [...collections.annotationVerses.values()]
-      .filter(
-        (annotationVerse) => annotationVerse.annotationId === annotation.id,
-      )
-      .sort((left, right) => left.ordinal - right.ordinal)
-      .map((annotationVerse) => annotationVerse.verseId);
     try {
       const remote = await uploadAnnotation({
         data: {
           rkey: annotation.rkey,
-          verses,
+          verses: annotation.verses,
           comment: annotation.comment,
           createdAt: annotation.createdAt,
         },
@@ -94,6 +74,46 @@ async function synchronizeAnnotations(dbClient: DbClient, ownerDid: string) {
       );
       await transaction.isPersisted.promise;
     }
+  }
+
+  await pullAnnotations(dbClient, ownerDid);
+}
+
+async function pullAnnotations(dbClient: DbClient, ownerDid: string) {
+  const lastSeen = await readAnnotationLastSeen(ownerDid);
+  const seenCursors = new Set<string>();
+  let cursor: string | undefined;
+  let newestAnnotationId: string | null = null;
+
+  do {
+    const page = await listMyAnnotationsPage({ data: { cursor } });
+    const annotationIds = page.annotations.map((annotation) => annotation.id);
+    if (newestAnnotationId === null && annotationIds.length > 0) {
+      newestAnnotationId = annotationIds[0];
+    }
+
+    const lastSeenIndex = lastSeen ? annotationIds.indexOf(lastSeen) : -1;
+    const annotations =
+      lastSeenIndex >= 0
+        ? page.annotations.slice(0, lastSeenIndex + 1)
+        : page.annotations;
+    if (annotations.length > 0) {
+      await cacheAnnotationSnapshot(dbClient, { annotations });
+    }
+
+    if (lastSeenIndex >= 0 || !page.cursor) {
+      cursor = undefined;
+    } else {
+      if (seenCursors.has(page.cursor)) {
+        throw new Error('HappyView returned a repeated annotation cursor');
+      }
+      seenCursors.add(page.cursor);
+      cursor = page.cursor;
+    }
+  } while (cursor);
+
+  if (newestAnnotationId !== null) {
+    await writeAnnotationLastSeen(ownerDid, newestAnnotationId);
   }
 }
 

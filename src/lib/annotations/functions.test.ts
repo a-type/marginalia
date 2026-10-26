@@ -48,8 +48,60 @@ describe('chapter annotation records', () => {
     expect(snapshot.annotations[0]).toMatchObject({
       id: record.uri,
       authorDid: did,
+      chapterKeys: ['GEN/1'],
       comment: 'A note',
       createdAt,
     });
+  });
+
+  it('lists only caller annotations and forwards its page cursor', async () => {
+    const did = 'did:plc:abcdefghijklmnopqrstuvwx';
+    const record = {
+      uri: `at://${did}/com.marginsbible.annotation/rkey`,
+      cid: 'bafyreitest',
+      $type: 'com.marginsbible.annotation',
+      verses: [{ id: 'GEN/1:1' }],
+      comment: 'A note',
+      createdAt: '2026-09-30T12:00:00.000Z',
+    };
+    getHappyViewSession.mockResolvedValue({ did });
+    fetchXrpcRecordPage.mockResolvedValue({
+      records: [record],
+      cursor: 'next',
+    });
+    parseAtRecordUri.mockReturnValue({ authorDid: did, rkey: 'rkey' });
+
+    const { listMyAnnotationsPage } = await import('./functions');
+    const page = await listMyAnnotationsPage({ data: { cursor: 'previous' } });
+
+    expect(fetchXrpcRecordPage).toHaveBeenCalledWith(
+      { did },
+      'com.marginsbible.annotation.listMine',
+      { limit: '100', cursor: 'previous' },
+    );
+    expect(page.cursor).toBe('next');
+    expect(page.annotations).toHaveLength(1);
+    expect(page.annotations[0].authorDid).toBe(did);
+  });
+
+  it('rejects annotation records outside the authenticated caller', async () => {
+    const ownerDid = 'did:plc:abcdefghijklmnopqrstuvwx';
+    const otherDid = 'did:plc:zyxwvutsrqponmlkjihgfedc';
+    const record = {
+      uri: `at://${otherDid}/com.marginsbible.annotation/rkey`,
+      cid: 'bafyreitest',
+      $type: 'com.marginsbible.annotation',
+      verses: [{ id: 'GEN/1:1' }],
+      comment: 'A note',
+      createdAt: '2026-09-30T12:00:00.000Z',
+    };
+    getHappyViewSession.mockResolvedValue({ did: ownerDid });
+    fetchXrpcRecordPage.mockResolvedValue({ records: [record] });
+    parseAtRecordUri.mockReturnValue({ authorDid: otherDid, rkey: 'rkey' });
+
+    const { listMyAnnotationsPage } = await import('./functions');
+    const page = await listMyAnnotationsPage({ data: {} });
+
+    expect(page.annotations).toEqual([]);
   });
 });

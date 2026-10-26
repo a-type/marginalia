@@ -1,66 +1,40 @@
-import { and, eq, useDbClient, useLiveQuery } from '@tanstack/react-db';
-import { useEffect } from 'react';
+import { inArray, useLiveQuery } from '@tanstack/react-db';
 
+import type { AnnotationRecord } from '#/lib/annotations/collections';
 import {
   annotationCollectionOptions,
-  annotationVerseCollectionOptions,
+  formatAnnotationChapterKey,
 } from '#/lib/annotations/collections';
-import type { AnnotationRecord } from '#/lib/annotations/collections';
-import { requestAnnotationSync } from '#/lib/annotations/sync';
 import type { BibleLocation } from '#/lib/bible/location';
 import type { VerseId } from '#/lib/bible/verse';
+import { parseVerseId } from '#/lib/bible/verse';
 
 export interface AnnotationWithVerses extends AnnotationRecord {
   verses: VerseId[];
 }
 
-export function useChapterAnnotations(
-  accountDid: string | null,
-  location: BibleLocation,
-) {
-  const dbClient = useDbClient();
+export function useChapterAnnotations(location: BibleLocation) {
   const { data } = useLiveQuery({
     query: (query) =>
       query
-        .from({ annotationVerse: annotationVerseCollectionOptions })
-        .innerJoin(
-          { annotation: annotationCollectionOptions },
-          ({ annotation, annotationVerse }) =>
-            eq(annotation.id, annotationVerse.annotationId),
-        )
-        .where(({ annotationVerse }) =>
-          and(
-            eq(annotationVerse.bookId, location.bookId),
-            eq(annotationVerse.chapter, location.chapter),
+        .from({ annotation: annotationCollectionOptions })
+        .where(({ annotation }) =>
+          inArray(
+            formatAnnotationChapterKey(location.bookId, location.chapter),
+            annotation.chapterKeys,
           ),
         )
         .orderBy(({ annotation }) => annotation.createdAt, 'desc')
-        .orderBy(({ annotationVerse }) => annotationVerse.ordinal)
-        .select(({ annotation, annotationVerse }) => ({
-          ...annotation,
-          verseId: annotationVerse.verseId,
-        })),
+        .select(({ annotation }) => ({ ...annotation })),
   });
 
-  useEffect(() => {
-    if (!accountDid) return;
-    const synchronize = () => {
-      void requestAnnotationSync(dbClient, accountDid);
-    };
-    synchronize();
-    window.addEventListener('online', synchronize);
-    return () => window.removeEventListener('online', synchronize);
-  }, [accountDid, dbClient]);
-
-  const annotations = new Map<string, AnnotationWithVerses>();
-  for (const row of data) {
-    const annotation = annotations.get(row.id);
-    if (annotation) {
-      annotation.verses.push(row.verseId);
-    } else {
-      const { verseId, ...record } = row;
-      annotations.set(row.id, { ...record, verses: [verseId] });
-    }
-  }
-  return [...annotations.values()];
+  return data.flatMap((annotation) => {
+    const verses = annotation.verses.filter((verseId) => {
+      const verse = parseVerseId(verseId);
+      return (
+        verse.bookId === location.bookId && verse.chapter === location.chapter
+      );
+    });
+    return verses.length > 0 ? [{ ...annotation, verses }] : [];
+  });
 }

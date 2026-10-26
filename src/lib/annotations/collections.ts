@@ -1,11 +1,9 @@
 import type { DbClient } from '@tanstack/react-db';
-import {
-  BasicIndex,
-  collectionOptions,
-  localStorageCollectionOptions,
-} from '@tanstack/react-db';
+import { BasicIndex } from '@tanstack/react-db';
 
 import type { BookId, VerseId } from '#/lib/bible/verse';
+import { parseVerseId } from '#/lib/bible/verse';
+import { indexedDbCollectionOptions } from './indexeddb';
 
 export type AnnotationStatus = 'pending' | 'uploaded' | 'synced';
 
@@ -17,55 +15,80 @@ export interface AnnotationRecord {
   authorDid: string | null;
   bookId: BookId;
   chapter: number;
+  chapterKeys: string[];
+  verses: VerseId[];
   comment: string;
   createdAt: string;
   status: AnnotationStatus;
   syncError: string | null;
 }
 
-export interface AnnotationVerseRecord {
-  id: string;
-  annotationId: string;
-  verseId: VerseId;
-  bookId: BookId;
-  chapter: number;
-  verse: number;
-  ordinal: number;
-}
-
 export interface ChapterAnnotationSnapshot {
   annotations: AnnotationRecord[];
-  annotationVerses: AnnotationVerseRecord[];
 }
 
-export const annotationCollectionOptions = collectionOptions(
-  localStorageCollectionOptions<AnnotationRecord>({
-    id: 'annotations-v2',
-    storageKey: 'margins.annotations.v2',
-    getKey: (annotation) => annotation.id,
-  }),
-);
+export interface AnnotationSyncPage extends ChapterAnnotationSnapshot {
+  cursor?: string;
+}
 
-export const annotationVerseCollectionOptions = collectionOptions(
-  localStorageCollectionOptions<AnnotationVerseRecord>({
-    id: 'annotation-verses-v2',
-    storageKey: 'margins.annotation-verses.v2',
-    getKey: (annotationVerse) => annotationVerse.id,
+export const annotationCollectionOptions =
+  indexedDbCollectionOptions<AnnotationRecord>({
+    id: 'annotations-v3',
+    storeName: 'annotations',
     defaultIndexType: BasicIndex,
     autoIndex: 'eager',
-  }),
-);
+    syncMode: 'on-demand',
+  });
 
 export function getAnnotationCollections(dbClient: DbClient) {
-  return {
-    annotations: dbClient.collection(annotationCollectionOptions),
-    annotationVerses: dbClient.collection(annotationVerseCollectionOptions),
-  };
+  return { annotations: dbClient.collection(annotationCollectionOptions) };
 }
 
-export function formatAnnotationVerseRecordId(
-  annotationId: string,
-  verseId: VerseId,
+export function formatAnnotationChapterKey(bookId: BookId, chapter: number) {
+  return `${bookId}/${chapter}`;
+}
+
+export function getAnnotationChapterKeys(verses: readonly VerseId[]) {
+  return [
+    ...new Set(
+      verses.map((verseId) => {
+        const verse = parseVerseId(verseId);
+        return formatAnnotationChapterKey(verse.bookId, verse.chapter);
+      }),
+    ),
+  ];
+}
+
+export async function ensureAnnotationCollectionReady(
+  annotations: ReturnType<typeof getAnnotationCollections>['annotations'],
 ) {
-  return `${annotationId}#${verseId}`;
+  if (annotations.isReady()) return;
+  await new Promise<void>((resolve, reject) => {
+    let unsubscribeReady = () => {};
+    let unsubscribeError = () => {};
+    let settled = false;
+    const finish = (error?: unknown) => {
+      if (settled) return;
+      settled = true;
+      unsubscribeReady();
+      unsubscribeError();
+      if (error) reject(error);
+      else resolve();
+    };
+    unsubscribeReady = annotations.on('status:ready', () => finish());
+    unsubscribeError = annotations.on('status:error', () =>
+      finish(new Error('Annotation collection sync failed')),
+    );
+    if (annotations.isReady()) {
+      finish();
+    } else if (annotations.status === 'error') {
+      finish(new Error('Annotation collection sync failed'));
+    } else {
+      try {
+        annotations.startSyncImmediate();
+      } catch (error) {
+        finish(error);
+      }
+    }
+  });
 }

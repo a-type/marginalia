@@ -4,9 +4,10 @@ import type { VerseId } from '#/lib/bible/verse';
 import { parseVerseId } from '#/lib/bible/verse';
 import { TID } from '@atproto/common-web';
 import type { DbClient } from '@tanstack/react-db';
-import type { AnnotationRecord, AnnotationVerseRecord } from './collections';
+import type { AnnotationRecord } from './collections';
 import {
-  formatAnnotationVerseRecordId,
+  ensureAnnotationCollectionReady,
+  getAnnotationChapterKeys,
   getAnnotationCollections,
 } from './collections';
 
@@ -52,39 +53,25 @@ export async function createAnnotation(
     authorDid,
     bookId: firstVerse.bookId,
     chapter: firstVerse.chapter,
+    chapterKeys: getAnnotationChapterKeys(verses),
+    verses: verses.sort(
+      (left, right) => parseVerseId(left).verse - parseVerseId(right).verse,
+    ),
     comment,
     createdAt: input.createdAt ?? new Date().toISOString(),
     status: 'pending',
     syncError: null,
   };
-  const annotationVerses: AnnotationVerseRecord[] = verses
-    .sort((left, right) => parseVerseId(left).verse - parseVerseId(right).verse)
-    .map((verseId, ordinal) => {
-      const verse = parseVerseId(verseId);
-      return {
-        id: formatAnnotationVerseRecordId(id, verseId),
-        annotationId: id,
-        verseId,
-        ...verse,
-        ordinal,
-      };
-    });
-
   const collections = getAnnotationCollections(dbClient);
-  await Promise.all([
-    collections.annotations.preload(),
-    collections.annotationVerses.preload(),
-  ]);
+  await ensureAnnotationCollectionReady(collections.annotations);
   const transaction = dbClient.createTransaction({
     mutationFn: async ({ transaction: pendingTransaction }) => {
-      collections.annotations.utils.acceptMutations(pendingTransaction);
-      collections.annotationVerses.utils.acceptMutations(pendingTransaction);
+      await collections.annotations.utils.acceptMutations(pendingTransaction);
     },
   });
 
   transaction.mutate(() => {
     collections.annotations.insert(annotation);
-    collections.annotationVerses.insert(annotationVerses);
   });
   await transaction.isPersisted.promise;
 

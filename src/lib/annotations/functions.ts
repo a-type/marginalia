@@ -3,20 +3,22 @@ import { z } from 'zod';
 
 import * as Annotation from '#/lexicons/com/marginsbible/annotation';
 import * as ListAnnotationsForChapter from '#/lexicons/com/marginsbible/annotation/listForChapter';
+import * as ListMyAnnotations from '#/lexicons/com/marginsbible/annotation/listMine';
 import {
   getAuthenticatedHappyViewClient,
   getHappyViewSession,
 } from '#/lib/atproto/client';
 import { fetchXrpcRecordPage, parseAtRecordUri } from '#/lib/atproto/xrpc';
+import type { BibleLocation } from '#/lib/bible/location';
 import type { VerseId } from '#/lib/bible/verse';
 import { isBookId, isValidVerseId, parseVerseId } from '#/lib/bible/verse';
 import { logger } from '#/logger';
 import type {
   AnnotationRecord,
-  AnnotationVerseRecord,
+  AnnotationSyncPage,
   ChapterAnnotationSnapshot,
 } from './collections';
-import { formatAnnotationVerseRecordId } from './collections';
+import { getAnnotationChapterKeys } from './collections';
 
 const uploadAnnotationSchema = z.object({
   rkey: z.string().refine(TID.is, 'Invalid annotation key'),
@@ -37,6 +39,10 @@ export type UploadAnnotationInput = z.input<typeof uploadAnnotationSchema>;
 const listChapterAnnotationsSchema = z.object({
   bookId: z.string().refine(isBookId, 'Invalid book ID'),
   chapter: z.number().int().positive(),
+});
+
+const listMyAnnotationsSchema = z.object({
+  cursor: z.string().optional(),
 });
 
 const remoteAnnotationSchema = z
@@ -75,7 +81,7 @@ export async function listChapterAnnotations({
 }): Promise<ChapterAnnotationSnapshot> {
   const location = listChapterAnnotationsSchema.parse(data);
   const session = await getHappyViewSession();
-  if (!session) return { annotations: [], annotationVerses: [] };
+  if (!session) return { annotations: [] };
 
   const page = await fetchXrpcRecordPage(
     session,
@@ -85,10 +91,34 @@ export async function listChapterAnnotations({
       chapter: String(location.chapter),
     },
   );
-  const annotations = new Map<string, AnnotationRecord>();
-  const annotationVerses: AnnotationVerseRecord[] = [];
+  return parseAnnotationRecords(page.records, location);
+}
 
-  for (const candidate of page.records) {
+export async function listMyAnnotationsPage({
+  data,
+}: {
+  data: z.input<typeof listMyAnnotationsSchema>;
+}): Promise<AnnotationSyncPage> {
+  const { cursor } = listMyAnnotationsSchema.parse(data);
+  const session = await getHappyViewSession();
+  if (!session) return { annotations: [] };
+
+  const page = await fetchXrpcRecordPage(session, ListMyAnnotations.$nsid, {
+    limit: '100',
+    ...(cursor ? { cursor } : {}),
+  });
+  const snapshot = parseAnnotationRecords(page.records, undefined, session.did);
+  return { ...snapshot, cursor: page.cursor };
+}
+
+function parseAnnotationRecords(
+  candidates: unknown[],
+  location?: BibleLocation,
+  expectedAuthorDid?: string,
+): ChapterAnnotationSnapshot {
+  const annotations = new Map<string, AnnotationRecord>();
+
+  for (const candidate of candidates) {
     const parsed = remoteAnnotationSchema.safeParse(candidate);
     if (!parsed.success) {
       logger.warn('Skipping malformed HappyView annotation record', candidate);
@@ -99,6 +129,13 @@ export async function listChapterAnnotations({
     if (!uriParts) {
       logger.warn(
         'Skipping HappyView annotation with invalid AT URI',
+        parsed.data.uri,
+      );
+      continue;
+    }
+    if (expectedAuthorDid && uriParts.authorDid !== expectedAuthorDid) {
+      logger.warn(
+        'Skipping HappyView annotation from an unexpected author',
         parsed.data.uri,
       );
       continue;
@@ -138,14 +175,20 @@ export async function listChapterAnnotations({
       }
       const parsedVerse = parseVerseId(verseId);
       if (
-        parsedVerse.bookId === location.bookId &&
-        parsedVerse.chapter === location.chapter
+        !location ||
+        (parsedVerse.bookId === location.bookId &&
+          parsedVerse.chapter === location.chapter)
       ) {
         verses.set(verseId, parsedVerse);
       }
     }
 
     if (verses.size === 0) continue;
+    const firstVerse = verses.values().next().value;
+    if (!firstVerse) continue;
+    const orderedVerses = [...verses.entries()]
+      .sort(([, left], [, right]) => left.verse - right.verse)
+      .map(([verseId]) => verseId);
 
     annotations.set(parsed.data.uri, {
       id: parsed.data.uri,
@@ -153,25 +196,14 @@ export async function listChapterAnnotations({
       uri: parsed.data.uri,
       cid: parsed.data.cid ?? null,
       authorDid: uriParts.authorDid,
-      bookId: location.bookId,
-      chapter: location.chapter,
+      bookId: location?.bookId ?? firstVerse.bookId,
+      chapter: location?.chapter ?? firstVerse.chapter,
+      chapterKeys: getAnnotationChapterKeys(orderedVerses),
+      verses: orderedVerses,
       comment,
       createdAt: record.createdAt,
       status: 'synced',
       syncError: null,
-    });
-
-    const orderedVerses = [...verses.entries()].sort(
-      ([, left], [, right]) => left.verse - right.verse,
-    );
-    orderedVerses.forEach(([verseId, verse], ordinal) => {
-      annotationVerses.push({
-        id: formatAnnotationVerseRecordId(parsed.data.uri, verseId),
-        annotationId: parsed.data.uri,
-        verseId,
-        ...verse,
-        ordinal,
-      });
     });
   }
 
@@ -179,6 +211,5 @@ export async function listChapterAnnotations({
     annotations: [...annotations.values()].sort((left, right) =>
       right.createdAt.localeCompare(left.createdAt),
     ),
-    annotationVerses,
   };
 }

@@ -5,3 +5,4 @@
 export * from './annotation.defs.js'
 export { main as default } from './annotation.defs.js'
 export * as listForChapter from './annotation/listForChapter.js'
+export * as listMine from './annotation/listMine.js'

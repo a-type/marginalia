@@ -1,6 +1,7 @@
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import {
   HeadContent,
+  Outlet,
   Scripts,
   createRootRouteWithContext,
 } from '@tanstack/react-router';
@@ -13,6 +14,8 @@ import { getLocale } from '#/paraglide/runtime';
 import uiCss from '@a-type/ui/main.css?url';
 import appCss from '../styles.css?url';
 
+import { AnnotationSyncCoordinator } from '#/components/annotations/AnnotationSyncCoordinator';
+import { initializeAnnotationStorage } from '#/lib/annotations/indexeddb';
 import { Provider } from '@a-type/ui';
 import type { DbClient } from '@tanstack/react-db';
 import type { QueryClient } from '@tanstack/react-query';
@@ -23,11 +26,12 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  beforeLoad: () => {
+  beforeLoad: async () => {
     // Other redirect strategies are possible; see
     // https://github.com/TanStack/router/tree/main/examples/react/i18n-paraglide#offline-redirect
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('lang', getLocale());
+      await initializeAnnotationStorage();
     }
   },
 
@@ -76,8 +80,18 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       ? [{ src: '/registerSW.js', defer: true }]
       : [],
   }),
+  component: RootRoute,
   shellComponent: RootDocument,
 });
+
+function RootRoute() {
+  return (
+    <>
+      <AnnotationSyncCoordinator />
+      <Outlet />
+    </>
+  );
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
