@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import { defaultTranslationId } from './manifests';
 
 const storage = vi.hoisted(() => ({
   listTranslations: vi.fn(),
@@ -35,12 +36,12 @@ it.each([
       },
     );
     vi.stubGlobal('window', {
-      location: { pathname: '/web/GEN/1' },
+      location: { pathname: `/${defaultTranslationId}/GEN/1` },
       addEventListener: vi.fn(),
     });
     storage.listTranslations.mockResolvedValue([
       {
-        id: 'web-p',
+        id: defaultTranslationId,
         origin: 'remote',
         sourceStatus,
         searchStatus,
@@ -56,7 +57,10 @@ it.each([
     expect(postMessage).toHaveBeenCalledTimes(recoveredCalls);
     if (recoveredCalls)
       expect(postMessage).toHaveBeenLastCalledWith(
-        expect.objectContaining({ action: 'install', translationId: 'web-p' }),
+        expect.objectContaining({
+          action: 'install',
+          translationId: defaultTranslationId,
+        }),
       );
   },
 );

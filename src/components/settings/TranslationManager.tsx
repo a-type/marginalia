@@ -1,5 +1,8 @@
 import type { TranslationManifest } from '#/lib/bible/manifests';
-import { defaultTranslationId, knownTranslations } from '#/lib/bible/manifests';
+import {
+  builtinTranslations,
+  defaultTranslationId,
+} from '#/lib/bible/manifests';
 import {
   downloadTranslation,
   importTranslation,
@@ -47,7 +50,7 @@ export function TranslationManager() {
   });
   const deletion = useTranslationDeletion();
   const catalog = [
-    ...knownTranslations,
+    ...builtinTranslations,
     ...(translations.data ?? [])
       .filter((record) => record.origin === 'import')
       .map((record) => ({ id: record.id, title: record.manifest.title })),
@@ -99,7 +102,7 @@ function TranslationImportForm() {
         {m.translation_import_file()}
         <input
           type="file"
-          accept=".zip,.usfm,.sfm"
+          accept=".zip,.usfm,.sfm,.xml,.osis"
           disabled={preview.isPending || importJob.isPending}
           onChange={(event) => {
             const file = event.currentTarget.files?.[0];

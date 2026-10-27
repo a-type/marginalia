@@ -1,4 +1,4 @@
-import { knownTranslations } from '#/lib/bible/manifests';
+import { builtinTranslations } from '#/lib/bible/manifests';
 import { m } from '#/paraglide/messages';
 import { translationsQueryOptions } from '#/queries/translations';
 import { Select } from '@a-type/ui';
@@ -10,18 +10,20 @@ export function TranslationSelect({
   onValueChange,
   installedOnly = false,
   disabled = false,
+  loading = false,
 }: {
   value: string;
   onValueChange: (value: string) => void;
   installedOnly?: boolean;
   disabled?: boolean;
+  loading?: boolean;
 }) {
   const translations = useQuery(translationsQueryOptions);
   const installed = (translations.data ?? []).filter(
     (record) => record.sourceStatus === 'ready',
   );
   const choices = [
-    ...knownTranslations,
+    ...builtinTranslations,
     ...installed
       .filter((record) => record.origin === 'import')
       .map((record) => ({ id: record.id, title: record.manifest.title })),
@@ -38,10 +40,16 @@ export function TranslationSelect({
         if (id) onValueChange(id);
       }}
       disabled={disabled}
+      itemToStringLabel={(id) => {
+        return (
+          choices.find((translation) => translation.id === id)?.title ?? id
+        );
+      }}
     >
       <Select.Trigger
         className={cls.trigger}
         aria-label={m.translation_label()}
+        loading={loading}
       >
         <span>
           {choices.find((translation) => translation.id === value)?.title ??

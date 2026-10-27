@@ -5,10 +5,10 @@ import type { BookId } from '#/lib/bible/verse';
 import { AppError } from '#/lib/error';
 import type { TranslationBook, TranslationManifest } from './manifests';
 import {
+  builtinTranslations,
   defaultTranslationId,
   isTranslationId,
-  knownTranslations,
-  parseTranslationManifest,
+  parseTranslationExtra,
 } from './manifests';
 import { getStoredBook, getTranslation } from './translations';
 
@@ -64,7 +64,7 @@ export function storeTranslationId(translationId: string): void {
 
 function getTranslationUrl(translationId: string, path: string): string {
   if (
-    !knownTranslations.some((translation) => translation.id === translationId)
+    !builtinTranslations.some((translation) => translation.id === translationId)
   )
     throw new AppError(
       AppError.Code.NotFound,
@@ -78,15 +78,13 @@ export async function fetchTranslationManifest(
 ): Promise<TranslationManifest> {
   const local = await readLocalManifest(translationId);
   if (local) return local;
-  const response = await fetch(
-    getTranslationUrl(translationId, 'manifest.json'),
-  );
+  const response = await fetch(getTranslationUrl(translationId, 'extra.json'));
   if (!response.ok)
     throw new AppError(
       AppError.Code.ExternalServiceError,
-      'Unable to load translation manifest',
+      'Unable to load translation metadata',
     );
-  return parseTranslationManifest(await response.json(), translationId);
+  return parseTranslationExtra(await response.json(), translationId);
 }
 
 export function getTranslationBook(

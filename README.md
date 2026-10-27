@@ -65,6 +65,27 @@ pnpm lexicons
 pnpm happyview:provision
 ```
 
+## Downloading USFM sources
+
+Download a translation from [Fetch Bible](https://v1.fetch.bible):
+
+```sh
+pnpm usfm:download eng_asv
+```
+
+This downloads every book listed in the translation's `extra.json` to
+`public/usfm/eng_asv/`, preserving filenames such as `gen.usfm`. After all
+downloads succeed, it saves the complete `extra.json` alongside the books.
+The reader derives uppercase book IDs, localized names, chapter counts, and
+lowercase USFM filenames directly from this metadata. The standard 66 books
+are placed in Bible order, followed by any additional books; no separate
+translation manifest is needed.
+
+Use `--output <directory>` to override the `public/usfm` destination root.
+Running the command again overwrites the downloaded files. Downloading
+sources does not register a new translation in the reader's built-in catalog,
+which supplies edition titles that are not included in `extra.json`.
+
 ## Production deployment
 
 Set `APP_URL` to the app's exact public HTTPS origin and `APP_DOMAIN` to its

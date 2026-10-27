@@ -13,6 +13,7 @@
     "pwa-assets": "pwa-assets-generator --preset minimal-2023 public/icon.svg",
     "test": "vitest run",
     "test:browser": "vitest run --project browser",
+    "usfm:download": "node ./scripts/download-usfm.mjs",
     "happyview:provision": "dotenv -e .env -- node ./scripts/provision-happyview.mjs",
     "lint": "eslint",
     "format": "prettier --write . && eslint --fix",

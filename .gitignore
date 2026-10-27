@@ -18,3 +18,4 @@ todos.json
 *.db
 *.db-shm
 *.db-wal
+.vitest-attachments

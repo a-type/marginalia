@@ -69,7 +69,6 @@ export function BibleReaderLocation({
           ? m.translation_location_changed()
           : '',
       );
-      onOpenChange(false);
     },
   });
 
@@ -118,7 +117,7 @@ export function BibleReaderLocation({
             <TranslationSelect
               value={translationId}
               onValueChange={(id) => changeTranslation.mutate(id)}
-              disabled={changeTranslation.isPending}
+              loading={changeTranslation.isPending}
             />
           </div>
         </Popover.Content>

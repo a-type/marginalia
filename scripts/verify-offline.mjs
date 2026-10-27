@@ -127,9 +127,9 @@ async function noOverflow() {
 
 try {
   await mkdir(output, { recursive: true });
-  await page.goto(`${origin}/web/GEN/1`);
+  await page.goto(`${origin}/eng_webu/GEN/1`);
   await page.getByRole('button', { name: /, Chapter 1$/ }).waitFor();
-  await waitReady('web-p');
+  await waitReady('eng_webu');
   await page.setViewportSize({ width: 375, height: 850 });
   await openLocation();
   const bookGroup = page.getByRole('group', { name: 'Book', exact: true });
@@ -167,14 +167,14 @@ try {
     animations: 'disabled',
   });
   await chapterGroup.getByRole('button', { name: '2', exact: true }).click();
-  await page.waitForURL('**/web/GEN/2');
+  await page.waitForURL('**/eng_webu/GEN/2');
   await page.getByRole('heading', { name: 'Chapter 2', exact: true }).waitFor();
   await openLocation();
   await page
     .getByRole('group', { name: 'Chapter', exact: true })
     .getByRole('button', { name: '1', exact: true })
     .click();
-  await page.waitForURL('**/web/GEN/1');
+  await page.waitForURL('**/eng_webu/GEN/1');
   await page.getByRole('heading', { name: 'Chapter 1', exact: true }).waitFor();
   await page.setViewportSize({ width: 1280, height: 900 });
   console.log(
@@ -187,33 +187,32 @@ try {
     })),
   );
   const initialRequests = bibleRequests.length;
-  await selectTranslation(/New English Translation/);
-  await page.waitForURL('**/net/GEN/1');
+  await selectTranslation(/American Standard Version/);
+  await page.waitForURL('**/eng_asv/GEN/1');
   assert.equal(
-    (await records()).some((record) => record.id === 'net'),
+    (await records()).some((record) => record.id === 'eng_asv'),
     false,
   );
   assert.ok(
     bibleRequests
       .slice(initialRequests)
       .every(
-        (path) =>
-          path.endsWith('manifest.json') || path.endsWith('02-GENengnet.usfm'),
+        (path) => path.endsWith('extra.json') || path.endsWith('gen.usfm'),
       ),
   );
   console.log(
-    'Alternate selection did not install NET:',
+    'Alternate selection did not install ASV:',
     bibleRequests.slice(initialRequests),
   );
   await settings();
-  const netRow = page.getByRole('listitem').filter({
+  const asvRow = page.getByRole('listitem').filter({
     has: page.getByRole('heading', {
-      name: 'New English Translation',
+      name: 'American Standard Version',
       exact: true,
     }),
   });
-  await netRow.getByRole('button', { name: 'Download', exact: true }).click();
-  await waitReady('net');
+  await asvRow.getByRole('button', { name: 'Download', exact: true }).click();
+  await waitReady('eng_asv');
   console.log(
     'Installed storage:',
     (await records()).map(({ id, sourceBytes, preparedBytes }) => ({
@@ -246,7 +245,7 @@ try {
       });
     const results = [];
     try {
-      for (const id of ['web-p', 'net']) {
+      for (const id of ['eng_webu', 'eng_asv']) {
         const cold = await search(id, 'light');
         const samples = [];
         for (let iteration = 0; iteration < 6; iteration++) {
@@ -277,15 +276,15 @@ try {
     timings,
   );
   await page.keyboard.press('Escape');
-  await selectTranslation(/World English Bible/);
-  await page.waitForURL('**/web/GEN/1');
+  await selectTranslation(/World English Bible \(Updated\)/);
+  await page.waitForURL('**/eng_webu/GEN/1');
   await page.evaluate(() =>
     navigator.serviceWorker.ready.then(() => undefined),
   );
   await context.setOffline(true);
   const offlineStart = bibleRequests.length;
   await selectBook('Revelation');
-  assert.equal(new URL(page.url()).pathname, '/web/GEN/1');
+  assert.equal(new URL(page.url()).pathname, '/eng_webu/GEN/1');
   const stagedBookChapter22 = page
     .getByRole('group', { name: 'Chapter', exact: true })
     .getByRole('button', { name: '22', exact: true });
@@ -293,7 +292,7 @@ try {
   assert.equal(await stagedBookChapter22.getAttribute('aria-current'), null);
   await stagedBookChapter22.scrollIntoViewIfNeeded();
   await stagedBookChapter22.click();
-  await page.waitForURL('**/web/REV/22');
+  await page.waitForURL('**/eng_webu/REV/22');
   await page
     .getByRole('heading', { name: 'Chapter 22', exact: true })
     .waitFor();
@@ -302,8 +301,8 @@ try {
     .getByRole('group', { name: 'Chapter', exact: true })
     .getByRole('button', { name: '1', exact: true })
     .click();
-  await page.waitForURL('**/web/REV/1');
-  await page.getByRole('button', { name: 'Search Bible', exact: true }).click();
+  await page.waitForURL('**/eng_webu/REV/1');
+  await page.getByRole('tab', { name: 'Search', exact: true }).click();
   await page
     .getByRole('textbox', { name: 'Words or quoted phrase' })
     .fill('"in the beginning"');
@@ -328,7 +327,8 @@ try {
   });
   await page.getByRole('button', { name: /^Genesis 1:1/ }).click();
   await page.waitForURL(
-    (url) => url.pathname === '/web/GEN/1' && url.searchParams.has('verses'),
+    (url) =>
+      url.pathname === '/eng_webu/GEN/1' && url.searchParams.has('verses'),
   );
   assert.equal(
     String(JSON.parse(new URL(page.url()).searchParams.get('verses'))),
@@ -350,10 +350,10 @@ try {
   console.log(
     'Offline book navigation, phrase search and result navigation passed',
   );
-  await selectTranslation(/New English Translation/);
-  await page.waitForURL((url) => url.pathname === '/net/GEN/1');
+  await selectTranslation(/American Standard Version/);
+  await page.waitForURL((url) => url.pathname === '/eng_asv/GEN/1');
   assert.equal(bibleRequests.length, offlineStart);
-  console.log('Explicit NET download and offline translation switching passed');
+  console.log('Explicit ASV download and offline translation switching passed');
   await settings();
   await page.locator('input[type=file]').setInputFiles({
     name: 'partial.usfm',
@@ -381,7 +381,7 @@ try {
   await page.keyboard.press('Escape');
   await selectTranslation(/My offline edition/);
   await page.waitForURL(`**/${imported.id}/TST/1`);
-  await page.getByRole('button', { name: 'Search Bible', exact: true }).click();
+  await page.getByRole('tab', { name: 'Search', exact: true }).click();
   await page
     .getByRole('textbox', { name: 'Words or quoted phrase' })
     .fill('bright');
@@ -395,7 +395,7 @@ try {
       animations: 'disabled',
     });
   }
-  await page.keyboard.press('Escape');
+  await page.getByRole('tab', { name: 'Read', exact: true }).click();
   await page.setViewportSize({ width: 1280, height: 900 });
   await context.setOffline(false);
   await page.reload();
@@ -413,14 +413,14 @@ try {
   });
   const webRow = page.getByRole('listitem').filter({
     has: page.getByRole('heading', {
-      name: 'World English Bible (Catholic)',
+      name: 'World English Bible (Updated)',
       exact: true,
     }),
   });
   await webRow.getByRole('button', { name: 'Delete download' }).click();
   const confirmation = page.getByRole('dialog').filter({
     has: page.getByRole('heading', {
-      name: 'Delete World English Bible (Catholic) from this device?',
+      name: 'Delete World English Bible (Updated) from this device?',
     }),
   });
   await confirmation.getByRole('button', { name: 'Delete download' }).click();
@@ -429,7 +429,7 @@ try {
   await page.reload();
   await page.getByRole('button', { name: /, Chapter \d+$/ }).waitFor();
   assert.equal(
-    (await records()).some((record) => record.id === 'web-p'),
+    (await records()).some((record) => record.id === 'eng_webu'),
     false,
   );
   assert.deepEqual(failures, []);

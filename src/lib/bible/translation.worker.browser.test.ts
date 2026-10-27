@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest';
+import { builtinTranslations } from './manifests';
 import type {
   SearchResult,
   WorkerRequest,
@@ -6,9 +7,51 @@ import type {
 } from './translation-jobs';
 import {
   deleteTranslation,
+  getStoredBook,
   getTranslation,
   translationDatabase,
 } from './translations';
+
+it.each(builtinTranslations)(
+  'downloads and prepares $id from Fetch Bible metadata',
+  async ({ id, title }) => {
+    await deleteTranslation(id, false);
+    const worker = new Worker(
+      new URL('./translation.worker.ts', import.meta.url),
+      { type: 'module' },
+    );
+    try {
+      await new Promise<void>((resolve, reject) => {
+        worker.onmessage = ({ data }: MessageEvent<WorkerResponse>) => {
+          if (data.requestId !== 1) return;
+          if (data.error) reject(new Error(data.error));
+          else resolve();
+        };
+        worker.onerror = reject;
+        worker.postMessage({
+          action: 'install',
+          translationId: id,
+          explicit: true,
+          requestId: 1,
+        } satisfies WorkerRequest);
+      });
+      const record = await getTranslation(id);
+      expect(record?.manifest).toMatchObject({ id, title });
+      expect(record?.sourceStatus).toBe('ready');
+      expect(record?.searchStatus).toBe('ready');
+      expect(record?.downloaded).toBe(record?.manifest.books.length);
+      expect(record?.prepared).toBe(record?.manifest.books.length);
+      expect((await getStoredBook(id, 'GEN'))?.source).toContain('\\id GEN');
+      if (id === 'eng_webc') {
+        expect((await getStoredBook(id, 'TOB'))?.source).toContain('\\id TOB');
+      }
+    } finally {
+      worker.terminate();
+      await deleteTranslation(id, false);
+    }
+  },
+  60_000,
+);
 
 it('imports, prepares and searches persisted verses in a fresh worker without raw source', async () => {
   let worker = new Worker(new URL('./translation.worker.ts', import.meta.url), {

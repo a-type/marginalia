@@ -1,6 +1,6 @@
 import { AppError } from '#/lib/error';
 import type { TranslationManifest } from './manifests';
-import { knownTranslations, parseTranslationManifest } from './manifests';
+import { builtinTranslations, parseTranslationExtra } from './manifests';
 import type { SearchToken, SearchVerse } from './search';
 import {
   corpusVersion,
@@ -129,14 +129,14 @@ async function install(
         title: request.title.trim().slice(0, 200) || request.file.name,
       };
     } else if (!manifest) {
-      if (!knownTranslations.some((translation) => translation.id === id))
+      if (!builtinTranslations.some((translation) => translation.id === id))
         throw new AppError(
           AppError.Code.NotFound,
           'Translation is not installed',
         );
-      manifest = parseTranslationManifest(
+      manifest = parseTranslationExtra(
         await (
-          await fetchRemote(`/usfm/${id}/manifest.json`, controller.signal)
+          await fetchRemote(`/usfm/${id}/extra.json`, controller.signal)
         ).json(),
         id,
       );
@@ -184,7 +184,7 @@ async function install(
         if (inspected.id !== book.id || inspected.chapters !== book.chapters)
           throw new AppError(
             AppError.Code.BadRequest,
-            `Book does not match manifest: ${book.id}`,
+            `Book does not match translation metadata: ${book.id}`,
           );
         await saveBook(record, book.id, source);
       }

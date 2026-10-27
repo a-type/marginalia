@@ -1,7 +1,7 @@
 import { strToU8, zipSync } from 'fflate';
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
-import type { TranslationManifest } from './manifests';
+import { builtinTranslations, parseTranslationExtra } from './manifests';
 import { extractVerses } from './search';
 import { inspectUSFM, readUSFMImport, splitUSFM } from './usfm-import';
 
@@ -49,16 +49,14 @@ describe('USFM imports', () => {
     ).rejects.toThrow('Unsafe');
   });
   it('validates and prepares the shipped translation corpora', async () => {
-    for (const translation of ['web-p', 'net']) {
-      const manifest: TranslationManifest = JSON.parse(
-        await readFile(`public/usfm/${translation}/manifest.json`, 'utf8'),
+    for (const { id } of builtinTranslations) {
+      const manifest = parseTranslationExtra(
+        JSON.parse(await readFile(`public/usfm/${id}/extra.json`, 'utf8')),
+        id,
       );
       let total = 0;
       for (const book of manifest.books) {
-        const text = await readFile(
-          `public/usfm/${translation}/${book.source}`,
-          'utf8',
-        );
+        const text = await readFile(`public/usfm/${id}/${book.source}`, 'utf8');
         const inspected = inspectUSFM(
           text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n'),
         );
