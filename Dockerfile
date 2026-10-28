@@ -11,6 +11,8 @@ COPY . .
 
 ARG VITE_HAPPYVIEW_CLIENT_KEY
 ENV VITE_HAPPYVIEW_CLIENT_KEY=${VITE_HAPPYVIEW_CLIENT_KEY}
+ARG APP_URL=https://marginsbible.com
+ENV APP_URL=${APP_URL}
 
 RUN pnpm build
 
@@ -20,4 +22,4 @@ ENV PORT=3000
 
 EXPOSE 3000
 
-CMD ["node", ".output/server/index.mjs"]
+CMD ["pnpm", "start"]

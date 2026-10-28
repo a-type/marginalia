@@ -27,7 +27,7 @@ docker compose pull happyview
 docker compose up -d happyview
 ```
 
-Start HappyView and the TanStack Start development server:
+Start HappyView and the Vite development server:
 
 ```sh
 docker compose up -d happyview
@@ -133,10 +133,12 @@ docker compose up --build -d app
 ```
 
 Caddy terminates TLS and routes `/api/*` to HappyView, rewrites `/xrpc/*` to
-`/api/xrpc/*`, and sends all other requests to the TanStack Start app. HappyView
-uses `BASE_PATH=/api`; its `PUBLIC_URL` remains the app origin without that
-path. The HappyView container is bound to loopback on host port 3001 and is not
-directly exposed to the network.
+`/api/xrpc/*`, and sends all other requests to the static SPA server. The app
+image serves Vite's `dist/` output with history fallback for direct route loads.
+OAuth client metadata is generated during the build, so changing `APP_URL`
+requires rebuilding the app. HappyView uses `BASE_PATH=/api`; its `PUBLIC_URL`
+remains the app origin without that path. The HappyView container is bound to
+loopback on host port 3001 and is not directly exposed to the network.
 
 ## Railway deployment
 
@@ -156,17 +158,16 @@ planning subsequent changes.
 ## Progressive web app
 
 `vite-plugin-pwa` generates the web app manifest and a Workbox service worker
-during `pnpm build`. The root document links the manifest, install icons, and
-the plugin-generated registration script. Service workers are disabled in
-development; use `pnpm build` followed by `pnpm start` to test installation on
-`http://127.0.0.1:3000` (or use HTTPS in production).
+during `pnpm build`. The static app shell links the manifest and install icons,
+and the plugin injects its service-worker registration script. Service workers
+are disabled in development; use `pnpm build` followed by `pnpm start` to test
+installation on `http://127.0.0.1:3000` (or use HTTPS in production).
 
-The worker precaches built JavaScript, CSS, fonts, and install icons. HTML
-navigation, OAuth, and API requests remain network-only, so this does not
-provide offline cold launch, reload, or direct navigation. Translation text
-already stored in the browser can be read while the app is open and its code is
-loaded. Browser-managed IndexedDB stores downloaded USFM and prepared verse
-text; storage can be evicted and is not a backup.
+The worker precaches the app shell and built JavaScript, CSS, and fonts, allowing
+offline app launch and route navigation. OAuth and API requests remain
+network-only. Translation text already stored in the browser can be read while
+the app is open. Browser-managed IndexedDB stores downloaded USFM and prepared
+verse text; storage can be evicted and is not a backup.
 
 WEB starts downloading in the background by default. Deleting WEB suppresses
 future automatic downloads until the user explicitly downloads it again. Other

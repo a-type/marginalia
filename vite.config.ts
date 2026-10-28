@@ -2,15 +2,15 @@ import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { devtools } from '@tanstack/devtools-vite';
 import { createProxyServer } from 'http-proxy-3';
 import { ServerResponse } from 'node:http';
-import type { ViteDevServer } from 'vite';
+import type { Plugin, ViteDevServer } from 'vite';
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-import { tanstackStart } from '@tanstack/react-start/plugin/vite';
+import { getOAuthClientMetadata } from './src/lib/atproto/client-metadata';
+import { tanstackRouter } from '@tanstack/router-plugin/vite';
 
 import babel from '@rolldown/plugin-babel';
 import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react';
-import { nitro } from 'nitro/vite';
 
 function getHappyViewProxyPath(url: string | undefined) {
   if (!url) return undefined;
@@ -74,34 +74,58 @@ function happyViewProxyPlugin(target: string) {
   };
 }
 
+function oauthMetadataPlugin(appUrl: string): Plugin {
+  const metadata = JSON.stringify(getOAuthClientMetadata(appUrl), null, 2);
+
+  return {
+    name: 'margins-oauth-client-metadata',
+    configureServer(server) {
+      server.middlewares.use(
+        '/oauth-client-metadata.json',
+        (_request, response) => {
+          response.setHeader('content-type', 'application/json; charset=utf-8');
+          response.setHeader('cache-control', 'public, max-age=300');
+          response.end(metadata);
+        },
+      );
+    },
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'oauth-client-metadata.json',
+        source: metadata,
+      });
+    },
+  };
+}
+
 const config = defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), ['APP_URL', 'HAPPYVIEW_']);
   const happyViewUpstream = env.HAPPYVIEW_UPSTREAM || 'http://127.0.0.1:3001';
-
-  if (mode === 'development' && env.APP_URL && !process.env.APP_URL) {
-    process.env.APP_URL = env.APP_URL;
-  }
+  const appUrl =
+    env.APP_URL ||
+    (mode === 'development'
+      ? 'http://127.0.0.1:7654'
+      : 'https://marginsbible.com');
 
   return {
     resolve: { tsconfigPaths: true },
-    ssr: { noExternal: ['@a-type/ui'] },
     plugins: [
-      // TanStack Start's SSR middleware runs before Vite's built-in proxy.
+      tanstackRouter(),
       mode === 'development'
         ? happyViewProxyPlugin(happyViewUpstream)
         : undefined,
+      oauthMetadataPlugin(appUrl),
       devtools(),
       paraglideVitePlugin({
         project: './project.inlang',
         outdir: './src/paraglide',
         strategy: ['url', 'baseLocale'],
       }),
-      nitro({ rollupConfig: { external: [/^@sentry\//] } }),
-      tanstackStart(),
       viteReact(),
       babel({ presets: [reactCompilerPreset()] }),
       VitePWA({
-        outDir: '.output/public',
+        outDir: 'dist',
         injectRegister: 'script',
         includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
         manifest: {
@@ -134,9 +158,12 @@ const config = defineConfig(({ mode }) => {
           ],
         },
         workbox: {
-          globPatterns: ['assets/**/*.{js,css,woff,woff2}'],
-          // Start renders HTML on the server; there is no static app shell.
-          navigateFallback: null,
+          globPatterns: [
+            'index.html',
+            'registerSW.js',
+            'assets/**/*.{js,css,woff,woff2}',
+          ],
+          navigateFallback: '/index.html',
         },
       }),
     ],

@@ -5,6 +5,7 @@ x-app-image: &app-image
   build:
     context: .
     args:
+      APP_URL: ${APP_URL:-http://127.0.0.1:7654}
       VITE_HAPPYVIEW_CLIENT_KEY: ${VITE_HAPPYVIEW_CLIENT_KEY:-}
 
 services:
@@ -16,7 +17,7 @@ services:
       NODE_ENV: production
       PORT: 3000
     expose:
-      - "3000"
+      - '3000'
     restart: unless-stopped
 
   happyview:
@@ -31,7 +32,7 @@ services:
       SESSION_SECRET: ${HAPPYVIEW_SESSION_SECRET:?Set HAPPYVIEW_SESSION_SECRET in .env}
       TOKEN_ENCRYPTION_KEY: ${HAPPYVIEW_TOKEN_ENCRYPTION_KEY:?Set HAPPYVIEW_TOKEN_ENCRYPTION_KEY in .env}
     ports:
-      - "127.0.0.1:3001:3000"
+      - '127.0.0.1:3001:3000'
     volumes:
       - happyview-data:/data
     restart: unless-stopped
@@ -44,9 +45,9 @@ services:
       HAPPYVIEW_BASE_PATH: /api
       HAPPYVIEW_PRIVATE_DOMAIN: happyview
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

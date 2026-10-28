@@ -11,7 +11,7 @@ The app is in very early development. Backwards compatibility is not important u
 - Use pnpm 11 and Node.js 24; versions are declared in [mise.toml](mise.toml).
 - `pnpm install` installs dependencies.
 - `pnpm dev` runs Vite on `http://127.0.0.1:7654`.
-- `pnpm build` creates the Nitro production bundle; `pnpm start` runs it.
+- `pnpm build` creates the static SPA in `dist/`; `pnpm start` serves it with SPA fallback.
 - `pnpm check` checks Prettier and `pnpm lint` runs ESLint. `pnpm format` writes formatting and ESLint fixes.
 - `pnpm generate-routes` regenerates the TanStack route tree.
 - `pnpm lexicons` regenerates TypeScript from the ATProto lexicons.
@@ -21,13 +21,13 @@ See [README.md](README.md) for deployment and TAP operation notes. Prefer [packa
 
 ## Architecture
 
-- React 19 and TanStack Start provide SSR, server functions, TanStack Router file routes, and TanStack Query. Nitro supplies the production server; Vite and the React Compiler build the app.
+- React 19 and TanStack Router provide file-based client routing and TanStack Query. Vite and the React Compiler build the static SPA.
 - Route definitions live in [src/routes/](src/routes/). Keep route components thin and move reusable UI to [src/components/](src/components/) and server/domain behavior to [src/lib/](src/lib/).
 - [src/components/usfm/](src/components/usfm/) owns USFM parsing and pluggable React rendering. Verse identifiers and parsing belong in [src/lib/bible/verse.ts](src/lib/bible/verse.ts).
 - SQLite is accessed through Kysely in [src/db.ts](src/db.ts). Schema changes belong in [src/db.migrations.ts](src/db.migrations.ts); reusable data operations belong in [src/lib/db/queries.ts](src/lib/db/queries.ts).
 - UI messages live in [messages/](messages/). Paraglide generates the runtime in `src/paraglide/` during development/build.
 - Use the `#/*` alias for imports from `src/`. TypeScript is strict and rejects unused locals and parameters.
-- Throw structured `AppError` values from application boundaries; global handling and logging are configured in [src/start.ts](src/start.ts).
+- Throw structured `AppError` values from application boundaries; this app runs as a client-only SPA and does not provide TanStack Start server middleware.
 - When referencing a verse, use the defined [`VerseId`](src/lib/bible/verse.ts) as a primary ID format whenever relevant.
 
 ## ATProto Model And Flow

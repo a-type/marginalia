@@ -7,7 +7,6 @@ import {
 } from '#/lib/bible/reading-tabs';
 
 export const Route = createFileRoute('/')({
-  ssr: false,
   loader: ({ location }) => {
     if (location.state.skipHomeRestore) return;
     const tab = getMostRecentlyVisitedReadingTab();

@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HealthRouteImport } from './routes/health'
-import { Route as OauthClientMetadataDotjsonRouteImport } from './routes/oauth-client-metadata[.]json'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SocialRouteImport } from './routes/social'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
@@ -27,12 +26,6 @@ const HealthRoute = HealthRouteImport.update({
   path: '/health',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OauthClientMetadataDotjsonRoute =
-  OauthClientMetadataDotjsonRouteImport.update({
-    id: '/oauth-client-metadata.json',
-    path: '/oauth-client-metadata.json',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -57,7 +50,6 @@ const TranslationBookChapterRoute = TranslationBookChapterRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
-  '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute
   '/search': typeof SearchRoute
   '/social': typeof SocialRoute
   '/oauth/callback': typeof OauthCallbackRoute
@@ -66,7 +58,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
-  '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute
   '/search': typeof SearchRoute
   '/social': typeof SocialRoute
   '/oauth/callback': typeof OauthCallbackRoute
@@ -76,7 +67,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
-  '/oauth-client-metadata.json': typeof OauthClientMetadataDotjsonRoute
   '/search': typeof SearchRoute
   '/social': typeof SocialRoute
   '/oauth/callback': typeof OauthCallbackRoute
@@ -87,7 +77,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/health'
-    | '/oauth-client-metadata.json'
     | '/search'
     | '/social'
     | '/oauth/callback'
@@ -96,7 +85,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/health'
-    | '/oauth-client-metadata.json'
     | '/search'
     | '/social'
     | '/oauth/callback'
@@ -105,7 +93,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/health'
-    | '/oauth-client-metadata.json'
     | '/search'
     | '/social'
     | '/oauth/callback'
@@ -115,7 +102,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HealthRoute: typeof HealthRoute
-  OauthClientMetadataDotjsonRoute: typeof OauthClientMetadataDotjsonRoute
   SearchRoute: typeof SearchRoute
   SocialRoute: typeof SocialRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
@@ -136,13 +122,6 @@ declare module '@tanstack/react-router' {
       path: '/health'
       fullPath: '/health'
       preLoaderRoute: typeof HealthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/oauth-client-metadata.json': {
-      id: '/oauth-client-metadata.json'
-      path: '/oauth-client-metadata.json'
-      fullPath: '/oauth-client-metadata.json'
-      preLoaderRoute: typeof OauthClientMetadataDotjsonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/search': {
@@ -179,7 +158,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HealthRoute: HealthRoute,
-  OauthClientMetadataDotjsonRoute: OauthClientMetadataDotjsonRoute,
   SearchRoute: SearchRoute,
   SocialRoute: SocialRoute,
   OauthCallbackRoute: OauthCallbackRoute,
@@ -188,13 +166,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
