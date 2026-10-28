@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   builtinTranslations,
+  getInitialTranslationBook,
   isTranslationId,
   parseTranslationExtra,
 } from './manifests';
@@ -21,6 +22,26 @@ const extra = {
 };
 
 describe('Fetch Bible translation metadata', () => {
+  it('chooses Genesis or falls back to the first available book', () => {
+    const genesis = { id: 'GEN', title: 'Genesis', chapters: 50 } as const;
+    const john = { id: 'JHN', title: 'John', chapters: 21 } as const;
+
+    expect(
+      getInitialTranslationBook({
+        id: 'eng_example',
+        title: 'Example',
+        books: [john, genesis],
+      }),
+    ).toBe(genesis);
+    expect(
+      getInitialTranslationBook({
+        id: 'eng_example',
+        title: 'Example',
+        books: [john],
+      }),
+    ).toBe(john);
+  });
+
   it('infers names, chapter counts, filenames, and Bible order from extra.json', () => {
     expect(parseTranslationExtra(extra, 'eng_webc')).toEqual({
       id: 'eng_webc',

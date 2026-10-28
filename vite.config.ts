@@ -164,6 +164,7 @@ const config = defineConfig(({ mode }) => {
             'assets/**/*.{js,css,woff,woff2}',
           ],
           navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/(?:api|xrpc)(?:\/|$)/],
         },
       }),
     ],

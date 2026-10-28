@@ -17,7 +17,11 @@ export function BibleRecovery() {
           <Icon name="refresh" />
           {m.translation_retry()}
         </Button>
-        <Button onClick={() => void navigate({ to: '/' })}>
+        <Button
+          onClick={() =>
+            void navigate({ to: '/', state: { skipHomeRestore: true } })
+          }
+        >
           <Icon name="book" />
           {m.bible_recovery_home()}
         </Button>

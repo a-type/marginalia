@@ -16,9 +16,11 @@ export function useReadingTabRouteState(): string | undefined {
   const router = useRouter();
   const canGoBack = useCanGoBack();
   const navigate = useNavigate();
-  const { pathname, state } = useLocation({
+  const { pathname, search, hash, state } = useLocation({
     select: (location) => ({
       pathname: location.pathname,
+      search: location.search,
+      hash: location.hash,
       state: location.state,
     }),
   });
@@ -60,6 +62,8 @@ export function useReadingTabRouteState(): string | undefined {
 
     void navigate({
       to: pathname,
+      search: (previous) => ({ ...previous, ...search }),
+      hash,
       state: (previous) => ({
         ...previous,
         activeReadingTabId: tab.id,
