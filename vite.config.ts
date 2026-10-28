@@ -6,8 +6,8 @@ import type { Plugin, ViteDevServer } from 'vite';
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-import { getOAuthClientMetadata } from './src/lib/atproto/client-metadata';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
+import { getOAuthClientMetadata } from './src/lib/atproto/client-metadata';
 
 import babel from '@rolldown/plugin-babel';
 import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react';
