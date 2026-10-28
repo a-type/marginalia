@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { AppShell } from '#/components/app/AppShell';
 import { SocialSidebar } from '#/components/auth/SocialSidebar';
-import { SearchButton } from '#/components/search/SearchButton';
+import { FindPeopleButton } from '#/components/search/FindPeopleButton';
 import { m } from '#/paraglide/messages';
 import { currentUserDidQueryOptions } from '#/queries/user';
 import cls from './social.module.css';
@@ -19,11 +19,11 @@ function SocialPage() {
   });
 
   return (
-    <AppShell activeTab="social">
+    <AppShell>
       <div className={cls.root}>
-        <SearchButton className={cls.followButton} emphasis="default">
+        <FindPeopleButton className={cls.followButton} emphasis="default">
           {m.awake_jumpy_racoon_absorb()}
-        </SearchButton>
+        </FindPeopleButton>
         <SocialSidebar accountDid={userDidQuery.data ?? null} />
       </div>
     </AppShell>

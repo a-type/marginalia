@@ -30,3 +30,10 @@ declare module '@tanstack/react-router' {
     router: ReturnType<typeof getRouter>;
   }
 }
+
+declare module '@tanstack/react-router' {
+  interface HistoryState {
+    activeReadingTabId?: string;
+    skipHomeRestore?: boolean;
+  }
+}

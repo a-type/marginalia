@@ -121,5 +121,7 @@
   "app_navigation_label": "Hauptbereiche",
   "app_tab_read": "Lesen",
   "app_tab_search": "Suchen",
-  "app_tab_social": "Soziales"
+  "app_tab_social": "Soziales",
+  "app_tab_home": "Startseite",
+  "app_tab_add_bible": "Bibel-Tab hinzufügen"
 }

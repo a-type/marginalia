@@ -131,8 +131,11 @@
   "app_tab_read": "Read",
   "app_tab_search": "Search",
   "app_tab_social": "Social",
+  "app_tab_home": "Home",
+  "app_tab_add_bible": "Add Bible tab",
   "elegant_watery_oryx_radiate": "Settings",
   "awake_jumpy_racoon_absorb": "Follow People",
   "antsy_sunny_iguana_dial": "Search",
-  "fancy_tough_ocelot_charm": "Follow"
+  "fancy_tough_ocelot_charm": "Follow",
+  "close_tab": "Close tab"
 }

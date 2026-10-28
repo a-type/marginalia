@@ -56,7 +56,7 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
 
 function ReaderPage() {
   return (
-    <AppShell activeTab="read">
+    <AppShell>
       <BibleReader />
     </AppShell>
   );
