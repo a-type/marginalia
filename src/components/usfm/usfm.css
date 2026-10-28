@@ -40,9 +40,6 @@
 .usfm-paragraph {
   margin: 0 0 var(--m-sp);
   text-wrap: pretty;
-}
-
-.usfm-paragraph + .usfm-paragraph {
   text-indent: 1.5em;
 }
 
@@ -149,11 +146,14 @@
   width: --fn-literal(min(max-content, 80vw));
   font-family: ui-sans-serif, system-ui, sans-serif;
   text-indent: 0;
+
+  & > * + * {
+    margin-left: 1ch;
+  }
 }
 
 .usfm-note-fr,
 .usfm-note-xo {
-  margin-right: var(--m-sp-xs);
   font-weight: 700;
 }
 
@@ -165,4 +165,12 @@
   /* words of jesus */
   @apply --mx-fg(var(--m-tint-heavy));
   @apply --mx-fg-heavier(4);
+}
+
+.usfm-unknown {
+  display: none;
+}
+
+[data-usfm-marker='r'] {
+  @apply --mx-prose-ambient;
 }

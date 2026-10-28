@@ -24,11 +24,11 @@ const METADATA_MARKERS = new Set([
 
 const TITLE_MARKER = /^(?:mt|mte|imt|imte)\d*$/;
 const HEADING_MARKER =
-  /^(?:s|sr|r|d|sp|sd|is|iq|iqt|iot|io|iex|imte|cl|cd)\d*$/;
+  /^(?:s|sr|d|sp|sd|is|iq|iqt|iot|io|iex|imte|cl|cd)\d*$/;
 const PARAGRAPH_MARKER =
-  /^(?:p|m|po|pr|cls|pmo|pm|pmc|pmr|pi|mi|nb|pc|ph|lit)\d*$/;
+  /^(?:p|m|po|pr|cls|pmo|pm|pmc|pmr|pi|mi|nb|pc|ph|lit|r|lh|lf)\d*$/;
 const POETRY_MARKER = /^(?:q|qr|qc|qa|qm|qd)\d*$/;
-const LIST_MARKER = /^(?:lh|li|lf|lim)\d*$/;
+const LIST_MARKER = /^(?:li|lim)\d*$/;
 const TABLE_MARKER = /^(?:tr|th|thr|tc|tcr)\d*$/;
 
 const NOTE_MARKERS = new Set(['f', 'fe', 'ef', 'x', 'ex']);
@@ -87,10 +87,20 @@ const CHARACTER_MARKERS = new Set([
   'jmp',
   'ca',
   'va',
+  'ref',
 ]);
 
 const PAIRED_MARKERS = new Set([...NOTE_MARKERS, ...CHARACTER_MARKERS, 'fig']);
-const ATTRIBUTE_MARKERS = new Set(['w', 'wa', 'wg', 'wh', 'rb', 'jmp', 'fig']);
+const ATTRIBUTE_MARKERS = new Set([
+  'w',
+  'wa',
+  'wg',
+  'wh',
+  'rb',
+  'jmp',
+  'fig',
+  'ref',
+]);
 
 const ARGUMENT_MARKERS = new Set(['c', 'v']);
 const BREAK_MARKERS = new Set(['b', 'pb']);
@@ -161,16 +171,23 @@ function parseAttributes(value: string): Record<string, string> {
   return attributes;
 }
 
-function splitAttributes(value: string): {
+function splitAttributes(
+  value: string,
+  defaultAttribute?: string,
+): {
   content: string;
   attributes: Record<string, string>;
 } {
   const delimiter = value.indexOf('|');
   if (delimiter === -1) return { content: value, attributes: {} };
 
+  const attributeSource = value.slice(delimiter + 1).trim();
   return {
     content: value.slice(0, delimiter),
-    attributes: parseAttributes(value.slice(delimiter + 1)),
+    attributes:
+      defaultAttribute && !attributeSource.includes('=')
+        ? { [defaultAttribute]: attributeSource }
+        : parseAttributes(attributeSource),
   };
 }
 
@@ -355,7 +372,7 @@ function parseInline(source: string, stopMarker?: string): InlineResult {
       const closing = findClosingMarker(source, contentStart, rawMarker);
       const rawContent = source.slice(contentStart, closing.contentEnd);
       const { content, attributes } = ATTRIBUTE_MARKERS.has(marker)
-        ? splitAttributes(rawContent)
+        ? splitAttributes(rawContent, marker === 'ref' ? 'loc' : undefined)
         : { content: rawContent, attributes: {} };
       const note = NOTE_MARKERS.has(marker)
         ? parseNoteContents(content)
