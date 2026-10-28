@@ -1,6 +1,7 @@
 import { Divider, Popover, Heading as UIHeading } from '@a-type/ui';
 import { useIsAnnotationPaneActive } from '../annotations/annotationPaneStore';
 import { ChapterNumberProvider } from './contexts';
+import { Reference } from './Reference';
 import type {
   USFMComponents,
   USFMDocumentComponentProps,
@@ -126,7 +127,10 @@ function Table({ marker, children }: USFMNodeComponentProps) {
   );
 }
 
-function Character({ marker, attributes, children }: USFMNodeComponentProps) {
+function Character(props: USFMNodeComponentProps) {
+  const { marker, attributes, children } = props;
+  if (marker === 'ref') return <Reference {...props} />;
+
   return (
     <span
       className={`usfm-character usfm-${marker}`}

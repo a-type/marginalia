@@ -21,6 +21,28 @@ export function parseBibleLocation(
   return { bookId, chapter };
 }
 
+export function parseBibleReference(
+  value = '',
+): (BibleLocation & { verse?: number }) | null {
+  const match =
+    /^(\S+)\s+([1-9]\d*)(?::([1-9]\d*))?(?:-(?:[1-9]\d*:)?[1-9]\d*)?$/.exec(
+      value.trim(),
+    );
+  if (!match) return null;
+
+  const location = parseBibleLocation(match[1], match[2]);
+  const verse = match[3] ? Number(match[3]) : undefined;
+  if (
+    !location ||
+    !Number.isSafeInteger(location.chapter) ||
+    (verse !== undefined && !Number.isSafeInteger(verse))
+  ) {
+    return null;
+  }
+
+  return { ...location, ...(verse === undefined ? {} : { verse }) };
+}
+
 export function readStoredBibleLocation(): BibleLocation {
   try {
     const value: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '');

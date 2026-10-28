@@ -1,17 +1,12 @@
 import { Box, FormikForm, Heading, TextField } from '@a-type/ui';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from '@tanstack/react-router';
+import { useMutation } from '@tanstack/react-query';
 
 import {
   FollowSuggestions,
   PersonRow,
 } from '#/components/auth/FollowSuggestions';
-import { followProfile, lookupProfileByHandle } from '#/lib/social/functions';
+import { lookupProfileByHandle } from '#/lib/social/functions';
 import { m } from '#/paraglide/messages';
-import {
-  followedProfilesQueryOptions,
-  followSuggestionsQueryOptions,
-} from '#/queries/social';
 import cls from './SocialSidebar.module.css';
 
 export interface SocialSidebarProps {
@@ -19,32 +14,10 @@ export interface SocialSidebarProps {
 }
 
 export function SocialSidebar({ accountDid }: SocialSidebarProps) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const followedProfiles = useQuery({
-    ...followedProfilesQueryOptions,
-    enabled: !!accountDid,
-  });
-  const followedDids = new Set(
-    followedProfiles.data?.map((profile) => profile.authorDid) ?? [],
-  );
   const lookup = useMutation({
     mutationFn: (handle: string) => lookupProfileByHandle({ data: { handle } }),
   });
-  const follow = useMutation({
-    mutationFn: (subject: string) => followProfile({ data: { subject } }),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: followSuggestionsQueryOptions.queryKey,
-        }),
-        queryClient.invalidateQueries({
-          queryKey: followedProfilesQueryOptions.queryKey,
-        }),
-        router.invalidate(),
-      ]);
-    },
-  });
+
   const lookupResult = lookup.data ?? null;
 
   if (!accountDid) return null;

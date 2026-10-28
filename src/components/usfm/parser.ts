@@ -23,8 +23,7 @@ const METADATA_MARKERS = new Set([
 ]);
 
 const TITLE_MARKER = /^(?:mt|mte|imt|imte)\d*$/;
-const HEADING_MARKER =
-  /^(?:s|sr|d|sp|sd|is|iq|iqt|iot|io|iex|imte|cl|cd)\d*$/;
+const HEADING_MARKER = /^(?:s|sr|d|sp|sd|is|iq|iqt|iot|io|iex|imte|cl|cd)\d*$/;
 const PARAGRAPH_MARKER =
   /^(?:p|m|po|pr|cls|pmo|pm|pmc|pmr|pi|mi|nb|pc|ph|lit|r|lh|lf)\d*$/;
 const POETRY_MARKER = /^(?:q|qr|qc|qa|qm|qd)\d*$/;
@@ -424,6 +423,31 @@ function isContainerCategory(category: USFMNodeCategory): boolean {
   );
 }
 
+function joinInlineLines(usfm: string): string[] {
+  const lines: string[] = [];
+
+  for (const rawLine of usfm.replace(/\r\n?/g, '\n').split('\n')) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    const marker = /^\\([+\w-]+)/.exec(line)?.[1]?.replace(/^\+/, '');
+    const previousLine = lines.at(-1);
+    const continuesInline =
+      !marker ||
+      PAIRED_MARKERS.has(marker) ||
+      NOTE_PART_MARKERS.has(marker) ||
+      markerCategory(marker) === 'milestone';
+
+    if (previousLine !== undefined && continuesInline) {
+      lines[lines.length - 1] = `${previousLine} ${line}`;
+    } else {
+      lines.push(line);
+    }
+  }
+
+  return lines;
+}
+
 /**
  * Parses a USFM book or chapter into a renderable tree. Unknown markers are
  * retained so consumers can supply a component without changing the parser.
@@ -434,10 +458,7 @@ export function parseUSFM(usfm: string): USFMDocument {
   let container: USFMMarkerNode | undefined;
   let activeVerseArgument: string | undefined;
 
-  for (const rawLine of usfm.replace(/\r\n?/g, '\n').split('\n')) {
-    const line = rawLine.trim();
-    if (!line) continue;
-
+  for (const line of joinInlineLines(usfm)) {
     const match = /^\\([+\w-]+)(?:\s+([\s\S]*))?$/.exec(line);
     if (!match?.[1]) {
       const target =

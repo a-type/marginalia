@@ -101,3 +101,57 @@ describe('USFM paragraph semantics', () => {
     ]);
   });
 });
+
+describe('USFM physical line wrapping', () => {
+  it('keeps Revelation 1:19 text with its verse number', () => {
+    const source = String.raw`\p \v 19
+\wj Therefore\f + \fr 1:19 \ft TR does not include \fqa Therefore\ft .\f* write down the things you have seen, the things that are, and the things that will happen after this. \wj* \v 20 \wj This is the mystery of the seven stars.\wj*`;
+    const document = parseUSFM(source);
+
+    expect(document).toEqual(parseUSFM(source.replaceAll('\n', ' ')));
+    expect(document.children).toMatchObject([
+      {
+        marker: 'p',
+        children: [
+          {
+            marker: 'v',
+            argument: '19',
+            children: [
+              {
+                marker: 'wj',
+                category: 'character',
+                closed: true,
+                children: [
+                  { type: 'text', value: 'Therefore' },
+                  { marker: 'f', category: 'note', closed: true },
+                  {
+                    type: 'text',
+                    value:
+                      ' write down the things you have seen, the things that are, and the things that will happen after this. ',
+                  },
+                ],
+              },
+              { type: 'text', value: ' ' },
+              {
+                marker: 'v',
+                argument: '20',
+                children: [{ marker: 'wj', closed: true }],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it.each([
+    String.raw`\p \v 19 \wj Write down
+the things that will happen after this.\wj*`,
+    String.raw`\p \v 19 \wj Write down the things that will happen after this.
+\wj*`,
+    String.raw`\p \v 19 \wj Write down
+\+w the|strong="G3588"\+w* things that will happen after this.\wj*`,
+  ])('ignores physical line breaks within inline content', (source) => {
+    expect(parseUSFM(source)).toEqual(parseUSFM(source.replaceAll('\n', ' ')));
+  });
+});

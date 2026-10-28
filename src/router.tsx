@@ -13,6 +13,9 @@ export function getRouter() {
     routeTree,
     context,
     scrollRestoration: true,
+    scrollToTopSelectors: [
+      '[data-reader-scroll-area] [data-scroll-direction="vertical"]',
+    ],
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,
   });

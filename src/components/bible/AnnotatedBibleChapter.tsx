@@ -31,7 +31,11 @@ export function AnnotatedBibleChapter({
 }: AnnotatedBibleChapterProps) {
   return (
     <Box className={clsx(cls.root, className)}>
-      <ScrollArea direction="vertical" className={cls.scrollArea}>
+      <ScrollArea
+        direction="vertical"
+        className={cls.scrollArea}
+        data-reader-scroll-area
+      >
         <div className={cls.chapterContent}>
           {header}
           <Box gap className={cls.verseRow}>
