@@ -72,6 +72,12 @@ export interface TranslationManifest {
   metadata?: TranslationMetadata;
 }
 
+export function getInitialTranslationBook(
+  manifest: TranslationManifest,
+): TranslationBook | undefined {
+  return manifest.books.find((book) => book.id === 'GEN') ?? manifest.books[0];
+}
+
 export function isTranslationId(value: string): boolean {
   return /^[a-z0-9]+(?:[_-][a-z0-9]+)*$/.test(value);
 }

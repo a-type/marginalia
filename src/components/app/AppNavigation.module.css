@@ -1,0 +1,19 @@
+.navigation {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.tabs {
+  min-width: 0;
+}
+
+.tabList {
+  gap: var(--m-sp-xs);
+}
+
+.addTab {
+  position: sticky;
+  right: 0;
+  margin-inline-start: var(--m-sp);
+  box-shadow: 0 0 15px var(--m-sp) var(--m-gray-wash);
+}

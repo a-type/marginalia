@@ -15,7 +15,7 @@ import { useState } from 'react';
 import { FollowSuggestions } from '../auth/FollowSuggestions';
 import { FollowButton } from './FollowButton';
 
-export function SearchButton({ children, ...props }: ButtonProps) {
+export function FindPeopleButton({ children, ...props }: ButtonProps) {
   return (
     <Dialog disableSheet>
       <Dialog.Trigger

@@ -1,6 +1,6 @@
 import { Button, clsx, Icon, Popover } from '@a-type/ui';
 import { useMutation } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
+import { getRouteApi, useLocation } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import type { TranslationManifest } from '#/lib/bible/source';
@@ -38,6 +38,9 @@ export function BibleReaderLocation({
   className,
 }: BibleReaderLocationProps) {
   const navigate = readerRoute.useNavigate();
+  const activeReadingTabId = useLocation({
+    select: (routeLocation) => routeLocation.state.activeReadingTabId,
+  });
   const search = readerRoute.useSearch();
   const [announcement, setAnnouncement] = useState('');
   const [showTranslationManager, setShowTranslationManager] = useState(false);
@@ -61,6 +64,7 @@ export function BibleReaderLocation({
       }
       await navigate({
         params: { translation, book: book.id, chapter: String(nextChapter) },
+        state: (previous) => ({ ...previous, activeReadingTabId }),
         search:
           selectedExists && book.id === bookId && nextChapter === chapter
             ? { verses: search.verses }
@@ -81,6 +85,7 @@ export function BibleReaderLocation({
         book: nextBookId,
         chapter: String(nextChapter),
       },
+      state: (previous) => ({ ...previous, activeReadingTabId }),
       search: {},
     });
     onOpenChange(false);

@@ -1,6 +1,6 @@
 import { useDbClient } from '@tanstack/react-db';
 import { useQuery } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
+import { getRouteApi, useLocation } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
 import { AnnotationPane } from '#/components/annotations/AnnotationPane';
@@ -10,7 +10,7 @@ import { useHighlightSync } from '#/components/annotations/useChapterHighlights'
 import type { ChapterAnnotationSnapshot } from '#/lib/annotations/collections';
 import { reconcileChapterAnnotations } from '#/lib/annotations/reconcile';
 import type { BibleLocation } from '#/lib/bible/location';
-import { storeBibleLocation } from '#/lib/bible/location';
+import { storeReadingTabLocation } from '#/lib/bible/reading-tabs';
 import { parseVerseSelection } from '#/lib/bible/selection';
 import { rememberTranslation, storeTranslationId } from '#/lib/bible/source';
 import { formatVerseId } from '#/lib/bible/verse';
@@ -33,12 +33,24 @@ export function BibleReader() {
   const selectedVerses = readerRoute.useSearch({
     select: (search) => search.verses,
   });
+  const { pathname, activeReadingTabId } = useLocation({
+    select: (routeLocation) => ({
+      pathname: routeLocation.pathname,
+      activeReadingTabId: routeLocation.state.activeReadingTabId,
+    }),
+  });
   const [locationOpen, setLocationOpen] = useState(false);
   const { accountDid, annotations } = useBibleReaderData(location);
 
   useResetAnnotationPaneOnRouteChange();
   useScrollToSelectedVerse(location, selectedVerses, translationId);
-  useStoreBibleReaderLocation(location, translationId, manifest.title);
+  useStoreBibleReaderLocation(
+    pathname,
+    activeReadingTabId,
+    location,
+    translationId,
+    manifest.title,
+  );
 
   return (
     <div className={cls.root}>
@@ -127,15 +139,20 @@ function useScrollToSelectedVerse(
 }
 
 function useStoreBibleReaderLocation(
+  pathname: string,
+  activeReadingTabId: string | undefined,
   location: BibleLocation,
   translationId: string,
   translationTitle: string,
 ) {
   useEffect(() => {
-    storeBibleLocation(location);
+    if (pathname !== `/${translationId}/${location.bookId}/${location.chapter}`)
+      return;
+
+    storeReadingTabLocation(activeReadingTabId, location, translationId);
     storeTranslationId(translationId);
     rememberTranslation({ id: translationId, title: translationTitle });
-  }, [location, translationId, translationTitle]);
+  }, [activeReadingTabId, location, pathname, translationId, translationTitle]);
 }
 
 function useReconcileChapterAnnotations({

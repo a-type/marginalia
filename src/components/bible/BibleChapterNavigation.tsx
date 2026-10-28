@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { Button, Icon, Tooltip } from '@a-type/ui';
-import { getRouteApi } from '@tanstack/react-router';
+import { getRouteApi, useLocation } from '@tanstack/react-router';
 
 import type { BibleLocation } from '#/lib/bible/location';
 import { getAdjacentChapter } from '#/lib/bible/navigation';
@@ -23,6 +23,9 @@ export function BibleChapterNavigation({
   translationId: string;
 }) {
   const navigate = readerRoute.useNavigate();
+  const activeReadingTabId = useLocation({
+    select: (routeLocation) => routeLocation.state.activeReadingTabId,
+  });
   const previous = getAdjacentChapter(manifest, location, -1);
   const next = getAdjacentChapter(manifest, location, 1);
 
@@ -34,6 +37,7 @@ export function BibleChapterNavigation({
         book: target.bookId,
         chapter: String(target.chapter),
       },
+      state: (currentState) => ({ ...currentState, activeReadingTabId }),
       search: {},
       resetScroll: true,
     }).then(() => {

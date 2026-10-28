@@ -1,6 +1,3 @@
-import { createIsomorphicFn } from '@tanstack/react-start';
-import { getRequestUrl } from '@tanstack/react-start/server';
-
 import type { BookId } from '#/lib/bible/verse';
 import { AppError } from '#/lib/error';
 import { fetchBibleManifest, translationResourceUrl } from './fetch-bible';
@@ -24,39 +21,34 @@ export interface RecentTranslation {
   title: string;
 }
 
-const getResourceOrigin = createIsomorphicFn()
-  .client(() => window.location.origin)
-  .server(() => getRequestUrl().origin);
+const getResourceOrigin = () => window.location.origin;
 
-const readLocalManifest = createIsomorphicFn()
-  .client(async (id: string) => {
-    try {
-      const record = await getTranslation(id);
-      return record &&
-        (record.origin === 'remote' || record.sourceStatus === 'ready')
-        ? record.manifest
-        : undefined;
-    } catch (error) {
-      if (id.startsWith('local-')) throw AppError.wrap(error);
-      return undefined;
-    }
-  })
-  .server((_id: string): Promise<TranslationManifest | undefined> =>
-    Promise.resolve(undefined),
-  );
+async function readLocalManifest(
+  id: string,
+): Promise<TranslationManifest | undefined> {
+  try {
+    const record = await getTranslation(id);
+    return record &&
+      (record.origin === 'remote' || record.sourceStatus === 'ready')
+      ? record.manifest
+      : undefined;
+  } catch (error) {
+    if (id.startsWith('local-')) throw AppError.wrap(error);
+    return undefined;
+  }
+}
 
-const readLocalSource = createIsomorphicFn()
-  .client(async (id: string, bookId: string) => {
-    try {
-      return (await getStoredBook(id, bookId))?.source;
-    } catch (error) {
-      if (id.startsWith('local-')) throw AppError.wrap(error);
-      return undefined;
-    }
-  })
-  .server((_id: string, _bookId: string): Promise<string | undefined> =>
-    Promise.resolve(undefined),
-  );
+async function readLocalSource(
+  id: string,
+  bookId: string,
+): Promise<string | undefined> {
+  try {
+    return (await getStoredBook(id, bookId))?.source;
+  } catch (error) {
+    if (id.startsWith('local-')) throw AppError.wrap(error);
+    return undefined;
+  }
+}
 
 export function readStoredTranslationId(): string {
   const translationId = localStorage.getItem(TRANSLATION_STORAGE_KEY);

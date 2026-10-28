@@ -1,24 +1,16 @@
 import { TanStackDevtools } from '@tanstack/react-devtools';
-import {
-  HeadContent,
-  Outlet,
-  Scripts,
-  createRootRouteWithContext,
-} from '@tanstack/react-router';
+import { Outlet, createRootRouteWithContext } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools';
 
 import { getLocale } from '#/paraglide/runtime';
 
-import uiCss from '@a-type/ui/main.css?url';
-import appCss from '../styles.css?url';
-
 import { AnnotationSyncCoordinator } from '#/components/annotations/AnnotationSyncCoordinator';
 import { initializeAnnotationStorage } from '#/lib/annotations/indexeddb';
 import { Provider } from '@a-type/ui';
 import type { DbClient } from '@tanstack/react-db';
-import type { QueryClient } from '@tanstack/react-query';
+import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 
 interface MyRouterContext {
   dbClient: DbClient;
@@ -35,72 +27,17 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     }
   },
 
-  head: () => ({
-    meta: [
-      {
-        charSet: 'utf-8',
-      },
-      {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
-      },
-      {
-        title: 'Margins Bible',
-      },
-      {
-        name: 'theme-color',
-        content: '#ffffff',
-      },
-    ],
-    links: [
-      {
-        rel: 'manifest',
-        href: '/manifest.webmanifest',
-      },
-      {
-        rel: 'icon',
-        href: '/favicon.ico',
-        sizes: '48x48',
-      },
-      {
-        rel: 'apple-touch-icon',
-        href: '/apple-touch-icon-180x180.png',
-        sizes: '180x180',
-      },
-      {
-        rel: 'stylesheet',
-        href: appCss,
-      },
-      {
-        rel: 'stylesheet',
-        href: uiCss,
-      },
-    ],
-    scripts: import.meta.env.PROD
-      ? [{ src: '/registerSW.js', defer: true }]
-      : [],
-  }),
   component: RootRoute,
-  shellComponent: RootDocument,
 });
 
 function RootRoute() {
-  return (
-    <>
-      <AnnotationSyncCoordinator />
-      <Outlet />
-    </>
-  );
-}
+  const { queryClient } = Route.useRouteContext();
 
-function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang={getLocale()}>
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <Provider manifestPath={false}>{children}</Provider>
+    <QueryClientProvider client={queryClient}>
+      <Provider manifestPath={false}>
+        <AnnotationSyncCoordinator />
+        <Outlet />
         <TanStackDevtools
           config={{
             position: 'bottom-right',
@@ -113,8 +50,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             TanStackQueryDevtools,
           ]}
         />
-        <Scripts />
-      </body>
-    </html>
+      </Provider>
+    </QueryClientProvider>
   );
 }

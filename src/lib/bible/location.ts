@@ -6,9 +6,6 @@ export interface BibleLocation {
   chapter: number;
 }
 
-const STORAGE_KEY = 'margins:bible-location';
-const defaultLocation: BibleLocation = { bookId: 'GEN', chapter: 1 };
-
 export function parseBibleLocation(
   bookId: string,
   chapterValue: string | number,
@@ -41,25 +38,4 @@ export function parseBibleReference(
   }
 
   return { ...location, ...(verse === undefined ? {} : { verse }) };
-}
-
-export function readStoredBibleLocation(): BibleLocation {
-  try {
-    const value: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '');
-    if (!value || typeof value !== 'object') return defaultLocation;
-
-    const { bookId, chapter } = value as Record<string, unknown>;
-    if (typeof bookId !== 'string') return defaultLocation;
-    if (typeof chapter !== 'string' && typeof chapter !== 'number') {
-      return defaultLocation;
-    }
-
-    return parseBibleLocation(bookId, chapter) ?? defaultLocation;
-  } catch {
-    return defaultLocation;
-  }
-}
-
-export function storeBibleLocation(location: BibleLocation): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(location));
 }

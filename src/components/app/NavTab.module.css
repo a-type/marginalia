@@ -1,0 +1,23 @@
+.tabWrapper {
+  @apply --mx-action-secondary;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  box-shadow: var(--m-shadow-sm);
+  transition:
+    background-color var(--m-dur) var(--m-ease),
+    color var(--m-dur) var(--m-ease);
+  overflow: clip;
+}
+
+.root {
+  flex: 0 0 auto;
+  aspect-ratio: auto;
+  justify-content: center;
+  min-width: --fn-literal(28px);
+  min-height: --fn-literal(28px);
+}
+.root[aria-current='page'] {
+  @apply --mx-bg(var(--m-tint-light));
+}

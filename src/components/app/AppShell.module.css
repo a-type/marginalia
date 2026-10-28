@@ -23,19 +23,6 @@
   margin-inline: auto;
 }
 
-.tabs {
-  flex: 0 1 auto;
-  border-radius: var(--m-rd);
-  min-width: 0;
-  & * {
-    border-radius: inherit;
-  }
-}
-
-.tab {
-  border-radius: inherit;
-}
-
 .userMenu {
   flex: 0 0 auto;
   margin-inline-start: auto;

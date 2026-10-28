@@ -15,7 +15,7 @@ function SearchPage() {
   const translationId = Route.useLoaderData();
 
   return (
-    <AppShell activeTab="search">
+    <AppShell>
       <Box p>
         <BibleSearch initialTranslation={translationId} isActive />
       </Box>
