@@ -7,13 +7,14 @@ import type { TranslationManifest } from '#/lib/bible/source';
 import {
   fetchTranslationManifest,
   fetchTranslationSource,
+  readRecentTranslations,
 } from '#/lib/bible/source';
 import type { BookId } from '#/lib/bible/verse';
 import { parseVerseLabel } from '#/lib/bible/verse';
 import { m } from '#/paraglide/messages';
+import { TranslationManagerDialog } from '../settings/TranslationManagerDialog';
 import { BibleLocationSelector } from './BibleLocationSelector';
 import cls from './BibleReaderLocation.module.css';
-import { TranslationSelect } from './TranslationSelect';
 
 const readerRoute = getRouteApi('/$translation/$book/$chapter');
 
@@ -39,6 +40,7 @@ export function BibleReaderLocation({
   const navigate = readerRoute.useNavigate();
   const search = readerRoute.useSearch();
   const [announcement, setAnnouncement] = useState('');
+  const [showTranslationManager, setShowTranslationManager] = useState(false);
   const changeTranslation = useMutation({
     networkMode: 'always',
     mutationFn: async (translation: string) => {
@@ -86,6 +88,16 @@ export function BibleReaderLocation({
 
   const currentBookTitle =
     manifest.books.find((book) => book.id === bookId)?.title ?? bookId;
+  const recentTranslations = [
+    { id: translationId, title: manifest.title },
+    ...readRecentTranslations(),
+  ]
+    .filter(
+      (translation, index, translations) =>
+        translations.findIndex((entry) => entry.id === translation.id) ===
+        index,
+    )
+    .slice(0, 3);
 
   return (
     <div className={clsx(cls.root, className)}>
@@ -114,14 +126,43 @@ export function BibleReaderLocation({
             </p>
           )}
           <div className={cls.translation}>
-            <TranslationSelect
-              value={translationId}
-              onValueChange={(id) => changeTranslation.mutate(id)}
-              loading={changeTranslation.isPending}
-            />
+            <div
+              className={cls.translationButtons}
+              aria-label={m.translation_recent()}
+            >
+              {recentTranslations.map((translation) => (
+                <Button
+                  key={translation.id}
+                  size="small"
+                  emphasis="light"
+                  toggled={translation.id === translationId}
+                  toggleMode="color"
+                  disabled={changeTranslation.isPending}
+                  onClick={() => changeTranslation.mutate(translation.id)}
+                >
+                  {translation.title}
+                </Button>
+              ))}
+              <Button
+                size="small"
+                emphasis="ghost"
+                onClick={() => setShowTranslationManager(true)}
+              >
+                {m.translation_more()}
+              </Button>
+            </div>
           </div>
         </Popover.Content>
       </Popover>
+      <TranslationManagerDialog
+        open={showTranslationManager}
+        onOpenChange={setShowTranslationManager}
+        onSelect={(translation) => {
+          setShowTranslationManager(false);
+          onOpenChange(false);
+          changeTranslation.mutate(translation.id);
+        }}
+      />
       {announcement && (
         <p className={cls.status} role="status">
           {announcement}

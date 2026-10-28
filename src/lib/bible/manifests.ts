@@ -1,12 +1,51 @@
 import { AppError } from '#/lib/error';
+import type { TranslationMetadata } from './fetch-bible';
 import type { BookId } from './verse';
 
 export const defaultTranslationId = 'eng_webu';
 
+const webMetadata: TranslationMetadata = {
+  language: 'eng',
+  languageName: 'English',
+  direction: 'ltr',
+  attribution: 'Public domain',
+  attributionUrl: 'https://worldenglish.bible/',
+  licenses: [
+    {
+      name: 'Public domain',
+      url: 'https://worldenglish.bible/',
+      attributionRequired: false,
+      shareAlike: false,
+      noDerivatives: false,
+    },
+  ],
+};
+
 export const builtinTranslations = [
-  { id: 'eng_webu', title: 'World English Bible (Updated)' },
-  { id: 'eng_webc', title: 'World English Bible (Catholic)' },
-  { id: 'eng_asv', title: 'American Standard Version' },
+  {
+    id: 'eng_webu',
+    title: 'World English Bible (Updated)',
+    metadata: webMetadata,
+  },
+  {
+    id: 'eng_webc',
+    title: 'World English Bible (Catholic)',
+    metadata: webMetadata,
+  },
+  {
+    id: 'eng_asv',
+    title: 'American Standard Version',
+    metadata: {
+      ...webMetadata,
+      attributionUrl: 'https://ebible.org/Scriptures/details.php?id=eng-asv',
+      licenses: [
+        {
+          ...webMetadata.licenses[0],
+          url: 'https://ebible.org/Scriptures/details.php?id=eng-asv',
+        },
+      ],
+    },
+  },
 ];
 
 const bookOrder = (
@@ -30,6 +69,7 @@ export interface TranslationManifest {
   id: string;
   title: string;
   books: TranslationBook[];
+  metadata?: TranslationMetadata;
 }
 
 export function isTranslationId(value: string): boolean {
@@ -39,6 +79,7 @@ export function isTranslationId(value: string): boolean {
 export function parseTranslationExtra(
   value: unknown,
   translationId: string,
+  details?: Pick<TranslationManifest, 'title' | 'metadata'>,
 ): TranslationManifest {
   const extra = value as {
     book_names?: Record<string, { normal?: unknown } | null>;
@@ -65,7 +106,7 @@ export function parseTranslationExtra(
 
   const entries = Object.entries(names);
   if (!entries.length || entries.length > 200) return invalid();
-  const books = entries.map(([key, name]): TranslationBook => {
+  const books: TranslationBook[] = entries.map(([key, name]) => {
     const chapters = headings[key];
     if (
       !/^[a-z0-9]{3}$/.test(key) ||
@@ -88,12 +129,12 @@ export function parseTranslationExtra(
     return index === -1 ? bookOrder.length : index;
   };
   books.sort((first, second) => rank(first.id) - rank(second.id));
+  const translation =
+    details ?? builtinTranslations.find((entry) => entry.id === translationId);
   return {
     id: translationId,
-    title:
-      builtinTranslations.find(
-        (translation) => translation.id === translationId,
-      )?.title ?? translationId,
+    title: translation?.title ?? translationId,
+    ...(translation?.metadata ? { metadata: translation.metadata } : {}),
     books,
   };
 }

@@ -1,3 +1,4 @@
+import { fetchBibleCatalog } from '#/lib/bible/fetch-bible';
 import {
   searchTranslation,
   startTranslationService,
@@ -8,6 +9,12 @@ import {
 } from '#/lib/bible/translations';
 import type { QueryClient } from '@tanstack/react-query';
 import { queryOptions } from '@tanstack/react-query';
+
+export const fetchBibleCatalogQueryOptions = queryOptions({
+  queryKey: ['fetch-bible-catalog'],
+  queryFn: ({ signal }) => fetchBibleCatalog(signal),
+  staleTime: 60 * 60 * 1000,
+});
 
 export const translationsQueryOptions = queryOptions({
   queryKey: ['translations'],

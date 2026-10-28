@@ -27,6 +27,18 @@
   border-top: 1px solid var(--m-gray-light);
   padding-top: var(--m-sp-sm);
 }
+.translationButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--m-sp-xs);
+  min-width: 0;
+}
+.translationButtons button {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .status {
   flex-basis: 100%;
   margin: 0;

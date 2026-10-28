@@ -1,46 +1,38 @@
-import type { TranslationManifest } from '#/lib/bible/manifests';
-import {
-  builtinTranslations,
-  defaultTranslationId,
-} from '#/lib/bible/manifests';
-import {
-  downloadTranslation,
-  importTranslation,
-  previewTranslation,
-  removeTranslation,
-  stopTranslation,
-} from '#/lib/bible/translation-jobs';
-import type { StoredTranslation } from '#/lib/bible/translations';
-import { listTranslations } from '#/lib/bible/translations';
+import type { FetchBibleTranslation } from '#/lib/bible/fetch-bible';
+import { filterFetchBibleTranslations } from '#/lib/bible/fetch-bible';
+import { builtinTranslations } from '#/lib/bible/manifests';
 import { m } from '#/paraglide/messages';
-import { translationsQueryOptions } from '#/queries/translations';
-import { Button, Dialog, Icon, Input } from '@a-type/ui';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { useNavigate, useRouterState } from '@tanstack/react-router';
-import { useState } from 'react';
+import {
+  fetchBibleCatalogQueryOptions,
+  translationsQueryOptions,
+} from '#/queries/translations';
+import { Box, Field, Input, ScrollArea, Select, Switch } from '@a-type/ui';
+import { useQuery } from '@tanstack/react-query';
+import { useRouterState } from '@tanstack/react-router';
+import { useDeferredValue, useId, useState } from 'react';
+import { TranslationCard } from './TranslationCard';
+import { TranslationDeletionDialog } from './TranslationDeletionDialog';
+import { TranslationImportForm } from './TranslationImportForm';
 import cls from './TranslationManager.module.css';
+import { bytes, toFetchBibleTranslation } from './translationManagerUtils';
+import { useTranslationDeletion } from './useTranslationDeletion';
 
-function bytes(value: number) {
-  return `${(value / 1024 / 1024).toFixed(1)} MiB`;
-}
-
-function requestPersistence() {
-  const storage = (navigator as Partial<Navigator>).storage;
-  if (storage && typeof storage.persist === 'function') {
-    void storage.persist().catch(() => false);
-  }
-}
-
-export function translationStatus(record?: StoredTranslation) {
-  if (!record) return m.translation_not_downloaded();
-  if (record.sourceStatus === 'ready') return m.translation_downloaded();
-  if (record.sourceStatus === 'paused') return m.translation_paused();
-  if (record.sourceStatus === 'error') return m.translation_error();
-  return m.translation_downloading();
-}
-
-export function TranslationManager() {
+export function TranslationManager({
+  onSelect,
+}: {
+  onSelect?: (translation: FetchBibleTranslation) => void;
+}) {
   const translations = useQuery(translationsQueryOptions);
+  const catalog = useQuery(fetchBibleCatalogQueryOptions);
+  const searchId = useId();
+  const languageId = useId();
+  const [text, setText] = useState('');
+  const [language, setLanguage] = useState('');
+  const [downloadedOnly, setDownloadedOnly] = useState(false);
+  const deferredText = useDeferredValue(text);
+  const activeTranslationId = useRouterState({
+    select: (state) => state.location.pathname.split('/')[1] ?? '',
+  });
   const quota = useQuery({
     queryKey: ['translation-quota', translations.dataUpdatedAt],
     queryFn: () => (navigator as Partial<Navigator>).storage?.estimate(),
@@ -49,336 +41,166 @@ export function TranslationManager() {
     gcTime: 0,
   });
   const deletion = useTranslationDeletion();
-  const catalog = [
-    ...builtinTranslations,
-    ...(translations.data ?? [])
-      .filter((record) => record.origin === 'import')
-      .map((record) => ({ id: record.id, title: record.manifest.title })),
+  const records = translations.data ?? [];
+  const recordById = new Map(records.map((record) => [record.id, record]));
+  const remoteById = new Map(
+    (catalog.data ?? []).map((entry) => [entry.id, entry]),
+  );
+  const allTranslations = [
+    ...builtinTranslations.map((translation) =>
+      toFetchBibleTranslation(translation, recordById.get(translation.id)),
+    ),
+    ...(catalog.data ?? []).map((translation) =>
+      toFetchBibleTranslation(translation, recordById.get(translation.id)),
+    ),
+    ...records
+      .filter(
+        (record) =>
+          !remoteById.has(record.id) &&
+          !builtinTranslations.some(
+            (translation) => translation.id === record.id,
+          ),
+      )
+      .map((record) => toFetchBibleTranslation(record, record)),
+  ]
+    .filter(
+      (translation, index, allEntries) =>
+        allEntries.findIndex((entry) => entry.id === translation.id) === index,
+    )
+    .sort(
+      (left, right) =>
+        Number(recordById.get(right.id)?.sourceStatus === 'ready') -
+        Number(recordById.get(left.id)?.sourceStatus === 'ready'),
+    );
+  const results = filterFetchBibleTranslations(
+    allTranslations,
+    deferredText,
+    language,
+  ).filter(
+    (translation) =>
+      !downloadedOnly ||
+      recordById.get(translation.id)?.sourceStatus === 'ready',
+  );
+  const languages = [
+    ...new Map(
+      allTranslations
+        .filter((translation) => translation.language)
+        .map((translation) => [
+          translation.language,
+          `${translation.languageName} · ${translation.languageLocalName}`,
+        ]),
+    ).entries(),
   ];
   return (
-    <section className={cls.root} aria-label={m.translations_title()}>
-      <h2>{m.translations_title()}</h2>
-      {translations.isError && (
+    <div className={cls.root}>
+      {(translations.isError || catalog.isError) && (
         <p role="alert">{m.translation_storage_error()}</p>
       )}
-      <ul className={cls.list}>
-        {catalog.map((translation) => (
-          <TranslationRow
-            key={translation.id}
-            translation={translation}
-            record={translations.data?.find(
-              (record) => record.id === translation.id,
-            )}
-            onDelete={() => deletion.setDeleting(translation)}
+      <Box gap items="center" grow className={cls.filters}>
+        <Field>
+          <Field.Label>{m.translation_catalog_search()}</Field.Label>
+          <Field.Control
+            render={
+              <Input
+                id={searchId}
+                type="search"
+                value={text}
+                onValueChange={setText}
+              />
+            }
           />
-        ))}
-      </ul>
-      {quota.data?.quota !== undefined && (
-        <small>
-          {m.translation_quota({
-            used: bytes(quota.data.usage ?? 0),
-            quota: bytes(quota.data.quota),
-          })}
-        </small>
-      )}
+        </Field>
+        <Field>
+          <Field.Label>{m.language_label()}</Field.Label>
+          <Field.Control
+            render={
+              <Select
+                value={language}
+                onValueChange={(value) => setLanguage(value ?? '')}
+                itemToStringLabel={(value) =>
+                  languages.find(([id]) => id === value)?.[1] ??
+                  m.translation_all_languages()
+                }
+              >
+                <Select.Trigger
+                  id={languageId}
+                  aria-label={m.translation_catalog_language()}
+                  className={cls.languageTrigger}
+                >
+                  <span>
+                    {languages.find(([id]) => id === language)?.[1] ??
+                      m.translation_all_languages()}
+                  </span>
+                  <Select.Icon />
+                </Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="">
+                    {m.translation_all_languages()}
+                  </Select.Item>
+                  {languages.map(([id, name]) => (
+                    <Select.Item value={id} key={id}>
+                      {name}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select>
+            }
+          />
+        </Field>
+        <Field>
+          <Field.Control
+            render={
+              <Switch
+                checked={downloadedOnly}
+                onCheckedChange={() => setDownloadedOnly(!downloadedOnly)}
+              />
+            }
+          />
+          <Field.Label>{m.translation_downloaded_only()}</Field.Label>
+        </Field>
+      </Box>
       <TranslationImportForm />
+      <ScrollArea direction="vertical" className={cls.scrollArea}>
+        <ScrollArea.Content>
+          {catalog.status === 'pending' || translations.status === 'pending' ? (
+            <p role="status">{m.translation_catalog_loading()}</p>
+          ) : (
+            <>
+              <p role="status">
+                {results.length
+                  ? m.translation_catalog_count({ count: results.length })
+                  : m.translation_catalog_empty()}
+              </p>
+              <ul className={cls.list}>
+                {results.map((translation) => (
+                  <TranslationCard
+                    key={translation.id}
+                    translation={translation}
+                    record={recordById.get(translation.id)}
+                    active={translation.id === activeTranslationId}
+                    onSelect={onSelect}
+                    onDelete={() => deletion.setDeleting(translation)}
+                  />
+                ))}
+              </ul>
+            </>
+          )}
+        </ScrollArea.Content>
+      </ScrollArea>
+      <small>
+        {m.translation_quota({
+          used: bytes(quota.data?.usage ?? 0),
+          quota: bytes(quota.data?.quota ?? 0),
+        })}
+      </small>
       <TranslationDeletionDialog
         deleting={deletion.deleting}
         error={deletion.error}
         pending={deletion.pending}
+        isDefault={deletion.isDefault}
         onClose={deletion.close}
         onConfirm={deletion.confirm}
       />
-    </section>
-  );
-}
-
-function TranslationImportForm() {
-  const { draft, setDraft, preview, importJob, selectFile, cancelImport } =
-    useTranslationImport();
-  return (
-    <>
-      <label className={cls.file}>
-        {m.translation_import_file()}
-        <input
-          type="file"
-          accept=".zip,.usfm,.sfm,.xml,.osis"
-          disabled={preview.isPending || importJob.isPending}
-          onChange={(event) => {
-            const file = event.currentTarget.files?.[0];
-            selectFile(file);
-            event.currentTarget.value = '';
-          }}
-        />
-      </label>
-      {preview.isPending && <p role="status">{m.translation_preview()}</p>}
-      {preview.error && <p role="alert">{preview.error.message}</p>}
-      {draft && (
-        <form
-          className={cls.importForm}
-          onSubmit={(event) => {
-            event.preventDefault();
-            importJob.mutate(draft);
-          }}
-        >
-          <label>
-            {m.translation_name()}
-            <Input
-              value={draft.manifest.title}
-              required
-              maxLength={200}
-              disabled={importJob.isPending}
-              onValueChange={(title) =>
-                setDraft({ ...draft, manifest: { ...draft.manifest, title } })
-              }
-            />
-          </label>
-          <p>
-            {m.translation_books({ count: draft.manifest.books.length })}:{' '}
-            {draft.manifest.books.map((book) => book.title).join(', ')}
-          </p>
-          <div className={cls.actions}>
-            <Button
-              type="submit"
-              disabled={importJob.isPending || !draft.manifest.title.trim()}
-            >
-              <Icon name="upload" />
-              {importJob.isPending
-                ? m.translation_importing()
-                : m.translation_import()}
-            </Button>
-            <Button type="button" emphasis="ghost" onClick={cancelImport}>
-              {m.annotation_cancel()}
-            </Button>
-          </div>
-        </form>
-      )}
-      {importJob.error && <p role="alert">{importJob.error.message}</p>}
-    </>
-  );
-}
-
-function useTranslationImport() {
-  const [draft, setDraft] = useState<{
-    file: File;
-    manifest: TranslationManifest;
-  }>();
-  const preview = useMutation({
-    networkMode: 'always',
-    mutationFn: previewTranslation,
-    onSuccess: (manifest, file) => setDraft({ file, manifest }),
-  });
-  const importJob = useMutation({
-    networkMode: 'always',
-    mutationFn: async (value: NonNullable<typeof draft>) => {
-      requestPersistence();
-      await importTranslation(
-        value.file,
-        value.manifest.title,
-        value.manifest.id,
-      );
-    },
-    onSuccess: () => setDraft(undefined),
-  });
-  const selectFile = (file?: File) => {
-    setDraft(undefined);
-    importJob.reset();
-    if (file) preview.mutate(file);
-  };
-  const cancelImport = () => {
-    if (draft && importJob.isPending)
-      void removeTranslation(draft.manifest.id).catch(() => {});
-    setDraft(undefined);
-  };
-  return { draft, setDraft, preview, importJob, selectFile, cancelImport };
-}
-
-function useTranslationDeletion() {
-  const [deleting, setDeleting] = useState<{ id: string; title: string }>();
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  });
-  const navigate = useNavigate();
-  const mutation = useMutation({
-    networkMode: 'always',
-    mutationFn: async (id: string) => {
-      await removeTranslation(id);
-      if (id.startsWith('local-') && pathname.split('/').includes(id)) {
-        const next = (await listTranslations()).find(
-          (record) => record.sourceStatus === 'ready',
-        );
-        if (next) {
-          await navigate({
-            to: '/$translation/$book/$chapter',
-            params: {
-              translation: next.id,
-              book: next.manifest.books[0].id,
-              chapter: '1',
-            },
-            search: {},
-          });
-        } else await navigate({ to: '/' });
-      }
-    },
-    onSuccess: () => setDeleting(undefined),
-  });
-  return {
-    deleting,
-    setDeleting,
-    error: mutation.error?.message,
-    pending: mutation.isPending,
-    close: () => setDeleting(undefined),
-    confirm: () => {
-      if (deleting) mutation.mutate(deleting.id);
-    },
-  };
-}
-
-function TranslationDeletionDialog({
-  deleting,
-  error,
-  pending,
-  onClose,
-  onConfirm,
-}: {
-  deleting?: { id: string; title: string };
-  error?: string;
-  pending: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <Dialog
-      open={Boolean(deleting)}
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
-      <Dialog.Content>
-        <Dialog.Title>
-          {m.translation_delete_confirm({ title: deleting?.title ?? '' })}
-        </Dialog.Title>
-        <Dialog.Description>
-          {deleting?.id.startsWith('local-')
-            ? m.translation_delete_import()
-            : deleting?.id === defaultTranslationId
-              ? m.translation_delete_default()
-              : m.translation_delete()}
-        </Dialog.Description>
-        {error && <p role="alert">{error}</p>}
-        <Dialog.Actions>
-          <Dialog.Close>{m.annotation_cancel()}</Dialog.Close>
-          <Button disabled={pending} onClick={onConfirm}>
-            <Icon name="trash" />
-            {m.translation_delete()}
-          </Button>
-        </Dialog.Actions>
-      </Dialog.Content>
-    </Dialog>
-  );
-}
-
-function TranslationRow({
-  translation,
-  record,
-  onDelete,
-}: {
-  translation: { id: string; title: string };
-  record?: StoredTranslation;
-  onDelete: () => void;
-}) {
-  const job = useMutation({
-    networkMode: 'always',
-    mutationFn: async () => {
-      requestPersistence();
-      await downloadTranslation(translation.id);
-    },
-  });
-  const cancel = useMutation({
-    networkMode: 'always',
-    mutationFn: () => stopTranslation(translation.id),
-  });
-  const busy = Boolean(record?.owner && (record.leaseUntil ?? 0) > Date.now());
-  const readingReady = record?.sourceStatus === 'ready';
-  const preparing = readingReady && record.searchStatus !== 'ready';
-  return (
-    <li className={cls.row}>
-      <div className={cls.details}>
-        <h3>{translation.title}</h3>
-        <span role="status">
-          {translationStatus(record)}
-          {readingReady &&
-            ` · ${record.searchStatus === 'ready' ? m.translation_search_ready() : record.searchStatus === 'error' ? m.translation_search_error() : m.translation_preparing()}`}
-        </span>
-        {record && (
-          <>
-            <small>
-              {m.translation_books({ count: record.manifest.books.length })}
-            </small>
-            <small>
-              {m.translation_bytes({
-                source: bytes(record.sourceBytes),
-                search: bytes(record.preparedBytes),
-              })}
-            </small>
-            {(!readingReady || preparing) && (
-              <progress
-                aria-label={
-                  preparing
-                    ? m.translation_preparing()
-                    : m.translation_downloading()
-                }
-                value={preparing ? record.prepared : record.downloaded}
-                max={record.manifest.books.length}
-              />
-            )}
-          </>
-        )}
-        {(record?.error || job.error || cancel.error) && (
-          <p role="alert">
-            {record?.error || job.error?.message || cancel.error?.message}
-          </p>
-        )}
-      </div>
-      <div className={cls.actions}>
-        {busy ? (
-          <Button
-            emphasis="ghost"
-            size="small"
-            title={m.annotation_cancel()}
-            aria-label={m.annotation_cancel()}
-            onClick={() => cancel.mutate()}
-          >
-            <Icon name="x" />
-          </Button>
-        ) : (
-          (!readingReady || preparing) && (
-            <Button
-              size="small"
-              disabled={job.isPending}
-              onClick={() => job.mutate()}
-            >
-              <Icon name={record ? 'refresh' : 'download'} />
-              {preparing
-                ? m.translation_retry_search()
-                : record
-                  ? m.translation_resume()
-                  : m.translation_download()}
-            </Button>
-          )
-        )}
-        {record && (
-          <Button
-            emphasis="ghost"
-            size="small"
-            title={m.translation_delete()}
-            aria-label={m.translation_delete()}
-            onClick={onDelete}
-          >
-            <Icon name="trash" />
-          </Button>
-        )}
-      </div>
-    </li>
+    </div>
   );
 }

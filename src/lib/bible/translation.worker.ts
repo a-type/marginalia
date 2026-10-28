@@ -1,4 +1,5 @@
 import { AppError } from '#/lib/error';
+import { fetchBibleManifest, translationResourceUrl } from './fetch-bible';
 import type { TranslationManifest } from './manifests';
 import { builtinTranslations, parseTranslationExtra } from './manifests';
 import type { SearchToken, SearchVerse } from './search';
@@ -129,17 +130,16 @@ async function install(
         title: request.title.trim().slice(0, 200) || request.file.name,
       };
     } else if (!manifest) {
-      if (!builtinTranslations.some((translation) => translation.id === id))
-        throw new AppError(
-          AppError.Code.NotFound,
-          'Translation is not installed',
-        );
-      manifest = parseTranslationExtra(
-        await (
-          await fetchRemote(`/usfm/${id}/extra.json`, controller.signal)
-        ).json(),
-        id,
-      );
+      manifest = builtinTranslations.some(
+        (translation) => translation.id === id,
+      )
+        ? parseTranslationExtra(
+            await (
+              await fetchRemote(`/usfm/${id}/extra.json`, controller.signal)
+            ).json(),
+            id,
+          )
+        : await fetchBibleManifest(id, controller.signal);
     }
     controller.signal.throwIfAborted();
     record = await beginTranslation(
@@ -176,7 +176,10 @@ async function install(
         controller.signal.throwIfAborted();
         if (await getStoredBook(id, book.id)) continue;
         const source = await (
-          await fetchRemote(`/usfm/${id}/${book.source}`, controller.signal)
+          await fetchRemote(
+            translationResourceUrl(id, book.source ?? ''),
+            controller.signal,
+          )
         ).text();
         const inspected = inspectUSFM(
           source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n'),

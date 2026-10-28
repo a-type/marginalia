@@ -1,0 +1,71 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-sp-md);
+  min-width: 0;
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--m-sp-sm);
+}
+.textFilter,
+.languageFilter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-sp-xs);
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+.searchInput,
+.searchInput input {
+  width: 100%;
+  min-width: 0;
+}
+.languageTrigger {
+  width: 100%;
+  min-width: 0;
+  justify-content: space-between;
+}
+.languageTrigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--m-sp-sm);
+  padding-block: var(--m-sp-md);
+  border-bottom: 1px solid var(--m-gray-light);
+}
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-sp-xs);
+  min-width: 0;
+  flex: 1 1 15rem;
+  overflow-wrap: anywhere;
+}
+.details h4 {
+  margin: 0;
+  font-size: var(--m-fs-md);
+}
+.download {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--m-sp-sm);
+}

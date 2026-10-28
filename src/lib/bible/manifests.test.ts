@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { isTranslationId, parseTranslationExtra } from './manifests';
+import {
+  builtinTranslations,
+  isTranslationId,
+  parseTranslationExtra,
+} from './manifests';
 
 const extra = {
   book_names: {
@@ -21,11 +25,14 @@ describe('Fetch Bible translation metadata', () => {
     expect(parseTranslationExtra(extra, 'eng_webc')).toEqual({
       id: 'eng_webc',
       title: 'World English Bible (Catholic)',
+      metadata: builtinTranslations.find(
+        (translation) => translation.id === 'eng_webc',
+      )?.metadata,
       books: [
         { id: 'GEN', title: 'Genesis', chapters: 2, source: 'gen.usfm' },
         { id: 'EXO', title: 'Exodus', chapters: 1, source: 'exo.usfm' },
-        { id: 'REV', title: 'Revelation', chapters: 1, source: 'rev.usfm' },
         { id: 'TOB', title: 'Tobit', chapters: 2, source: 'tob.usfm' },
+        { id: 'REV', title: 'Revelation', chapters: 1, source: 'rev.usfm' },
       ],
     });
   });

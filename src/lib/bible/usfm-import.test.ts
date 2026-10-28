@@ -8,6 +8,21 @@ import { inspectUSFM, readUSFMImport, splitUSFM } from './usfm-import';
 const source = '\\id GEN\n\\h Genesis\n\\c 1\n\\v 1 In the beginning.';
 
 describe('USFM imports', () => {
+  it('accepts inline verse markers in Fetch Bible poetry after an introduction', () => {
+    const poetry = String.raw`\id PSA
+\imt1 Introduction
+\ip Introductory text.
+\ie
+\c 1
+\q1 \v 1 Blessed is the reader.
+\q1 \v 2 Whose delight is in the law.`;
+    expect(inspectUSFM(poetry)).toMatchObject({ id: 'PSA', chapters: 1 });
+    expect(extractVerses(poetry, 'PSA')).toEqual([
+      { id: 'PSA/1:1', label: '1', text: 'Blessed is the reader.' },
+      { id: 'PSA/1:2', label: '2', text: 'Whose delight is in the law.' },
+    ]);
+  });
+
   it('accepts whole-Bible input with BOM/CRLF and partial translations', async () => {
     const file = new File(
       [

@@ -3,58 +3,128 @@
   flex-direction: column;
   gap: var(--m-sp-md);
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .root h2 {
   font-size: var(--m-fs-lg);
 }
-.root h3 {
-  font-size: var(--m-fs-md);
-  margin: 0;
-}
+
 .root p {
   margin: 0;
   overflow-wrap: anywhere;
 }
-.list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+
+.filters {
+  flex: 0 0 auto;
 }
+
+.languageTrigger {
+  width: 100%;
+  min-width: 0;
+  justify-content: space-between;
+}
+
+.languageTrigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-sp-xs);
+  min-height: 2.25rem;
+  padding: var(--m-sp-xs) var(--m-sp-sm);
+  border: 1px solid var(--m-gray-light);
+  border-radius: var(--m-rd);
+  cursor: pointer;
+  flex: 0 1 auto;
+}
+
+.fileButton:focus-within {
+  outline: 2px solid var(--m-tint);
+  outline-offset: 2px;
+}
+
+.fileButton input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.scrollArea {
+  flex: 1 0 0;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
+  gap: var(--m-sp-md);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .row {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: var(--m-sp-sm);
-  padding-block: var(--m-sp-md);
-  border-bottom: 1px solid var(--m-gray-light);
+  min-width: 0;
+  padding: var(--m-sp-md);
+  border: 1px solid var(--m-gray-light);
+  border-radius: var(--m-rd);
+  background: var(--m-bg);
 }
+
+.details,
+.language,
+.attribution,
+.status {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .details {
   display: flex;
   flex-direction: column;
   gap: var(--m-sp-xs);
-  min-width: 0;
-  flex: 1 1 14rem;
-  overflow-wrap: anywhere;
 }
-.details progress {
+
+.secondary {
+  display: block;
+  margin-top: var(--m-sp-xs);
+  color: var(--m-gray);
+}
+
+.status progress {
+  display: block;
   width: 100%;
+  min-width: 8rem;
   height: var(--m-sp-sm);
+  margin-top: var(--m-sp-xs);
 }
+
+.attribution,
+.actionsCell {
+  padding-top: var(--m-sp-sm);
+  border-top: 1px solid var(--m-gray-light);
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--m-sp-sm);
+  gap: var(--m-sp-xs);
 }
-.file,
+
 .importForm,
 .importForm label {
   display: flex;
   flex-direction: column;
   gap: var(--m-sp-sm);
   min-width: 0;
-}
-.file input {
-  max-width: 100%;
 }

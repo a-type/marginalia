@@ -1,0 +1,13 @@
+.root {
+  font-size: var(--m-fs-sm);
+  overflow-wrap: anywhere;
+}
+.root p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--m-sp-xs) var(--m-sp-sm);
+}

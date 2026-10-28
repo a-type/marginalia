@@ -71,22 +71,24 @@ Keep component prop dependencies light. If a component can get the same data fro
 
 After implementing a working component structure, review each component for overall complexity and number of concerns. Refactor and break down components which do more than 2 distinct jobs. Tightly coupled components can live in the same file, loosely coupled ones can be split into different files.
 
-Import design system components from `@a-type/ui` for semantic components. It has most common components.
+Import design system components from `@a-type/ui` for semantic components. It has most common components. Always favor using design system components with default styling over adding stylesheets.
 
 ## Styling
 
 The project uses CSS Modules for styling, with a CSS design system library called Arbor applied to a set of UI components in the `@a-type/ui` library.
 
-- Internal for a component should be placed in a CSS Module file with the same name alongside it.
-- Styles applied externally to other components rendered as children should live in the module file of the parent which is applying them.
-- Import `clsx` from `@a-type/ui` to combine class names
-- Use design system tokens (`--m-...`) for every applicable styling:
-  - `--m-p` tokens for padding
-    - `--m-tint` for primary color range
-    - `--m-rd` for radius
-    - `--m-dur` for duration
-    - `--m-ease` for easing
-      And so on.
+Internal for a component should be placed in a CSS Module file with the same name alongside it.
+When components are separated into new files, bring their styles along with them to a new CSS module file with the right name.
+Styles applied externally to other components rendered as children should live in the module file of the parent which is applying them.
+Import `clsx` from `@a-type/ui` to combine class names
+Use design system tokens (`--m-...`) for every applicable styling:
+
+- `--m-p` tokens for padding
+  - `--m-tint` for primary color range
+  - `--m-rd` for radius
+  - `--m-dur` for duration
+  - `--m-ease` for easing
+    And so on.
 
 ## Testing
 

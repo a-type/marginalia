@@ -67,6 +67,16 @@ pnpm happyview:provision
 
 ## Downloading USFM sources
 
+Settings includes a searchable Fetch Bible catalog with language filtering and
+direct on-device downloads. Only editions whose declared licenses permit
+commercial use are offered; missing, unknown, noncommercial, quantity-limited,
+or otherwise restricted terms are excluded. This policy is also enforced when
+loading remote metadata, not just in the catalog UI, and cannot be disabled.
+Results and translation settings link to publisher attribution and license
+terms, including attribution, share-alike, and no-derivatives requirements.
+Downloaded editions retain this information in IndexedDB for offline access.
+Bundled editions remain available without contacting Fetch Bible.
+
 Download a translation from [Fetch Bible](https://v1.fetch.bible):
 
 ```sh

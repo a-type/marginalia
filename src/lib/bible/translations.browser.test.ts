@@ -75,3 +75,38 @@ it('serializes ownership, resumes stored books and cancels stale preparation', a
   await updateTranslation(resumed, { searchStatus: 'ready', corpusVersion });
   expect((await getTranslation(defaultTranslationId))?.prepared).toBe(1);
 });
+
+it('preserves remote attribution and license conditions independently of the catalog', async () => {
+  const metadata = {
+    language: 'eng',
+    languageName: 'English',
+    direction: 'ltr' as const,
+    attribution: 'Bible publisher',
+    attributionUrl: 'https://example.com/publisher',
+    licenses: [
+      {
+        name: 'CC BY-SA',
+        url: 'https://creativecommons.org/licenses/by-sa/4.0/',
+        attributionRequired: true,
+        shareAlike: true,
+        noDerivatives: false,
+      },
+    ],
+  };
+  const record = (await beginTranslation(
+    { ...manifest, metadata },
+    'remote',
+    'metadata-owner',
+    true,
+  ))!;
+  await saveBook(record, 'GEN', '\\c 1\n\\v 1 Text');
+  await updateTranslation(record, { sourceStatus: 'ready', owner: undefined });
+  expect(
+    (await getTranslation(defaultTranslationId))?.manifest.metadata,
+  ).toEqual(metadata);
+  metadata.attribution = 'Changed in memory';
+  expect(
+    (await getTranslation(defaultTranslationId))?.manifest.metadata
+      ?.attribution,
+  ).toBe('Bible publisher');
+});

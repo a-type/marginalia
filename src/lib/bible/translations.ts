@@ -8,6 +8,7 @@ import { corpusVersion } from './search';
 export interface StoredTranslation {
   id: string;
   manifest: TranslationManifest;
+  language: string;
   origin: 'remote' | 'import';
   generation: string;
   sourceStatus: 'downloading' | 'paused' | 'error' | 'ready';
@@ -108,11 +109,23 @@ export function translationDatabase() {
 }
 
 export async function listTranslations() {
-  return (await translationDatabase()).getAll('translations');
+  const records = await (await translationDatabase()).getAll('translations');
+  return records.map(normalizeStoredTranslation);
 }
 
 export async function getTranslation(id: string) {
-  return (await translationDatabase()).get('translations', id);
+  const record = await (await translationDatabase()).get('translations', id);
+  return record ? normalizeStoredTranslation(record) : undefined;
+}
+
+function normalizeStoredTranslation(
+  record: StoredTranslation,
+): StoredTranslation {
+  const legacyLanguage = (record as { language?: string }).language;
+  return {
+    ...record,
+    language: legacyLanguage ?? record.manifest.metadata?.language ?? '',
+  };
 }
 
 export async function getStoredBook(id: string, bookId: string) {
@@ -179,6 +192,7 @@ export async function beginTranslation(
   const record: StoredTranslation = existing ?? {
     id: manifest.id,
     manifest,
+    language: manifest.metadata?.language ?? '',
     origin,
     generation: crypto.randomUUID(),
     sourceStatus: 'downloading',

@@ -12,7 +12,7 @@ import { reconcileChapterAnnotations } from '#/lib/annotations/reconcile';
 import type { BibleLocation } from '#/lib/bible/location';
 import { storeBibleLocation } from '#/lib/bible/location';
 import { parseVerseSelection } from '#/lib/bible/selection';
-import { storeTranslationId } from '#/lib/bible/source';
+import { rememberTranslation, storeTranslationId } from '#/lib/bible/source';
 import { formatVerseId } from '#/lib/bible/verse';
 import type { ChapterHighlightSnapshot } from '#/lib/highlights/collections';
 import { reconcileChapterHighlights } from '#/lib/highlights/reconcile';
@@ -38,7 +38,7 @@ export function BibleReader() {
 
   useResetAnnotationPaneOnRouteChange();
   useScrollToSelectedVerse(location, selectedVerses, translationId);
-  useStoreBibleReaderLocation(location, translationId);
+  useStoreBibleReaderLocation(location, translationId, manifest.title);
 
   return (
     <div className={cls.root}>
@@ -129,11 +129,13 @@ function useScrollToSelectedVerse(
 function useStoreBibleReaderLocation(
   location: BibleLocation,
   translationId: string,
+  translationTitle: string,
 ) {
   useEffect(() => {
     storeBibleLocation(location);
     storeTranslationId(translationId);
-  }, [location, translationId]);
+    rememberTranslation({ id: translationId, title: translationTitle });
+  }, [location, translationId, translationTitle]);
 }
 
 function useReconcileChapterAnnotations({

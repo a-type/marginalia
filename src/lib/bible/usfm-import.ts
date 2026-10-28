@@ -47,7 +47,7 @@ export function inspectUSFM(source: string): TranslationBook {
     )
   )
     invalid(`Invalid chapter sequence in ${id}`);
-  if (!/^\\v\s+/m.test(source)) invalid(`No verses in ${id}`);
+  if (!/\\v\s+/.test(source)) invalid(`No verses in ${id}`);
   const title =
     /^\\(?:toc2|h|mt1?)\s+([^\n\\]+)/m.exec(source)?.[1].trim() || id;
   return { id, title, chapters: chapters.length };

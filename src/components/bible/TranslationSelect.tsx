@@ -25,7 +25,12 @@ export function TranslationSelect({
   const choices = [
     ...builtinTranslations,
     ...installed
-      .filter((record) => record.origin === 'import')
+      .filter(
+        (record) =>
+          !builtinTranslations.some(
+            (translation) => translation.id === record.id,
+          ),
+      )
       .map((record) => ({ id: record.id, title: record.manifest.title })),
   ].filter(
     (translation) =>
