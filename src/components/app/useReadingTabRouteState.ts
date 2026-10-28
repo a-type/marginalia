@@ -69,6 +69,7 @@ export function useReadingTabRouteState(): string | undefined {
         activeReadingTabId: tab.id,
       }),
       replace: true,
+      resetScroll: false,
     });
   }, [activeReadingTabId, navigate, pathname, canGoBack, router]);
 

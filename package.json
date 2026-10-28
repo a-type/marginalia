@@ -18,9 +18,17 @@
     "lint": "eslint",
     "format": "prettier --write . && eslint --fix",
     "check": "prettier --check .",
+    "prepare": "husky",
     "start": "sirv dist --single --host 0.0.0.0 --port 3000",
     "lexicons": "lex build --lexicons ./lexicons --out ./src/lexicons --clear",
     "free-ports": "pnpx kill-port 7654"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{css,html,json,jsonc,md,mdx}": "prettier --write"
   },
   "dependencies": {
     "@a-type/ui": "^6.1.54",

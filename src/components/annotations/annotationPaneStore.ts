@@ -113,6 +113,7 @@ export function useSetSelectedVerseNumber() {
         ...(verse ? { verses: formatVerseSelection([verse]) } : {}),
         ...(annotation ? { annotation } : {}),
       },
+      state: (previous) => previous,
       replace: true,
       resetScroll: false,
     });

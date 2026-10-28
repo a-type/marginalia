@@ -130,7 +130,7 @@ function useScrollToSelectedVerse(
     const element = document.getElementById(`verse-${verseId}`);
     if (!element) return;
     element.scrollIntoView({
-      block: 'center',
+      block: 'nearest',
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
         ? 'auto'
         : 'smooth',
