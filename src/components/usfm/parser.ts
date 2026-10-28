@@ -509,9 +509,19 @@ export function parseUSFM(usfm: string): USFMDocument {
       continue;
     }
 
-    const node = createMarker(marker, parseInline(value).nodes, {
+    const children = parseInline(value).nodes;
+    const inlineVerseArgument =
+      category === 'poetry'
+        ? children.find(
+            (child): child is USFMMarkerNode =>
+              child.type === 'marker' && child.category === 'verse',
+          )?.argument
+        : undefined;
+    const node = createMarker(marker, children, {
       continuationVerseArgument:
-        category === 'poetry' ? activeVerseArgument : undefined,
+        category === 'poetry' && inlineVerseArgument === undefined
+          ? activeVerseArgument
+          : undefined,
     });
     const chapterTarget = chapter?.children ?? document.children;
 
@@ -523,7 +533,11 @@ export function parseUSFM(usfm: string): USFMDocument {
       container = undefined;
     }
 
-    if (category !== 'poetry') activeVerseArgument = undefined;
+    if (category === 'poetry' && inlineVerseArgument !== undefined) {
+      activeVerseArgument = inlineVerseArgument;
+    } else if (category !== 'poetry') {
+      activeVerseArgument = undefined;
+    }
   }
 
   return document;
