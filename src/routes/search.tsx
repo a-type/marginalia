@@ -16,7 +16,7 @@ function SearchPage() {
 
   return (
     <AppShell>
-      <Box p>
+      <Box p full col overflow="clip">
         <BibleSearch initialTranslation={translationId} isActive />
       </Box>
     </AppShell>

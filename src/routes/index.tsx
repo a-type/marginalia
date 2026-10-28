@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
 import { AppShell } from '#/components/app/AppShell';
+import { Introduction } from '#/components/home/Introduction';
 import {
   getMostRecentlyVisitedReadingTab,
   visitReadingTab,
@@ -28,5 +29,9 @@ export const Route = createFileRoute('/')({
 });
 
 function HomePage() {
-  return <AppShell />;
+  return (
+    <AppShell>
+      <Introduction />
+    </AppShell>
+  );
 }
