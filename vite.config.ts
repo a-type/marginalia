@@ -164,13 +164,29 @@ const config = defineConfig(({ mode }) => {
             'assets/**/*.{js,css,woff,woff2}',
           ],
           navigateFallback: '/index.html',
-          navigateFallbackDenylist: [/^\/(?:api|xrpc)(?:\/|$)/],
+          navigateFallbackDenylist: [/^\/(?:api|xrpc|lectserve)(?:\/|$)/],
         },
       }),
     ],
     server: {
       port: 7654,
       host: '127.0.0.1',
+      proxy: {
+        '^/lectserve/date/\\d{4}-\\d{2}-\\d{2}(?:\\?|$)': {
+          target: 'https://www.lectserve.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/lectserve/, ''),
+          configure(proxy) {
+            proxy.on('proxyReq', (request) => {
+              request.removeHeader('cookie');
+              request.removeHeader('authorization');
+            });
+            proxy.on('proxyRes', (response) => {
+              delete response.headers['set-cookie'];
+            });
+          },
+        },
+      },
     },
   };
 });

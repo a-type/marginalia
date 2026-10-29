@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseBibleLocation, parseBibleReference } from './location';
+import {
+  parseBibleLocation,
+  parseBibleReference,
+  parseScriptureCitation,
+} from './location';
 
 describe('parseBibleLocation', () => {
   it('accepts translation-defined book IDs and positive chapters', () => {
@@ -57,5 +61,43 @@ describe('parseBibleReference', () => {
     'https://example.com 1:1',
   ])('rejects invalid reference %s', (reference) => {
     expect(parseBibleReference(reference)).toBeNull();
+  });
+});
+
+describe('parseScriptureCitation', () => {
+  it.each([
+    ['Matthew 22:34-46', 'MAT', 22, 34],
+    ['1 Thessalonians 2:1-8', '1TH', 2, 1],
+    ['Psalm 90:1-6, 13-17', 'PSA', 90, 1],
+    ['Song of Songs 2:8-13', 'SNG', 2, 8],
+    ['Sirach 35:12-17', 'SIR', 35, 12],
+    ['Wisdom of Solomon 3:1-9', 'WIS', 3, 1],
+    ['II Corinthians 5:20b-6:10', '2CO', 5, 20],
+    ['John 1:(1-9), 10-18', 'JHN', 1, 1],
+    ['Isaiah 52:13–53:12', 'ISA', 52, 13],
+    ['1 Maccabees 2:49-end', '1MA', 2, 49],
+    ['Ephesians (1:11-14); 1:15-23', 'EPH', 1, 11],
+    ['Luke 6:20-26; (6:27-36)', 'LUK', 6, 20],
+    ['  Psalm 23  ', 'PSA', 23, undefined],
+  ])('locates the start of %s', (citation, bookId, chapter, verse) => {
+    expect(parseScriptureCitation(citation)).toEqual({
+      bookId,
+      chapter,
+      ...(verse === undefined ? {} : { verse }),
+    });
+  });
+
+  it.each([
+    '',
+    'Unknown 1:1',
+    'John',
+    'John 0:1',
+    'John 1:0',
+    'John 1junk',
+    'John 1:1junk',
+    'John 9007199254740992:1',
+    'John 1:9007199254740992',
+  ])('rejects unresolvable citation %s', (citation) => {
+    expect(parseScriptureCitation(citation)).toBeNull();
   });
 });

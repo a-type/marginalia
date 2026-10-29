@@ -65,6 +65,31 @@ pnpm lexicons
 pnpm happyview:provision
 ```
 
+## Daily lectionary
+
+Returning visitors can view daily scripture links on the home tab, choose a
+lectionary tradition, and browse dates with the calendar. Citations come from
+[LectServe](https://www.lectserve.com/html/about). The available options match
+its documented support: RCL and ACNA Sundays/feasts, and ACNA Daily Office
+using either the civil or liturgical calendar. There is no traditions endpoint.
+All three response sections are displayed with their own dates and traditions:
+Daily Office, the selected day's services, and Sunday readings. An empty
+weekday feast section does not hide Daily Office or upcoming Sunday readings.
+Selecting RCL or ACNA changes the Sunday/feast tradition and uses the ACNA civil
+Daily Office; selecting a Daily Office calendar uses ACNA Sunday/feast readings.
+Links use the selected Bible
+translation. Citations which cannot be resolved remain visible as text.
+Each reading opens a new Bible reading tab at the cited chapter and verse.
+Each group also offers **Open all in tabs**, which opens every resolvable
+reading in that group and activates the last new tab.
+
+Vite and Caddy proxy `/lectserve/date/YYYY-MM-DD` to LectServe's
+`/date/YYYY-MM-DD` endpoint because the API does not allow cross-origin browser
+requests. Other static hosts must provide the same proxy; `pnpm start` alone
+does not provide it. Reading data is cached in memory by date and tradition.
+Book-name aliases live in `src/lib/bible/book-names.ts`; add alternative names
+to a book's list to reuse the many-to-one resolver elsewhere.
+
 ## Downloading USFM sources
 
 Settings includes a searchable Fetch Bible catalog with language filtering and

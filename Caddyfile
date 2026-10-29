@@ -1,4 +1,15 @@
 {$CADDY_SITE_ADDRESS} {
+	@lectserve path_regexp lectserve ^/lectserve/date/[0-9]{4}-[0-9]{2}-[0-9]{2}$
+	handle @lectserve {
+		uri strip_prefix /lectserve
+		reverse_proxy https://www.lectserve.com {
+			header_up Host www.lectserve.com
+			header_up -Cookie
+			header_up -Authorization
+			header_down -Set-Cookie
+		}
+	}
+
 	@happyview_api path {$HAPPYVIEW_BASE_PATH} {$HAPPYVIEW_BASE_PATH}/*
 	handle @happyview_api {
 		reverse_proxy {$HAPPYVIEW_PRIVATE_DOMAIN}:3000

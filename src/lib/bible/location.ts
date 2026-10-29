@@ -1,5 +1,6 @@
 import type { BookId } from '#/lib/bible/verse';
 import { isBookId } from '#/lib/bible/verse';
+import { resolveBookName } from './book-names';
 
 export interface BibleLocation {
   bookId: BookId;
@@ -38,4 +39,25 @@ export function parseBibleReference(
   }
 
   return { ...location, ...(verse === undefined ? {} : { verse }) };
+}
+
+/** Locate the start of a citation, including discontinuous and optional verses. */
+export function parseScriptureCitation(
+  citation: string,
+): (BibleLocation & { verse?: number }) | null {
+  const match =
+    /^(.+?)\s+\(?([1-9]\d*)(?::\s*\(?([1-9]\d*)[a-f]?)?(?:\s*[-\u2013\u2014,;()[\]](?:end|[0-9a-f:,\s;()[\]\u2013\u2014-])*)?$/i.exec(
+      citation.trim(),
+    );
+  if (!match) return null;
+  const bookId = resolveBookName(match[1]);
+  if (!bookId) return null;
+  const chapter = Number(match[2]);
+  const verse = match[3] ? Number(match[3]) : undefined;
+  if (
+    !Number.isSafeInteger(chapter) ||
+    (verse !== undefined && !Number.isSafeInteger(verse))
+  )
+    return null;
+  return { bookId, chapter, ...(verse === undefined ? {} : { verse }) };
 }
