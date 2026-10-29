@@ -204,11 +204,13 @@ function parseAnnotationRecords(
     }
 
     if (verses.size === 0) continue;
-    const firstVerse = verses.values().next().value;
-    if (!firstVerse) continue;
     const orderedVerses = [...verses.entries()]
-      .sort(([, left], [, right]) => left.verse - right.verse)
+      .sort(
+        ([, left], [, right]) =>
+          left.chapter - right.chapter || left.verse - right.verse,
+      )
       .map(([verseId]) => verseId);
+    const firstVerse = parseVerseId(orderedVerses[0]);
 
     annotations.set(parsed.data.uri, {
       id: parsed.data.uri,

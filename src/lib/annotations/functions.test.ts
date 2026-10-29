@@ -75,6 +75,7 @@ describe('chapter annotation records', () => {
       records: [record],
       cursor: 'next',
     });
+
     parseAtRecordUri.mockReturnValue({ authorDid: did, rkey: 'rkey' });
 
     const { listMyAnnotationsPage } = await import('./functions');
@@ -88,6 +89,30 @@ describe('chapter annotation records', () => {
     expect(page.cursor).toBe('next');
     expect(page.annotations).toHaveLength(1);
     expect(page.annotations[0].authorDid).toBe(did);
+  });
+
+  it('preserves scripture order and the primary verse across chapters when pulling annotations', async () => {
+    const did = 'did:plc:abcdefghijklmnopqrstuvwx';
+    const record = {
+      uri: `at://${did}/com.marginsbible.annotation/rkey`,
+      $type: 'com.marginsbible.annotation',
+      verses: [{ id: 'JHN/4:2' }, { id: 'JHN/3:36' }, { id: 'JHN/4:1' }],
+      comment: 'A cross-chapter note',
+      createdAt: '2026-09-30T12:00:00.000Z',
+    };
+    getHappyViewSession.mockResolvedValue({ did });
+    fetchXrpcRecordPage.mockResolvedValue({ records: [record] });
+    parseAtRecordUri.mockReturnValue({ authorDid: did, rkey: 'rkey' });
+
+    const { listMyAnnotationsPage } = await import('./functions');
+    const page = await listMyAnnotationsPage({ data: {} });
+
+    expect(page.annotations[0]).toMatchObject({
+      bookId: 'JHN',
+      chapter: 3,
+      verses: ['JHN/3:36', 'JHN/4:1', 'JHN/4:2'],
+      chapterKeys: ['JHN/3', 'JHN/4'],
+    });
   });
 
   it('rejects annotation records outside the authenticated caller', async () => {

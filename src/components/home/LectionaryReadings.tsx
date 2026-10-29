@@ -111,7 +111,7 @@ function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
               translation,
               book: target.bookId,
               chapter: target.chapter,
-              verse: target.verse,
+              verses: target.verses,
               activate: index === targets.length - 1,
             });
           });
@@ -160,10 +160,10 @@ function ReadingLink({ reading }: { reading: LectionaryReading }) {
               translation,
               book: target.bookId,
               chapter: target.chapter,
-              verse: target.verse,
+              verses: target.verses,
             });
           }}
-          search={target.verse ? { verses: String(target.verse) } : {}}
+          search={{ verses: target.verses }}
           hash={
             target.verse
               ? `verse-${formatVerseId(target.bookId, target.chapter, target.verse)}`

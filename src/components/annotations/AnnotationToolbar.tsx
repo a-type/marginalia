@@ -10,10 +10,12 @@ import {
   useSetSelectedVerseNumber,
 } from './annotationPaneStore';
 import cls from './AnnotationToolbar.module.css';
+import { useSelectedVerseIds } from './VerseSelection';
 
 export function AnnotationToolbar() {
   const dbClient = useDbClient();
   const selectedVerse = usePrimarySelectedVerseId();
+  const selectedVerses = useSelectedVerseIds();
   const setSelectedVerseNumber = useSetSelectedVerseNumber();
   const paneOpen = useIsAnnotationPaneActive();
 
@@ -47,7 +49,7 @@ export function AnnotationToolbar() {
         size="small"
         emphasis="ghost"
         aria-label="Add annotation"
-        onClick={() => annotationPaneActions.openEditor(selectedVerse)}
+        onClick={() => annotationPaneActions.openEditor(selectedVerses)}
       >
         <Icon name="plus" />
       </Button>

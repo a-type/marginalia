@@ -16,10 +16,10 @@ export const annotationPaneStore = new Store<AnnotationPaneState>(initialState);
 
 export const annotationPaneActions = {
   reset: () => annotationPaneStore.setState(() => initialState),
-  openEditor: (selectedVerse: VerseId) =>
+  openEditor: (selectedVerses: readonly VerseId[]) =>
     annotationPaneStore.setState(() => ({
-      phase: 'editing',
-      draftVerses: [selectedVerse],
+      phase: selectedVerses.length ? 'editing' : 'closed',
+      draftVerses: [...selectedVerses],
     })),
   selectPrimaryVerse: (verseId: VerseId) =>
     annotationPaneStore.setState((state) =>

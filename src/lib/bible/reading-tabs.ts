@@ -1,12 +1,14 @@
 import type { BibleLocation } from './location';
 import { parseBibleLocation } from './location';
 import { isTranslationId } from './manifests';
+import { normalizeVerseSelection } from './selection';
 
 export interface ReadingTab extends BibleLocation {
   id: string;
   translationId: string;
   createdAt: number;
   visitedAt: number;
+  verses?: string;
 }
 
 export interface ReadingTabsState {
@@ -59,6 +61,9 @@ export function parseReadingTabsState(value: unknown): ReadingTabsState {
         ...location,
         createdAt: tab.createdAt,
         visitedAt: tab.visitedAt,
+        ...(normalizeVerseSelection(tab.verses)
+          ? { verses: normalizeVerseSelection(tab.verses) }
+          : {}),
       },
     ];
   });
@@ -75,7 +80,7 @@ export function getMostRecentlyVisitedReadingTab(): ReadingTab | undefined {
 
 export function createReadingTab(
   translationId: string,
-  location: BibleLocation = { bookId: 'GEN', chapter: 1 },
+  location: BibleLocation & { verses?: string } = { bookId: 'GEN', chapter: 1 },
 ): ReadingTab {
   const now = Date.now();
   const tab: ReadingTab = {
@@ -113,6 +118,7 @@ export function storeReadingTabLocation(
   activeReadingTabId: string | undefined,
   location: BibleLocation,
   translationId: string,
+  verses?: string,
 ): void {
   if (!activeReadingTabId) return;
   const state = readReadingTabsState();
@@ -121,7 +127,7 @@ export function storeReadingTabLocation(
   writeReadingTabsState({
     tabs: state.tabs.map((tab) =>
       tab.id === activeReadingTabId
-        ? { ...tab, ...location, translationId, visitedAt: Date.now() }
+        ? { ...tab, ...location, translationId, verses, visitedAt: Date.now() }
         : tab,
     ),
   });

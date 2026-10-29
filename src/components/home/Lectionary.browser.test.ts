@@ -201,7 +201,7 @@ describe('homepage lectionary', () => {
       const url = new URL(link!.href);
       expect(url.pathname).toBe('/eng_webu/MAT/22');
       expect(url.hash).toBe('#verse-MAT/22:34');
-      expect(JSON.parse(url.searchParams.get('verses')!)).toBe('34');
+      expect(url.searchParams.get('verses')).toBe('34-46');
       await expect.element(page.getByText('Alternative reading')).toBeVisible();
       await expect
         .element(
@@ -265,7 +265,7 @@ describe('homepage lectionary', () => {
       await expect
         .poll(() => view.router.state.location.pathname)
         .toBe('/eng_webu/LUK/1');
-      expect(view.router.state.location.search).toEqual({ verses: '1' });
+      expect(view.router.state.location.search).toEqual({ verses: '1-4' });
       expect(view.router.state.location.hash).toBe('verse-LUK/1:1');
       const tabs = readReadingTabsState().tabs;
       expect(tabs).toHaveLength(2);
@@ -319,7 +319,14 @@ describe('homepage lectionary', () => {
       expect(view.router.state.location.state.activeReadingTabId).toBe(
         tabs[3].id,
       );
-      expect(view.router.state.location.search).toEqual({ verses: '1' });
+      expect(view.router.state.location.search).toEqual({
+        verses: '1-6,13-17',
+      });
+      expect(tabs.slice(1).map((tab) => tab.verses)).toEqual([
+        '34-46',
+        '20-26',
+        '1-6,13-17',
+      ]);
     } finally {
       view.cleanup();
     }
@@ -352,14 +359,14 @@ describe('homepage lectionary', () => {
         { bookId: 'ACT', chapter: 6 },
         { bookId: 'JHN', chapter: 14 },
       ]);
-      expect(view.router.state.location.search).toEqual({ verses: '15' });
+      expect(view.router.state.location.search).toEqual({ verses: '15-31' });
       expect(view.router.state.location.hash).toBe('verse-JHN/14:15');
     } finally {
       view.cleanup();
     }
   });
 
-  it('opens chapter-only readings in a new tab without verse selection', async () => {
+  it('opens chapter-only readings with the entire chapter selected', async () => {
     mockLectServe();
     const view = await renderLectionary();
     try {
@@ -371,7 +378,9 @@ describe('homepage lectionary', () => {
         .poll(() => view.router.state.location.pathname)
         .toBe('/eng_webu/ISA/10');
       expect(readReadingTabsState().tabs).toHaveLength(1);
-      expect(view.router.state.location.search).toEqual({});
+      expect(view.router.state.location.search).toEqual({
+        verses: 'start-end',
+      });
       expect(view.router.state.location.hash).toBe('');
     } finally {
       view.cleanup();

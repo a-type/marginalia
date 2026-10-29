@@ -13,12 +13,10 @@ import {
   annotationCollectionOptions,
   getAnnotationCollections,
 } from '#/lib/annotations/collections';
-import {
-  formatVerseSelection,
-  parseVerseSelection,
-} from '#/lib/bible/selection';
+import { formatVerseSelection } from '#/lib/bible/selection';
 import type { VerseId } from '#/lib/bible/verse';
-import { formatVerseId, parseVerseId } from '#/lib/bible/verse';
+import { parseVerseId } from '#/lib/bible/verse';
+import { useSelectedVerseIds } from './VerseSelection';
 import {
   annotationPaneActions,
   annotationPaneStore,
@@ -120,13 +118,7 @@ export function useSetSelectedVerseNumber() {
 }
 
 export function usePrimarySelectedVerseId() {
-  const selectedNumber = readerRoute.useSearch({
-    select: (s) => parseVerseSelection(s.verses).at(0),
-  });
-  const { location } = readerRoute.useLoaderData();
-  return selectedNumber
-    ? formatVerseId(location.bookId, location.chapter, selectedNumber)
-    : undefined;
+  return useSelectedVerseIds().at(0);
 }
 
 export function useIsSelectedVerse(verseId: VerseId) {
@@ -137,18 +129,14 @@ export function useIsSelectedVerse(verseId: VerseId) {
   const includedInDraft = useStore(annotationPaneStore, (state) =>
     state.phase === 'closed' ? false : state.draftVerses.includes(verseId),
   );
-  const primarySelected = readerRoute.useSearch({
-    select: (search) =>
-      parseVerseSelection(search.verses).at(0) === parseVerseId(verseId).verse,
-  });
-  return editing ? includedInDraft : primarySelected;
+  const selected = useSelectedVerseIds().includes(verseId);
+  return editing ? includedInDraft : selected;
 }
 
 export function useToggleVerseSelected(verseId: VerseId) {
-  const primarySelected = readerRoute.useSearch({
-    select: (search) =>
-      parseVerseSelection(search.verses).at(0) === parseVerseId(verseId).verse,
-  });
+  const selectedVerses = useSelectedVerseIds();
+  const singleSelected =
+    selectedVerses.length === 1 && selectedVerses[0] === verseId;
   const setSelectedNumber = useSetSelectedVerseNumber();
   return () => {
     const phase = annotationPaneStore.state.phase;
@@ -162,7 +150,7 @@ export function useToggleVerseSelected(verseId: VerseId) {
     }
 
     void setSelectedNumber(
-      primarySelected ? undefined : parseVerseId(verseId).verse,
+      singleSelected ? undefined : parseVerseId(verseId).verse,
     );
   };
 }

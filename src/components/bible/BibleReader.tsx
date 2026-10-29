@@ -5,15 +5,17 @@ import { useEffect, useState } from 'react';
 
 import { AnnotationPane } from '#/components/annotations/AnnotationPane';
 import { useResetAnnotationPaneOnRouteChange } from '#/components/annotations/annotationPaneStore';
+import {
+  VerseSelectionProvider,
+  useSelectedVerseIds,
+} from '#/components/annotations/VerseSelection';
 import { useChapterAnnotations } from '#/components/annotations/useChapterAnnotations';
 import { useHighlightSync } from '#/components/annotations/useChapterHighlights';
 import type { ChapterAnnotationSnapshot } from '#/lib/annotations/collections';
 import { reconcileChapterAnnotations } from '#/lib/annotations/reconcile';
 import type { BibleLocation } from '#/lib/bible/location';
 import { storeReadingTabLocation } from '#/lib/bible/reading-tabs';
-import { parseVerseSelection } from '#/lib/bible/selection';
 import { rememberTranslation, storeTranslationId } from '#/lib/bible/source';
-import { formatVerseId } from '#/lib/bible/verse';
 import type { ChapterHighlightSnapshot } from '#/lib/highlights/collections';
 import { reconcileChapterHighlights } from '#/lib/highlights/reconcile';
 import { chapterAnnotationsQueryOptions } from '#/queries/annotations';
@@ -28,9 +30,18 @@ const emptyChapterAnnotations: ChapterAnnotationSnapshot = { annotations: [] };
 const emptyChapterHighlights: ChapterHighlightSnapshot = { highlights: [] };
 
 export function BibleReader() {
+  return (
+    <VerseSelectionProvider>
+      <BibleReaderContent />
+    </VerseSelectionProvider>
+  );
+}
+
+function BibleReaderContent() {
   const { location, manifest, source, translationId } =
     readerRoute.useLoaderData();
-  const selectedVerses = readerRoute.useSearch({
+  const selectedVerse = useSelectedVerseIds().at(0);
+  const selection = readerRoute.useSearch({
     select: (search) => search.verses,
   });
   const { pathname, activeReadingTabId } = useLocation({
@@ -43,13 +54,14 @@ export function BibleReader() {
   const { accountDid, annotations } = useBibleReaderData(location);
 
   useResetAnnotationPaneOnRouteChange();
-  useScrollToSelectedVerse(location, selectedVerses, translationId);
+  useScrollToSelectedVerse(selectedVerse, translationId);
   useStoreBibleReaderLocation(
     pathname,
     activeReadingTabId,
     location,
     translationId,
     manifest.title,
+    selection,
   );
 
   return (
@@ -119,14 +131,11 @@ function useBibleReaderData(location: BibleLocation) {
 }
 
 function useScrollToSelectedVerse(
-  location: BibleLocation,
-  selection: string | undefined,
+  verseId: string | undefined,
   translationId: string,
 ) {
   useEffect(() => {
-    const verse = parseVerseSelection(selection).at(0);
-    if (!verse) return;
-    const verseId = formatVerseId(location.bookId, location.chapter, verse);
+    if (!verseId) return;
     const element = document.getElementById(`verse-${verseId}`);
     if (!element) return;
     element.scrollIntoView({
@@ -135,7 +144,7 @@ function useScrollToSelectedVerse(
         ? 'auto'
         : 'smooth',
     });
-  }, [location.bookId, location.chapter, selection, translationId]);
+  }, [verseId, translationId]);
 }
 
 function useStoreBibleReaderLocation(
@@ -144,15 +153,28 @@ function useStoreBibleReaderLocation(
   location: BibleLocation,
   translationId: string,
   translationTitle: string,
+  selection: string | undefined,
 ) {
   useEffect(() => {
     if (pathname !== `/${translationId}/${location.bookId}/${location.chapter}`)
       return;
 
-    storeReadingTabLocation(activeReadingTabId, location, translationId);
+    storeReadingTabLocation(
+      activeReadingTabId,
+      location,
+      translationId,
+      selection,
+    );
     storeTranslationId(translationId);
     rememberTranslation({ id: translationId, title: translationTitle });
-  }, [activeReadingTabId, location, pathname, translationId, translationTitle]);
+  }, [
+    activeReadingTabId,
+    location,
+    pathname,
+    translationId,
+    translationTitle,
+    selection,
+  ]);
 }
 
 function useReconcileChapterAnnotations({

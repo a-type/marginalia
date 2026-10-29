@@ -4,10 +4,7 @@ import { AppShell } from '#/components/app/AppShell';
 import { BibleReader } from '#/components/bible/BibleReader';
 import { BibleRecovery } from '#/components/bible/BibleRecovery';
 import { parseBibleLocation } from '#/lib/bible/location';
-import {
-  formatVerseSelection,
-  parseVerseSelection,
-} from '#/lib/bible/selection';
+import { normalizeVerseSelection } from '#/lib/bible/selection';
 import {
   fetchTranslationManifest,
   fetchTranslationSource,
@@ -23,8 +20,7 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
   errorComponent: BibleRecovery,
   notFoundComponent: BibleRecovery,
   validateSearch: (search: Record<string, unknown>) => {
-    const verse = parseVerseSelection(search.verses).at(0);
-    const verses = verse ? formatVerseSelection([verse]) : undefined;
+    const verses = normalizeVerseSelection(search.verses);
     const annotation =
       typeof search.annotation === 'string' && search.annotation
         ? search.annotation

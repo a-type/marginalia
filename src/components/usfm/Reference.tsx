@@ -27,7 +27,7 @@ export function Reference({ attributes, children }: USFMNodeComponentProps) {
             book: target.bookId,
             chapter: String(target.chapter),
           }}
-          search={target.verse ? { verses: String(target.verse) } : {}}
+          search={{ verses: target.verses }}
           hash={
             target.verse
               ? `verse-${formatVerseId(target.bookId, target.chapter, target.verse)}`

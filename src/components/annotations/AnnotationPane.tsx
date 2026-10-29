@@ -24,6 +24,7 @@ import {
   useSetSelectedVerseNumber,
 } from './annotationPaneStore';
 import { AnnotationView } from './AnnotationView';
+import { useSelectedVerseIds } from './VerseSelection';
 
 export const readerRoute = getRouteApi('/$translation/$book/$chapter');
 
@@ -36,8 +37,9 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
   const dbClient = useDbClient();
   const { addingVerses, draftVerses, editing } = useAnnotationPaneState();
   const selectedVerse = usePrimarySelectedVerseId();
+  const selectedVerses = useSelectedVerseIds();
   const openEditor = () => {
-    if (selectedVerse) annotationPaneActions.openEditor(selectedVerse);
+    if (selectedVerse) annotationPaneActions.openEditor(selectedVerses);
   };
 
   const setOpenAnnotation = useSetOpenAnnotation();

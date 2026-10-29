@@ -122,4 +122,26 @@ describe('reading tabs', () => {
       chapter: 2,
     });
   });
+
+  it('restores a reading range and clears it when navigating without a selection', () => {
+    storage.setItem(
+      'margins:reading-tabs',
+      JSON.stringify({
+        tabs: [
+          {
+            id: 'range',
+            translationId: 'eng_webu',
+            bookId: 'JHN',
+            chapter: 3,
+            verses: '3:8-4:2',
+            createdAt: 10,
+            visitedAt: 20,
+          },
+        ],
+      }),
+    );
+    expect(readReadingTabsState().tabs[0].verses).toBe('3:8-4:2');
+    storeReadingTabLocation('range', { bookId: 'JHN', chapter: 4 }, 'eng_webu');
+    expect(readReadingTabsState().tabs[0].verses).toBeUndefined();
+  });
 });

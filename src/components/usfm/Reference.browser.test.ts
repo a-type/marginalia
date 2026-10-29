@@ -53,27 +53,31 @@ async function renderReference(target: string, label: string) {
 
 describe('USFM reference links', () => {
   it.each([
-    ['JHN 1:1-5', 'John 1:1-5', 'JHN', '1'],
-    ['HEB 11:1-3', 'Hebrews 11:1-3', 'HEB', '11'],
+    ['JHN 1:1-5', 'John 1:1-5', 'JHN', '1', '1-5'],
+    ['HEB 11:1-3', 'Hebrews 11:1-3', 'HEB', '11', '1-3'],
+    ['JHN 1:1-2:3', 'John 1:1-2:3', 'JHN', '1', '1-2:3'],
   ])(
     'links %s within the current translation',
-    async (target, label, book, chapter) => {
+    async (target, label, book, chapter, verses) => {
       const html = await renderReference(target, label);
       const href = /href="([^"]+)"/.exec(html)?.[1];
 
       expect(href).toBeDefined();
       const url = new URL(href!, 'https://margins.test');
       expect(url.pathname).toBe(`/msb/${book}/${chapter}`);
-      expect(JSON.parse(url.searchParams.get('verses')!)).toBe('1');
+      expect(url.searchParams.get('verses')).toBe(verses);
       expect(url.hash).toBe(`#verse-${book}/${chapter}:1`);
       expect(html).toContain(label);
       expect(html).toContain('<a ');
     },
   );
 
-  it('links chapter-only references without a verse selection', async () => {
+  it('selects the whole chapter for chapter-only references', async () => {
     const html = await renderReference('JHN 1', 'John 1');
-    expect(html).toContain('href="/msb/JHN/1"');
+    const href = /href="([^"]+)"/.exec(html)?.[1];
+    const url = new URL(href!, 'https://margins.test');
+    expect(url.pathname).toBe('/msb/JHN/1');
+    expect(url.searchParams.get('verses')).toBe('start-end');
   });
 
   it('keeps invalid targets readable without creating broken links', async () => {
@@ -96,7 +100,7 @@ describe('USFM reference links', () => {
       await expect
         .poll(() => router.state.location.pathname)
         .toBe('/msb/JHN/1');
-      expect(router.state.location.search).toEqual({ verses: '3' });
+      expect(router.state.location.search).toEqual({ verses: '3-5' });
     } finally {
       root.unmount();
       container.remove();

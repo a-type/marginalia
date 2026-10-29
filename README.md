@@ -79,9 +79,19 @@ Selecting RCL or ACNA changes the Sunday/feast tradition and uses the ACNA civil
 Daily Office; selecting a Daily Office calendar uses ACNA Sunday/feast readings.
 Links use the selected Bible
 translation. Citations which cannot be resolved remain visible as text.
-Each reading opens a new Bible reading tab at the cited chapter and verse.
+Each reading opens a new Bible reading tab with all cited verses selected.
+Discontinuous, optional, cross-chapter, and whole-chapter readings are supported.
 Each group also offers **Open all in tabs**, which opens every resolvable
 reading in that group and activates the last new tab.
+
+Reader URLs accept a `verses` search parameter containing comma-separated verses
+and ranges, such as `?verses=3-8,12` or `?verses=3:8-4:2`. Endpoints without a
+chapter use the chapter in the URL. The `start` and `end` tokens refer to the first
+and last available verses of a chapter, for example `?verses=10-end` or
+`?verses=3:start-4:end`. Ranges resolve against the selected translation.
+The first selected verse is primary for scrolling, highlights, and viewing
+annotations; starting a new annotation includes the entire selection. Clicking a
+verse replaces the URL selection with that single verse, rather than extending it.
 
 Vite and Caddy proxy `/lectserve/date/YYYY-MM-DD` to LectServe's
 `/date/YYYY-MM-DD` endpoint because the API does not allow cross-origin browser

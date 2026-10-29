@@ -22,13 +22,10 @@ export async function createAnnotation(
   if (
     !verses.every((verseId) => {
       const verse = parseVerseId(verseId);
-      return (
-        verse.bookId === firstVerse.bookId &&
-        verse.chapter === firstVerse.chapter
-      );
+      return verse.bookId === firstVerse.bookId;
     })
   ) {
-    throw new Error('Annotation verses must belong to one chapter');
+    throw new Error('Annotation verses must belong to one book');
   }
 
   const comment = input.comment.trim();
@@ -54,9 +51,11 @@ export async function createAnnotation(
     bookId: firstVerse.bookId,
     chapter: firstVerse.chapter,
     chapterKeys: getAnnotationChapterKeys(verses),
-    verses: verses.sort(
-      (left, right) => parseVerseId(left).verse - parseVerseId(right).verse,
-    ),
+    verses: verses.sort((left, right) => {
+      const a = parseVerseId(left);
+      const b = parseVerseId(right);
+      return a.chapter - b.chapter || a.verse - b.verse;
+    }),
     comment,
     createdAt: input.createdAt ?? new Date().toISOString(),
     status: 'pending',
