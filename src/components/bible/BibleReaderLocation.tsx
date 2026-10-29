@@ -1,20 +1,15 @@
 import { Button, clsx, Icon, Popover } from '@a-type/ui';
-import { useMutation } from '@tanstack/react-query';
 import { getRouteApi, useLocation } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import type { TranslationManifest } from '#/lib/bible/source';
-import {
-  fetchTranslationManifest,
-  fetchTranslationSource,
-  readRecentTranslations,
-} from '#/lib/bible/source';
+import { readRecentTranslations } from '#/lib/bible/source';
 import type { BookId } from '#/lib/bible/verse';
-import { parseVerseLabel } from '#/lib/bible/verse';
 import { m } from '#/paraglide/messages';
 import { TranslationManagerDialog } from '../settings/TranslationManagerDialog';
 import { BibleLocationSelector } from './BibleLocationSelector';
 import cls from './BibleReaderLocation.module.css';
+import { useSelectTranslation } from './useSelectTranslation';
 
 const readerRoute = getRouteApi('/$translation/$book/$chapter');
 
@@ -41,37 +36,14 @@ export function BibleReaderLocation({
   const activeReadingTabId = useLocation({
     select: (routeLocation) => routeLocation.state.activeReadingTabId,
   });
-  const search = readerRoute.useSearch();
   const [announcement, setAnnouncement] = useState('');
   const [showTranslationManager, setShowTranslationManager] = useState(false);
-  const changeTranslation = useMutation({
-    networkMode: 'always',
-    mutationFn: async (translation: string) => {
-      const next = await fetchTranslationManifest(translation);
-      const sameBook = next.books.find((book) => book.id === bookId);
-      const book = sameBook ?? next.books[0];
-      const nextChapter = sameBook ? Math.min(chapter, book.chapters) : 1;
-      const source = await fetchTranslationSource(translation, book);
-      let selectedExists = false;
-      let sourceChapter = 0;
-      for (const match of source.matchAll(/^\\(c|v)\s+(\S+)/gm)) {
-        if (match[1] === 'c') sourceChapter = Number(match[2]);
-        else if (
-          sourceChapter === nextChapter &&
-          String(parseVerseLabel(match[2])) === search.verses
-        )
-          selectedExists = true;
-      }
-      await navigate({
-        params: { translation, book: book.id, chapter: String(nextChapter) },
-        state: (previous) => ({ ...previous, activeReadingTabId }),
-        search:
-          selectedExists && book.id === bookId && nextChapter === chapter
-            ? { verses: search.verses }
-            : {},
-      });
+  const changeTranslation = useSelectTranslation({
+    bookId,
+    chapter,
+    onChange({ book, chapter: nextChapter }) {
       setAnnouncement(
-        book.id !== bookId || nextChapter !== chapter
+        book !== bookId || nextChapter !== chapter
           ? m.translation_location_changed()
           : '',
       );
@@ -104,6 +76,8 @@ export function BibleReaderLocation({
     )
     .slice(0, 3);
 
+  const translationShortId = translationId.split(/[-_]/)[1].toUpperCase();
+
   return (
     <div className={clsx(cls.root, className)}>
       <Popover open={open} onOpenChange={onOpenChange}>
@@ -112,7 +86,7 @@ export function BibleReaderLocation({
           aria-label={`${currentBookTitle}, ${m.bible_chapter_label()} ${chapter}`}
         >
           <span>
-            {currentBookTitle} {chapter}
+            {currentBookTitle} {chapter} ({translationShortId})
           </span>
           <Icon name="chevron" />
         </Popover.Trigger>
