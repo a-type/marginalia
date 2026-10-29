@@ -63,4 +63,23 @@ describe('poetry verse continuations', () => {
 
     expect(poetryArguments).toEqual([undefined, '1', undefined, '2']);
   });
+
+  it('associates poetry lines after an inline verse marker with that verse', () => {
+    const document = parseUSFM(String.raw`\c 1
+\q1 \v 9 Our Father.
+\q2 Who art in heaven.
+\q1 \v 10 Thy kingdom come.
+\q2 On earth as it is in heaven.`);
+    const chapter = document.children[0];
+
+    if (chapter.type !== 'marker') throw new Error('Expected chapter node');
+
+    const poetryArguments = chapter.children.flatMap((node) =>
+      node.type === 'marker' && node.category === 'poetry'
+        ? [node.continuationVerseArgument]
+        : [],
+    );
+
+    expect(poetryArguments).toEqual([undefined, '9', undefined, '10']);
+  });
 });
