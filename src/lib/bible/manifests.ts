@@ -21,29 +21,76 @@ const webMetadata: TranslationMetadata = {
   ],
 };
 
-export const builtinTranslations = [
+export interface BuiltInTranslation {
+  id: string;
+  title: string;
+  description?: string;
+  metadata: TranslationMetadata;
+}
+
+export const builtinTranslations: BuiltInTranslation[] = [
   {
     id: 'eng_webu',
     title: 'World English Bible (Updated)',
-    metadata: webMetadata,
-  },
-  {
-    id: 'eng_webc',
-    title: 'World English Bible (Catholic)',
-    metadata: webMetadata,
-  },
-  {
-    id: 'eng_asv',
-    title: 'American Standard Version',
+    description: `A contemporary English revision of the American Standard Version, completed in 2020. A good all-around Bible made freely available for the modern era.`,
     metadata: {
-      ...webMetadata,
-      attributionUrl: 'https://ebible.org/Scriptures/details.php?id=eng-asv',
+      language: 'eng',
+      languageName: 'English',
+      direction: 'ltr',
+      attribution: 'Public domain',
+      attributionUrl: 'https://worldenglish.bible/',
       licenses: [
         {
-          ...webMetadata.licenses[0],
-          url: 'https://ebible.org/Scriptures/details.php?id=eng-asv',
+          name: 'Public domain',
+          url: 'https://worldenglish.bible/',
+          attributionRequired: false,
+          shareAlike: false,
+          noDerivatives: false,
         },
       ],
+    },
+  },
+  {
+    id: 'eng_msb',
+    title: 'Majority Standard Bible',
+    description: `This modern translation completed in 2022 is based on the Majority Text, and has some nice formatting features like cross-references and differentiated words of Jesus.`,
+    metadata: {
+      language: 'eng',
+      languageName: 'English',
+      direction: 'ltr',
+      attribution: 'BSB Publishing, LLC',
+      attributionUrl: 'https://majoritybible.com/',
+      licenses: [
+        {
+          name: 'Public domain',
+          url: 'https://creativecommons.org/publicdomain/zero/1.0/',
+          attributionRequired: false,
+          shareAlike: false,
+          noDerivatives: false,
+        },
+      ],
+    },
+  },
+  {
+    id: 'eng_kjv',
+    title: 'King James Version',
+    description: `The definitive classic English translation of the Bible, first published in 1611. While its translation is less than accurate, it remains esteemed for its literary quality and historical significance.`,
+    metadata: {
+      language: 'eng',
+      languageName: 'English',
+      direction: 'ltr',
+      licenses: [
+        {
+          name: 'Public domain',
+          url: 'https://ebible.org/Scriptures/details.php?id=eng-kjv2006',
+          attributionRequired: false,
+          shareAlike: false,
+          noDerivatives: false,
+        },
+      ],
+      attribution: 'Public domain',
+      attributionUrl:
+        'https://ebible.org/Scriptures/details.php?id=eng-kjv2006',
     },
   },
 ];

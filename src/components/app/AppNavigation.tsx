@@ -6,17 +6,17 @@ import {
   useLocalStorage,
 } from '@a-type/ui';
 import { useLocation, useNavigate } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import {
+  useAddReadingTab,
+  useNavigateToReadingTab,
+  useReadingTabsState,
+} from './readingTabs';
 
 import { useTranslationManifest } from '#/components/bible/useTranslationManifest';
 import { getInitialTranslationBook } from '#/lib/bible/manifests';
-import type { ReadingTabsState } from '#/lib/bible/reading-tabs';
 import {
   closeReadingTab,
-  createReadingTab,
   getMostRecentlyVisitedReadingTab,
-  readReadingTabsState,
-  subscribeToReadingTabs,
   visitReadingTab,
 } from '#/lib/bible/reading-tabs';
 import { readStoredTranslationId } from '#/lib/bible/source';
@@ -39,50 +39,15 @@ export function AppNavigation() {
   const initialBook = selectedTranslation
     ? getInitialTranslationBook(selectedTranslation)
     : undefined;
-  const [readingTabs, setReadingTabs] = useState<ReadingTabsState>({
-    tabs: [],
-  });
 
-  useEffect(() => {
-    const updateTabs = () => setReadingTabs(readReadingTabsState());
-    updateTabs();
-    return subscribeToReadingTabs(updateTabs);
-  }, []);
+  const readingTabs = useReadingTabsState();
+  const navigateToReadingTab = useNavigateToReadingTab();
 
-  const navigateToReadingTab = (
-    tab: (typeof readingTabs.tabs)[number],
-    replace = false,
-  ) => {
-    visitReadingTab(tab.id);
-    void navigate({
-      to: '/$translation/$book/$chapter',
-      params: {
-        translation: tab.translationId,
-        book: tab.bookId,
-        chapter: String(tab.chapter),
-      },
-      state: { activeReadingTabId: tab.id },
-      replace,
-      viewTransition: true,
-    });
-  };
-
-  const addReadingTab = () => {
-    if (!selectedTranslation || !initialBook) return;
-    const tab = createReadingTab(selectedTranslation.id, {
-      bookId: initialBook.id,
-      chapter: 1,
-    });
-    navigateToReadingTab(tab);
-  };
+  const addReadingTab = useAddReadingTab();
 
   const closeReadingTabHandler = (tabId: string) => {
     const tab = readingTabs.tabs.find((item) => item.id === tabId);
     if (!tab) return;
-    setReadingTabs((current) => ({
-      ...current,
-      tabs: current.tabs.filter((item) => item.id !== tabId),
-    }));
     closeReadingTab(tabId);
     if (activeReadingTabId !== tabId) return;
 
@@ -154,7 +119,13 @@ export function AppNavigation() {
             className={cls.addTab}
             aria-label={m.app_tab_add_bible()}
             disabled={!initialBook}
-            onClick={addReadingTab}
+            onClick={() => {
+              if (!selectedTranslation || !initialBook) return;
+              addReadingTab({
+                translation: selectedTranslation.id,
+                book: initialBook.id,
+              });
+            }}
           >
             <Icon name="plus" />
           </Button>
