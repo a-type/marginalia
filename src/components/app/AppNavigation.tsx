@@ -5,10 +5,10 @@ import {
   Tooltip,
   useLocalStorage,
 } from '@a-type/ui';
-import { useQuery } from '@tanstack/react-query';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
+import { useTranslationManifest } from '#/components/bible/useTranslationManifest';
 import { getInitialTranslationBook } from '#/lib/bible/manifests';
 import type { ReadingTabsState } from '#/lib/bible/reading-tabs';
 import {
@@ -21,7 +21,6 @@ import {
 } from '#/lib/bible/reading-tabs';
 import { readStoredTranslationId } from '#/lib/bible/source';
 import { m } from '#/paraglide/messages';
-import { translationsQueryOptions } from '#/queries/translations';
 import cls from './AppNavigation.module.css';
 import { NavTab } from './NavTab';
 import { useReadingTabRouteState } from './useReadingTabRouteState';
@@ -34,12 +33,11 @@ export function AppNavigation() {
   const navigate = useNavigate();
   const pathname = useLocation({ select: (location) => location.pathname });
   const activeReadingTabId = useReadingTabRouteState();
-  const translations = useQuery(translationsQueryOptions);
-  const selectedTranslation = translations.data?.find(
-    (translation) => translation.id === readStoredTranslationId(),
+  const { data: selectedTranslation } = useTranslationManifest(
+    readStoredTranslationId(),
   );
   const initialBook = selectedTranslation
-    ? getInitialTranslationBook(selectedTranslation.manifest)
+    ? getInitialTranslationBook(selectedTranslation)
     : undefined;
   const [readingTabs, setReadingTabs] = useState<ReadingTabsState>({
     tabs: [],

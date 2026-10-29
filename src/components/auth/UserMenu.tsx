@@ -8,6 +8,7 @@ import { SettingsDialog } from '../settings/SettingsDialog';
 import { LoginDialog } from './LoginDialog';
 import { ProfileDialog } from './ProfileDialog';
 import { UserAvatar } from './UserAvatar';
+import cls from './UserMenu.module.css';
 
 export interface UserMenuProps {
   className?: string;
@@ -27,7 +28,9 @@ export function UserMenu({ className }: UserMenuProps) {
     <>
       <DropdownMenu>
         <DropdownMenu.Trigger
-          render={<Button emphasis="ghost" size="small" />}
+          render={
+            <Button emphasis="ghost" size="small" className={cls.trigger} />
+          }
           aria-label="User menu"
           className={className}
         >
