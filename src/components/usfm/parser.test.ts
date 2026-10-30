@@ -19,6 +19,64 @@ describe('USFM paragraph semantics', () => {
     ]);
   });
 
+  it('keeps verses active across continuation blocks', () => {
+    const document = parseUSFM(String.raw`\c 4
+\p \v 18 These are the generations of Perez:
+\b
+\li1 Perez was the father of Hezron,
+\li1 \v 19 Hezron was the father of Ram,
+\li1 Ram was the father of Amminadab,
+\p A following paragraph continues verse 19.
+\q1 A poetry line continues verse 19.
+\tr \v 20 A table row starts verse 20.
+\tc1 A table cell continues verse 20.`);
+
+    expect(document.children).toMatchObject([
+      {
+        marker: 'c',
+        children: [
+          { marker: 'p', children: [{ marker: 'v', argument: '18' }] },
+          { marker: 'b' },
+          {
+            marker: 'li1',
+            category: 'list',
+            continuationVerseArgument: '18',
+          },
+          {
+            marker: 'li1',
+            category: 'list',
+            children: [{ marker: 'v', argument: '19' }],
+          },
+          {
+            marker: 'li1',
+            category: 'list',
+            continuationVerseArgument: '19',
+          },
+          {
+            marker: 'p',
+            category: 'paragraph',
+            continuationVerseArgument: '19',
+          },
+          {
+            marker: 'q1',
+            category: 'poetry',
+            continuationVerseArgument: '19',
+          },
+          {
+            marker: 'tr',
+            category: 'table',
+            children: [{ marker: 'v', argument: '20' }],
+          },
+          {
+            marker: 'tc1',
+            category: 'table',
+            continuationVerseArgument: '20',
+          },
+        ],
+      },
+    ]);
+  });
+
   it('treats the Genesis creation narrative as paragraphs, not list entries', () => {
     const document = parseUSFM(String.raw`\c 1
 \s2 The First Day

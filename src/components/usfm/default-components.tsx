@@ -77,11 +77,34 @@ function Chapter({ argument, children }: USFMNodeComponentProps) {
   );
 }
 
-function Paragraph({ marker, children }: USFMNodeComponentProps) {
+function Paragraph({ node, marker, children }: USFMNodeComponentProps) {
   return (
     <p className="usfm-paragraph" data-usfm-marker={marker}>
-      {children}
+      <VerseContinuation node={node} marker={marker}>
+        {children}
+      </VerseContinuation>
     </p>
+  );
+}
+
+function VerseContinuation({
+  node,
+  marker,
+  children,
+}: Pick<USFMNodeComponentProps, 'node' | 'marker' | 'children'>) {
+  if (!node.continuationVerseArgument) return children;
+
+  return (
+    <Verse
+      node={node}
+      marker={marker}
+      category={node.category}
+      argument={node.continuationVerseArgument}
+      attributes={node.attributes}
+      isContinuation
+    >
+      {children}
+    </Verse>
   );
 }
 
@@ -93,36 +116,29 @@ function Poetry({ node, marker, children }: USFMNodeComponentProps) {
       data-usfm-marker={marker}
       style={{ '--usfm-indent': Math.max(0, level - 1) } as React.CSSProperties}
     >
-      {node.continuationVerseArgument ? (
-        <Verse
-          node={node}
-          marker={marker}
-          category={node.category}
-          argument={node.continuationVerseArgument}
-          attributes={node.attributes}
-          isContinuation
-        >
-          {children}
-        </Verse>
-      ) : (
-        children
-      )}
+      <VerseContinuation node={node} marker={marker}>
+        {children}
+      </VerseContinuation>
     </div>
   );
 }
 
-function List({ marker, children }: USFMNodeComponentProps) {
+function List({ node, marker, children }: USFMNodeComponentProps) {
   return (
     <div className="usfm-list-item" data-usfm-marker={marker}>
-      {children}
+      <VerseContinuation node={node} marker={marker}>
+        {children}
+      </VerseContinuation>
     </div>
   );
 }
 
-function Table({ marker, children }: USFMNodeComponentProps) {
+function Table({ node, marker, children }: USFMNodeComponentProps) {
   return (
     <div className="usfm-table-row" role="row" data-usfm-marker={marker}>
-      {children}
+      <VerseContinuation node={node} marker={marker}>
+        {children}
+      </VerseContinuation>
     </div>
   );
 }

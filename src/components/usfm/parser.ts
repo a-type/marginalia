@@ -499,7 +499,7 @@ export function parseUSFM(usfm: string): USFMDocument {
       const verse = createMarker(marker, parseInline(content).nodes, {
         argument,
       });
-      if (container?.category === 'poetry') {
+      if (container && isContainerCategory(container.category)) {
         container.continuationVerseArgument = undefined;
       }
       (container?.children ?? chapter?.children ?? document.children).push(
@@ -510,16 +510,16 @@ export function parseUSFM(usfm: string): USFMDocument {
     }
 
     const children = parseInline(value).nodes;
-    const inlineVerseArgument =
-      category === 'poetry'
-        ? children.find(
-            (child): child is USFMMarkerNode =>
-              child.type === 'marker' && child.category === 'verse',
-          )?.argument
-        : undefined;
+    const continuesVerse = isContainerCategory(category);
+    const inlineVerseArgument = continuesVerse
+      ? children.find(
+          (child): child is USFMMarkerNode =>
+            child.type === 'marker' && child.category === 'verse',
+        )?.argument
+      : undefined;
     const node = createMarker(marker, children, {
       continuationVerseArgument:
-        category === 'poetry' && inlineVerseArgument === undefined
+        continuesVerse && inlineVerseArgument === undefined
           ? activeVerseArgument
           : undefined,
     });
@@ -533,9 +533,9 @@ export function parseUSFM(usfm: string): USFMDocument {
       container = undefined;
     }
 
-    if (category === 'poetry' && inlineVerseArgument !== undefined) {
+    if (continuesVerse && inlineVerseArgument !== undefined) {
       activeVerseArgument = inlineVerseArgument;
-    } else if (category !== 'poetry') {
+    } else if (!continuesVerse && category !== 'break') {
       activeVerseArgument = undefined;
     }
   }

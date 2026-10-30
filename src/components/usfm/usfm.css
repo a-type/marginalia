@@ -103,11 +103,6 @@
   margin-left: var(--m-sp-lg);
 }
 
-.usfm-list-item::before {
-  content: '•';
-  margin-right: var(--m-sp-sm);
-}
-
 .usfm-table-row {
   display: flex;
   gap: var(--m-sp);
