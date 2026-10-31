@@ -1,8 +1,21 @@
-<svg
-  xmlns="http://www.w3.org/2000/svg"
-  width="512"
-  height="512"
-  viewBox="0 0 512 512"
->
-  <rect width="512" height="512" fill="#ffffff" />
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_993_18)">
+<rect width="180" height="180" rx="32" fill="white"/>
+<rect x="-17.9886" y="-9.05455" width="83.0957" height="189.055" fill="#FAC8FF" fill-opacity="0.36"/>
+<path d="M0 115L180 115" stroke-width="2" stroke="black"/>
+<path d="M0 85L180 85" stroke-width="2" stroke="black"/>
+<path d="M0 55L180 55" stroke-width="2" stroke="black"/>
+<path d="M0 145L180 145" stroke-width="2" stroke="black"/>
+<path d="M58 49.5H2V61H58V178.5H71V61H128V49.5H71V2H58V49.5Z" fill="#FF60A5"/>
+<mask id="stroke0_993_18" maskUnits="userSpaceOnUse" x="0" y="0" width="130" height="181" fill="black">
+<rect fill="white" width="130" height="181"/>
+<path d="M58 49.5H2V61H58V178.5H71V61H128V49.5H71V2H58V49.5Z"/>
+</mask>
+<path d="M2 49.5H58V2H71V49.5H128V61H71V178.5H58V61H2V49.5Z" stroke-width="4" stroke-linejoin="round" stroke="black" mask="url(#stroke0_993_18)"/>
+</g>
+<defs>
+<clipPath id="clip0_993_18">
+<rect width="180" height="180" rx="32" fill="white"/>
+</clipPath>
+</defs>
 </svg>
