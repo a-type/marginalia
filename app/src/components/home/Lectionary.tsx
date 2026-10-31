@@ -30,7 +30,9 @@ export function Lectionary() {
             if (value) setSelectedTradition(value);
           }}
           itemToStringLabel={(id) =>
-            lectionaryTraditions.find((item) => item.id === id)?.name ?? id
+            removeParenthetical(
+              lectionaryTraditions.find((item) => item.id === id)?.name ?? id,
+            )
           }
         >
           <Select.Trigger aria-label={m.lectionary_tradition()}>
@@ -71,4 +73,8 @@ export function Lectionary() {
       </TextLink>
     </Box>
   );
+}
+
+function removeParenthetical(name: string) {
+  return name.replace(/\s*\(.*?\)\s*/g, '').trim();
 }
