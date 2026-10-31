@@ -12,9 +12,30 @@ export default defineRailway(() => {
   const publicUrl = 'https://marginsbible.com';
   const publicDomain = new URL(publicUrl).hostname;
   const happyviewData = volume('happyview-data', { sizeMB: 1024 });
+  const indexerData = volume('annotation-indexer-data', { sizeMB: 1024 });
+  const indexer = service('annotation-indexer', {
+    source: github('a-type/marginalia', { checkSuites: false }),
+    build: {
+      builder: 'DOCKERFILE',
+      dockerfilePath: 'Indexer.Dockerfile',
+    },
+    replicas: { sfo: 1 },
+    volumeMounts: {
+      '/data': indexerData,
+    },
+    env: {
+      HOST: '::',
+      PORT: '3000',
+      INDEXER_DATABASE_PATH: '/data/annotations.sqlite',
+    },
+  });
 
   const margins = service('margins-bible', {
     source: github('a-type/marginalia', { checkSuites: false }),
+    build: {
+      builder: 'DOCKERFILE',
+      dockerfilePath: 'Dockerfile',
+    },
     replicas: { sfo: 1 },
     env: {
       APP_URL: publicUrl,
@@ -60,6 +81,6 @@ export default defineRailway(() => {
   });
 
   return project('miraculous-connection', {
-    resources: [margins, happyview, caddy, happyviewData],
+    resources: [margins, happyview, indexer, caddy, happyviewData, indexerData],
   });
 });

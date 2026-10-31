@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [".railway/railway.ts", "packages/bible/vitest.config.ts"],
+  "compilerOptions": {
+    "noEmit": true
+  }
+}

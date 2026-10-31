@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
 const defaultOutput = fileURLToPath(
-  new URL('../public/usfm/', import.meta.url),
+  new URL('../app/public/usfm/', import.meta.url),
 );
 const bookOrder = (
   'GEN EXO LEV NUM DEU JOS JDG RUT 1SA 2SA 1KI 2KI 1CH 2CH EZR NEH ' +
@@ -92,7 +92,7 @@ if (import.meta.main) {
     });
     if (values.help) {
       console.log(
-        'Usage: node scripts/download-usfm.mjs <translation> [--output public/usfm]',
+        'Usage: node scripts/download-usfm.mjs <translation> [--output app/public/usfm]',
       );
     } else {
       if (positionals.length !== 1) {

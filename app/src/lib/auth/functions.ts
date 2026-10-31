@@ -1,0 +1,36 @@
+import { z } from 'zod';
+
+import { isValidDid } from '@atproto/syntax';
+
+import {
+  getHappyViewSession,
+  signInToHappyView,
+  signOutOfHappyView,
+} from '../atproto/client';
+import { AppError } from '../error';
+
+const loginSchema = z.object({
+  identifier: z
+    .string()
+    .trim()
+    .min(1, 'Enter a valid handle, DID, or PDS address')
+    .max(255, 'Enter a valid handle, DID, or PDS address'),
+});
+
+export async function login({ data }: { data: unknown }) {
+  const { identifier } = loginSchema.parse(data);
+  await signInToHappyView(identifier);
+}
+
+export async function getCurrentUserDid(): Promise<string | null> {
+  const session = await getHappyViewSession();
+  if (!session) return null;
+  if (!isValidDid(session.did)) {
+    throw new AppError(AppError.Code.Unauthorized, 'Invalid HappyView session');
+  }
+  return session.did;
+}
+
+export async function logout() {
+  await signOutOfHappyView();
+}

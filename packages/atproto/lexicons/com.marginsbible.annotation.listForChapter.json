@@ -1,0 +1,32 @@
+{
+  "lexicon": 1,
+  "id": "com.marginsbible.annotation.listForChapter",
+  "description": "Lists annotations on a Bible chapter from the caller and followed accounts.",
+  "defs": {
+    "main": {
+      "type": "query",
+      "parameters": {
+        "type": "params",
+        "required": ["bookId", "chapter"],
+        "properties": {
+          "bookId": { "type": "string" },
+          "chapter": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["records"],
+          "properties": {
+            "records": {
+              "type": "array",
+              "description": "Annotation records with an additional uri field.",
+              "items": { "type": "unknown" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

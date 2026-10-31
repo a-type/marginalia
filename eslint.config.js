@@ -16,15 +16,26 @@ export default [
     },
   },
   {
+    files: ['.railway/**/*.ts', 'packages/bible/vitest.config.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.eslint.json',
+      },
+    },
+  },
+  {
     ignores: [
       'eslint.config.js',
       'prettier.config.js',
-      'src/**/usfm-source/**',
-      'src/lexicons/**',
-      'src/paraglide/**',
-      '.output/**',
-      '.tanstack/**',
-      'dist/**',
+      'app/src/**/usfm-source/**',
+      'app/src/lexicons/**',
+      'app/src/paraglide/**',
+      'app/src/routeTree.gen.ts',
+      'packages/atproto/src/lexicons/**',
+      '**/.output/**',
+      '**/.tanstack/**',
+      '**/dist/**',
+      '**/dist-indexer/**',
     ],
   },
 ];

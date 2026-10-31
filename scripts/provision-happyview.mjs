@@ -3,10 +3,23 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const lexiconsDirectory = join(projectRoot, 'lexicons');
+const lexiconsDirectory = join(projectRoot, 'packages/atproto/lexicons');
 const scriptsDirectory = join(projectRoot, 'happyview', 'lua');
 const baseUrl = process.env.HAPPYVIEW_BASE_URL?.replace(/\/+$/, '');
 const adminKey = process.env.HAPPYVIEW_ADMIN_KEY;
+const indexerUrl = new URL(
+  process.env.ANNOTATION_INDEXER_URL ?? 'http://annotation-indexer:3000',
+);
+if (
+  !['http:', 'https:'].includes(indexerUrl.protocol) ||
+  indexerUrl.username ||
+  indexerUrl.password ||
+  indexerUrl.search ||
+  indexerUrl.hash ||
+  indexerUrl.pathname !== '/'
+) {
+  throw new Error('ANNOTATION_INDEXER_URL must be an HTTP origin');
+}
 const clientScopes = [
   'atproto',
   'repo?collection=com.marginsbible.annotation&collection=com.marginsbible.highlight&collection=com.marginsbible.profile&collection=com.marginsbible.follow&action=create&action=update&action=delete',
@@ -276,6 +289,24 @@ const queryTargets = new Map([
   ['com.marginsbible.profile.list', 'com.marginsbible.profile'],
 ]);
 
+// Install hooks before enabling collection backfill.
+for (const collection of [
+  'com.marginsbible.annotation',
+  'com.marginsbible.follow',
+]) {
+  await post('/admin/scripts', {
+    id: `record.index:${collection}`,
+    script_type: 'lua',
+    body: (
+      await readFile(join(scriptsDirectory, 'index-record.lua'), 'utf8')
+    ).replaceAll(
+      '__ANNOTATION_INDEXER_URL__',
+      JSON.stringify(indexerUrl.origin),
+    ),
+    description: 'Maintains the private Margins annotation index.',
+  });
+}
+
 for (const { lexicon } of [...recordLexicons, ...queryLexicons]) {
   const isRecord = lexicon.defs?.main?.type === 'record';
   await post('/admin/lexicons', {
@@ -319,7 +350,12 @@ for (const script of scripts) {
   await post('/admin/scripts', {
     id: script.id,
     script_type: 'lua',
-    body: await readFile(join(scriptsDirectory, script.file), 'utf8'),
+    body: (
+      await readFile(join(scriptsDirectory, script.file), 'utf8')
+    ).replaceAll(
+      '__ANNOTATION_INDEXER_URL__',
+      JSON.stringify(indexerUrl.origin),
+    ),
     description: script.description,
   });
 }
@@ -327,5 +363,5 @@ for (const script of scripts) {
 await configureApiClient();
 
 console.info(
-  `Provisioned ${lexicons.length} lexicons and ${scripts.length} Lua scripts in HappyView.`,
+  `Provisioned ${lexicons.length} lexicons, ${scripts.length} query scripts, and annotation/follow record hooks in HappyView.`,
 );

@@ -1,0 +1,19 @@
+{
+  "name": "@marginsbible/atproto",
+  "type": "module",
+  "exports": {
+    "./lexicons": {
+      "types": "./dist/lexicons/index.d.ts",
+      "import": "./dist/lexicons/index.js"
+    }
+  },
+  "scripts": {
+    "lexicons": "lex build --lexicons ./lexicons --out ./src/lexicons --clear",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@atproto/common-web": "catalog:",
+    "@atproto/lex": "catalog:",
+    "@atproto/syntax": "catalog:"
+  }
+}

@@ -19,3 +19,4 @@ todos.json
 *.db-shm
 *.db-wal
 .vitest-attachments
+dist-indexer/

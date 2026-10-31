@@ -1,0 +1,21 @@
+{
+  "name": "@marginsbible/indexer",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "start": "dotenv run node ./src/main.ts",
+    "rebuild-indexes": "dotenv run node ./src/rebuild-main.ts"
+  },
+  "dependencies": {
+    "@marginsbible/bible": "workspace:*",
+    "@marginsbible/atproto": "workspace:*",
+    "@atproto/syntax": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "dotenv": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

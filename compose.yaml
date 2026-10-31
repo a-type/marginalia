@@ -9,6 +9,19 @@ x-app-image: &app-image
       VITE_HAPPYVIEW_CLIENT_KEY: ${VITE_HAPPYVIEW_CLIENT_KEY:-}
 
 services:
+  annotation-indexer:
+    image: margins-annotation-indexer
+    build:
+      context: .
+      dockerfile: Indexer.Dockerfile
+    environment:
+      HOST: '::'
+      PORT: 3000
+      INDEXER_DATABASE_PATH: /data/annotations.sqlite
+    volumes:
+      - annotation-indexer-data:/data
+    restart: unless-stopped
+
   app:
     <<: *app-image
     environment:
@@ -17,7 +30,7 @@ services:
       NODE_ENV: production
       PORT: 3000
     expose:
-      - "3000"
+      - '3000'
     restart: unless-stopped
 
   happyview:
@@ -32,10 +45,12 @@ services:
       SESSION_SECRET: ${HAPPYVIEW_SESSION_SECRET:?Set HAPPYVIEW_SESSION_SECRET in .env}
       TOKEN_ENCRYPTION_KEY: ${HAPPYVIEW_TOKEN_ENCRYPTION_KEY:?Set HAPPYVIEW_TOKEN_ENCRYPTION_KEY in .env}
     ports:
-      - "127.0.0.1:3001:3000"
+      - '127.0.0.1:3001:3000'
     volumes:
       - happyview-data:/data
     restart: unless-stopped
+    depends_on:
+      - annotation-indexer
 
   caddy:
     image: caddy:2-alpine
@@ -45,9 +60,9 @@ services:
       HAPPYVIEW_BASE_PATH: /api
       HAPPYVIEW_PRIVATE_DOMAIN: happyview
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
@@ -65,12 +80,32 @@ services:
       - node
       - scripts/provision-happyview.mjs
     environment:
+      APP_URL: ${APP_URL:-http://127.0.0.1:7654}
       HAPPYVIEW_ADMIN_KEY: ${HAPPYVIEW_ADMIN_KEY:-}
       HAPPYVIEW_BASE_URL: http://happyview:3000/api
+      ANNOTATION_INDEXER_URL: http://annotation-indexer:3000
+      VITE_HAPPYVIEW_CLIENT_KEY: ${VITE_HAPPYVIEW_CLIENT_KEY:-}
     depends_on:
       - happyview
 
+  annotation-indexer-rebuild:
+    image: margins-annotation-indexer
+    build:
+      context: .
+      dockerfile: Indexer.Dockerfile
+    profiles:
+      - setup
+    command: ['node', 'dist-indexer/rebuild.js']
+    environment:
+      HAPPYVIEW_ADMIN_KEY: ${HAPPYVIEW_ADMIN_KEY:-}
+      HAPPYVIEW_BASE_URL: http://happyview:3000/api
+      ANNOTATION_INDEXER_URL: http://annotation-indexer:3000
+    depends_on:
+      - happyview
+      - annotation-indexer
+
 volumes:
+  annotation-indexer-data:
   happyview-data:
   caddy-data:
   caddy-config:
