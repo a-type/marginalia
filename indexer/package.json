@@ -2,9 +2,10 @@
   "name": "@marginsbible/indexer",
   "type": "module",
   "scripts": {
-    "build": "vite build",
     "start": "dotenv run node ./src/main.ts",
-    "rebuild-indexes": "dotenv run node ./src/rebuild-main.ts"
+    "dev": "pnpm start",
+    "rebuild-indexes": "dotenv run node ./src/rebuild-main.ts",
+    "test": "vitest"
   },
   "dependencies": {
     "@marginsbible/bible": "workspace:*",
