@@ -205,8 +205,14 @@ planning subsequent changes.
 
 ### Private annotation indexer
 
-The `annotation-indexer` service uses Node.js 24's built-in SQLite driver and
-has no runtime npm dependencies. It has no public domain, published container
+The `annotation-indexer` service uses Node.js 24's built-in SQLite driver.
+Its image contains the indexer's TypeScript source (run with Node's native
+type stripping), built shared ATProto/Bible packages, and only their production
+npm dependencies. `pnpm deploy --prod --legacy` creates a self-contained
+dependency tree without requiring changes to the workspace's dependency-linking
+configuration. Package file allowlists exclude tests, local data, and secrets;
+frontend and development dependencies remain in the build stage.
+It has no public domain, published container
 port, or Caddy route. Its unauthenticated HTTP API is for trusted private
 services only; do not expose it through public ingress.
 
@@ -243,14 +249,14 @@ addition to the permissions used by provisioning. In Compose:
 docker compose --profile setup run --rm --build annotation-indexer-rebuild
 ```
 
-In Railway, run the bundled command **inside the private network**, for
+In Railway, run the command **inside the private network**, for
 example from an SSH shell in the indexer service:
 
 ```sh
 HAPPYVIEW_BASE_URL=http://happyview.railway.internal:3000/api \
 HAPPYVIEW_ADMIN_KEY='<admin key with records:read>' \
 ANNOTATION_INDEXER_URL=http://127.0.0.1:3000 \
-node dist-indexer/rebuild.js
+node src/rebuild-main.ts
 ```
 
 For local development without Docker, build the indexer and its shared
@@ -343,9 +349,9 @@ install icons, Apple touch icon, and favicon using `@vite-pwa/assets-generator`.
 - The Bible reader keeps pending annotations and highlights in browser storage
   for offline use; HappyView is the authoritative remote record index.
 - `indexer/` owns the private, rebuildable SQLite projection used by the
-  chapter annotation query. Its build bundles the service and reconciliation
-  command into `indexer/dist-indexer/`; `Indexer.Dockerfile` packages them
-  without the frontend or npm dependencies.
+  chapter annotation query. `Indexer.Dockerfile` builds its shared workspace
+  dependencies and deploys its source plus an isolated production dependency
+  tree, without the frontend or development tools.
 
 ## Checks
 

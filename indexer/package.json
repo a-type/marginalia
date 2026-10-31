@@ -1,6 +1,10 @@
 {
   "name": "@marginsbible/indexer",
   "type": "module",
+  "files": [
+    "src/**/*.ts",
+    "!src/**/*.test.ts"
+  ],
   "scripts": {
     "start": "dotenv run node ./src/main.ts",
     "dev": "pnpm start",

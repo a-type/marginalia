@@ -1,6 +1,9 @@
 {
   "name": "@marginsbible/atproto",
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "exports": {
     "./lexicons": {
       "types": "./dist/lexicons/index.d.ts",

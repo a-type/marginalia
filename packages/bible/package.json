@@ -1,6 +1,10 @@
 {
   "name": "@marginsbible/bible",
   "type": "module",
+  "files": [
+    "dist",
+    "!dist/**/*.test.*"
+  ],
   "exports": {
     "./verse": {
       "types": "./dist/verse.d.ts",

@@ -95,7 +95,7 @@ services:
       dockerfile: Indexer.Dockerfile
     profiles:
       - setup
-    command: ['node', 'dist-indexer/rebuild.js']
+    command: ['node', 'src/rebuild-main.ts']
     environment:
       HAPPYVIEW_ADMIN_KEY: ${HAPPYVIEW_ADMIN_KEY:-}
       HAPPYVIEW_BASE_URL: http://happyview:3000/api

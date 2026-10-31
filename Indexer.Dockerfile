@@ -6,14 +6,14 @@ COPY app/package.json ./app/package.json
 COPY indexer/package.json ./indexer/package.json
 COPY packages/atproto/package.json ./packages/atproto/package.json
 COPY packages/bible/package.json ./packages/bible/package.json
-RUN HUSKY=0 pnpm install --frozen-lockfile
+RUN HUSKY=0 pnpm --filter @marginsbible/indexer... install --frozen-lockfile
 COPY . .
 RUN pnpm --filter @marginsbible/indexer... --recursive build
+RUN pnpm --filter @marginsbible/indexer deploy --prod --legacy /out/indexer
 
 FROM node:24-bookworm-slim
 WORKDIR /app
-COPY --from=build /app/indexer/src ./src
-COPY indexer/package.json ./package.json
+COPY --from=build /out/indexer ./
 ENV NODE_ENV=production
 ENV HOST=::
 ENV PORT=3000
