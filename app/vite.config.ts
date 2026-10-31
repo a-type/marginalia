@@ -170,11 +170,6 @@ const config = defineConfig(({ mode }) => {
           ],
         },
         workbox: {
-          globPatterns: [
-            'index.html',
-            'registerSW.js',
-            'assets/**/*.{js,css,woff,woff2}',
-          ],
           navigateFallback: '/index.html',
           navigateFallbackDenylist: [/^\/(?:api|xrpc|lectserve)(?:\/|$)/],
         },
