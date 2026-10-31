@@ -1,10 +1,11 @@
-import { Box } from '@a-type/ui';
+import { Box, useThemedTitleBar } from '@a-type/ui';
 
 import { UserMenu } from '../auth/UserMenu';
 import { AppNavigation } from './AppNavigation';
 import cls from './AppShell.module.css';
 
 export function AppShell({ children }: { children?: React.ReactNode }) {
+  useThemedTitleBar('--m-gray-wash');
   return (
     <div className={cls.root}>
       <header className={cls.header}>

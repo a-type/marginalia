@@ -35,7 +35,7 @@ function RootRoute() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Provider manifestPath={false}>
+      <Provider>
         <AnnotationSyncCoordinator />
         <Outlet />
         <TanStackDevtools
