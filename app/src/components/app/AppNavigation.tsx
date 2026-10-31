@@ -108,6 +108,7 @@ export function AppNavigation() {
             tooltip={`${tab.bookId} ${tab.chapter}`}
             onClick={() => visitReadingTab(tab.id)}
             onClose={() => closeReadingTabHandler(tab.id)}
+            className={cls.tab}
           >
             {tab.bookId} {tab.chapter}
           </NavTab>

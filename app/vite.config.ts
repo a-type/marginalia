@@ -126,7 +126,7 @@ const config = defineConfig(({ mode }) => {
       babel({ presets: [reactCompilerPreset()] }),
       VitePWA({
         outDir: 'dist',
-        injectRegister: 'script',
+        injectRegister: 'auto',
         includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
         manifest: {
           id: '/',
