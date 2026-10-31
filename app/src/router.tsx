@@ -26,9 +26,26 @@ export function getRouter() {
 
   router.subscribe('onBeforeNavigate', (event) => {
     // only update on path changes
-    if (updateState.updateAvailable && event.pathChanged) {
+    if (
+      updateState.updateAvailable &&
+      event.pathChanged &&
+      !event.toLocation.state.noUpdate
+    ) {
       logger.info('Update ready to install, intercepting navigation...');
       updateApp();
+      // fallback - if update stalls, retry navigation with bypass
+      setTimeout(() => {
+        logger.warn('Update stalled, retrying navigation with bypass...');
+        try {
+          router.history.replace(event.toLocation.pathname, {
+            ...event.toLocation,
+            state: { ...event.toLocation.state, noUpdate: true },
+          });
+        } catch (error) {
+          logger.fatal('Failed to retry navigation with bypass:', error);
+          window.location.reload();
+        }
+      }, 5000);
       return false;
     }
   });
@@ -46,5 +63,6 @@ declare module '@tanstack/react-router' {
   interface HistoryState {
     activeReadingTabId?: string;
     skipHomeRestore?: boolean;
+    noUpdate?: boolean;
   }
 }
