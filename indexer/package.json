@@ -9,6 +9,7 @@
     "start": "dotenv run node ./src/main.ts",
     "dev": "pnpm start",
     "rebuild-indexes": "dotenv run node ./src/rebuild-main.ts",
+    "stats": "node ./src/stats-main.ts",
     "test": "vitest"
   },
   "dependencies": {

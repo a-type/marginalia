@@ -293,6 +293,23 @@ There is no distributed transaction between the services: ingestion can
 temporarily lead or lag HappyView storage. A rebuild reconciles against
 HappyView's stored records.
 
+#### Index stats
+
+To summarize what the indexer holds (readiness, rebuild state, annotation,
+author, book/chapter, and follow counts, plus top books, chapters, authors, and
+followed users), run this from an SSH shell in the indexer service. It opens the
+database read-only, so it is safe while the indexer is running:
+
+```sh
+node src/stats-main.ts          # human-readable
+node src/stats-main.ts --json   # machine-readable
+```
+
+It reads `INDEXER_DATABASE_PATH` (default `/data/annotations.sqlite`). In
+Compose, use `docker compose exec annotation-indexer node src/stats-main.ts`.
+Locally, use `INDEXER_DATABASE_PATH=/path/to/index.sqlite pnpm --filter
+@marginsbible/indexer stats`.
+
 The index stores full annotation documents plus exact chapter memberships
 and follow edges. Its author/creation-time index prepares for a future
 followed-user feed, but no feed API is implemented here.
