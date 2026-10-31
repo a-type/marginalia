@@ -156,6 +156,18 @@ const config = defineConfig(({ mode }) => {
               purpose: 'maskable',
             },
           ],
+          screenshots: [
+            {
+              src: '/screenshots/desktop.png',
+              sizes: '2407x1516',
+              form_factor: 'wide',
+            },
+            {
+              src: '/screenshots/mobile.png',
+              sizes: '610x1377',
+              form_factor: 'narrow',
+            },
+          ],
         },
         workbox: {
           globPatterns: [
