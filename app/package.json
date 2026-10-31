@@ -15,8 +15,6 @@
     "test:browser": "vitest run --project browser"
   },
   "dependencies": {
-    "@marginsbible/atproto": "workspace:*",
-    "@marginsbible/bible": "workspace:*",
     "@a-type/ui": "catalog:",
     "@arbor-css/core": "catalog:",
     "@arbor-css/postcss": "catalog:",
@@ -25,6 +23,8 @@
     "@atproto/syntax": "catalog:",
     "@happyview/lex-agent": "catalog:",
     "@happyview/oauth-client-browser": "catalog:",
+    "@marginsbible/atproto": "workspace:*",
+    "@marginsbible/bible": "workspace:*",
     "@tanstack/react-db": "catalog:",
     "@tanstack/react-devtools": "catalog:",
     "@tanstack/react-pacer": "catalog:",
@@ -39,6 +39,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "sirv-cli": "catalog:",
+    "valtio": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

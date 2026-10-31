@@ -35,8 +35,8 @@ export function Lectionary() {
             )
           }
         >
-          <Select.Trigger aria-label={m.lectionary_tradition()}>
-            <span>{tradition.name}</span>
+          <Select.Trigger size="small" aria-label={m.lectionary_tradition()}>
+            <span>{removeParenthetical(tradition.name)}</span>
             <Select.Icon />
           </Select.Trigger>
           <Select.Content>
@@ -48,9 +48,6 @@ export function Lectionary() {
           </Select.Content>
         </Select>
         <LectionaryDatePicker value={date} onChange={setDate} />
-        <Button emphasis="ghost" onClick={() => setDate(new Date())}>
-          {m.lectionary_today()}
-        </Button>
       </Box>
       {readings.isPending ? (
         <P role="status">{m.lectionary_loading()}</P>

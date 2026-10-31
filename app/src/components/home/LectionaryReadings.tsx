@@ -1,6 +1,6 @@
 import { m } from '#/paraglide/messages';
 import { getLocale } from '#/paraglide/runtime';
-import { Box, Button, Heading, Icon, P, Text, TextLink } from '@a-type/ui';
+import { Box, Button, Chip, Heading, Icon, P, Text } from '@a-type/ui';
 import { Link } from '@tanstack/react-router';
 import { parseScriptureCitation } from '../../lib/bible/location';
 import { getMostRecentlyVisitedReadingTab } from '../../lib/bible/reading-tabs';
@@ -20,14 +20,14 @@ export function LectionaryReadings({ day }: { day: LectionaryDay }) {
     <Box col gap="lg" aria-live="polite">
       {day.sections.map((section) => (
         <Box render={<section />} col gap key={section.kind}>
-          <Heading render={<h2 />}>
+          <Heading emphasis="ambient" render={<h2 />}>
             {section.kind === 'daily'
               ? m.lectionary_daily_section()
               : section.kind === 'red_letter'
                 ? m.lectionary_feast_section()
                 : m.lectionary_sunday_section()}
           </Heading>
-          <Text emphasis="secondary">
+          <Text emphasis="ambient">
             <time dateTime={section.date}>
               {new Date(`${section.date}T12:00:00`).toLocaleDateString(
                 getLocale(),
@@ -55,15 +55,15 @@ function SectionReadings({ section }: { section: LectionarySection }) {
   return (
     <Box col gap="lg">
       {offices.map((office) => (
-        <Box col gap key={office}>
+        <Box col key={office}>
           {office && office !== 'sunday' && (
-            <Heading render={<h3 />} emphasis="secondary">
+            <Text bold render={<h3 />} emphasis="ambient">
               {office === 'morning'
                 ? m.lectionary_morning()
                 : office === 'evening'
                   ? m.lectionary_evening()
                   : office}
-            </Heading>
+            </Text>
           )}
           <ReadingGroup
             readings={section.readings.filter(
@@ -83,8 +83,8 @@ function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
     return target ? [target] : [];
   });
   return (
-    <>
-      <Box col gap render={<ul />}>
+    <Box col gap>
+      <Box col gap render={<ul style={{ margin: 0 }} />}>
         {readings.map((reading, index) => (
           <Box
             render={<li />}
@@ -101,6 +101,7 @@ function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
       </Box>
       <Button
         emphasis="light"
+        size="small"
         disabled={!targets.length}
         onClick={() => {
           const translation =
@@ -119,7 +120,7 @@ function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
       >
         {m.lectionary_open_all_tabs()}
       </Button>
-    </>
+    </Box>
   );
 }
 
@@ -137,7 +138,8 @@ function ReadingLink({ reading }: { reading: LectionaryReading }) {
     );
   }
   return (
-    <TextLink
+    <Chip
+      className="justify-between"
       render={
         <Link
           to="/$translation/$book/$chapter"
@@ -175,6 +177,6 @@ function ReadingLink({ reading }: { reading: LectionaryReading }) {
     >
       {reading.citation}
       <Icon name="arrowRight" className={cls.linkIcon} />
-    </TextLink>
+    </Chip>
   );
 }

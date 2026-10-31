@@ -1,3 +1,15 @@
 .trigger {
   aspect-ratio: auto;
+  position: relative;
+}
+
+.updateIndicator {
+  width: --fn-literal(8px);
+  height: --fn-literal(8px);
+  @apply --mx-borderColor(var(--m-gray-ink));
+  border-radius: 50%;
+  background-color: var(--m-tint);
+  position: absolute;
+  top: --fn-literal(-2px);
+  right: --fn-literal(-2px);
 }

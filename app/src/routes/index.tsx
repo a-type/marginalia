@@ -1,5 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
+import { InstallHint } from '#/components/app/InstallHint';
+import { m } from '#/paraglide/messages';
 import { AppShell } from '../components/app/AppShell';
 import { Introduction } from '../components/home/Introduction';
 import { Lectionary } from '../components/home/Lectionary';
@@ -41,6 +43,9 @@ export const Route = createFileRoute('/')({
 function HomePage() {
   const visitedBefore = getVisitedBefore();
   return (
-    <AppShell>{!visitedBefore ? <Introduction /> : <Lectionary />}</AppShell>
+    <AppShell>
+      <InstallHint content={m.install_hint()} />
+      {!visitedBefore ? <Introduction /> : <Lectionary />}
+    </AppShell>
   );
 }

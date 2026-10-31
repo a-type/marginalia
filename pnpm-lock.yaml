@@ -290,6 +290,9 @@ catalogs:
     typescript:
       specifier: ^6.0.2
       version: 6.0.3
+    valtio:
+      specifier: ^2.3.2
+      version: 2.3.2
     vite:
       specifier: ^8.2.2
       version: 8.2.2
@@ -413,6 +416,9 @@ importers:
       sirv-cli:
         specifier: 'catalog:'
         version: 3.0.1
+      valtio:
+        specifier: 'catalog:'
+        version: 2.3.2(@types/react@19.2.18)(react@19.2.8)
       zod:
         specifier: 'catalog:'
         version: 4.5.4

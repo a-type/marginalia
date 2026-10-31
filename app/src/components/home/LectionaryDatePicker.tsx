@@ -17,7 +17,7 @@ export function LectionaryDatePicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <Popover.Trigger
-        render={<Button />}
+        render={<Button size="small" />}
         aria-label={`${m.lectionary_date()}: ${label}`}
       >
         {label}

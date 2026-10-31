@@ -51,6 +51,9 @@ catalog:
   'vite': '^8.2.2'
   'vite-plugin-pwa': '^2.0.0'
   'vitest': '^4.1.11'
+  valtio: ^2.3.2
+
+catalogMode: prefer
 
 allowBuilds:
   better-sqlite3: true
