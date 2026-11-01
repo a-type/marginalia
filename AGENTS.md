@@ -17,7 +17,7 @@ Before editing files for a substantial task:
 
 ## Product
 
-Margins is a Bible reader with decentralized social commentary. It renders Bible text from USFM and uses ATProto accounts and records so people can organize verse annotations into named commentaries. An annotation contains a Markdown comment; a highlight contains one verse and a color. The source schemas are in [lexicons/](lexicons/).
+Margins is a Bible reader with decentralized social commentary. It renders Bible text from USFM and uses ATProto accounts and records so people can organize verse annotations into named commentaries. An annotation contains a Markdown comment; a highlight contains one verse and a color. The source schemas are in [lexicons](packages/atproto/lexicons).
 
 The app is in very early development. Backwards compatibility is not important unless a task explicitly requires it, including for application APIs, persisted SQLite data and schema, and published ATProto lexicons. Prefer the cleanest current design over compatibility layers; breaking migrations and lexicon changes are acceptable.
 
@@ -32,39 +32,33 @@ The app is in very early development. Backwards compatibility is not important u
 - `pnpm lexicons` regenerates TypeScript from the ATProto lexicons.
 - There is no test script yet. For code changes, run the narrowest relevant check, then `pnpm check`, `pnpm lint`, and `pnpm build` as appropriate.
 
-See [README.md](README.md) for deployment and TAP operation notes. Prefer [package.json](package.json), [vite.config.ts](vite.config.ts), and [.env.example](.env.example) when README scaffold examples disagree with current configuration.
+See [README.md](README.md) for deployment and TAP operation notes. Prefer [package.json](package.json), [vite.config.ts](app/vite.config.ts), and [.env.example](.env.example) when README scaffold examples disagree with current configuration.
 
 ## Architecture
 
 - React 19 and TanStack Router provide file-based client routing and TanStack Query. Vite and the React Compiler build the static SPA.
-- Route definitions live in [src/routes/](src/routes/). Keep route components thin and move reusable UI to [src/components/](src/components/) and server/domain behavior to [src/lib/](src/lib/).
-- [src/components/usfm/](src/components/usfm/) owns USFM parsing and pluggable React rendering. Verse identifiers and parsing belong in [src/lib/bible/verse.ts](src/lib/bible/verse.ts).
-- SQLite is accessed through Kysely in [src/db.ts](src/db.ts). Schema changes belong in [src/db.migrations.ts](src/db.migrations.ts); reusable data operations belong in [src/lib/db/queries.ts](src/lib/db/queries.ts).
-- UI messages live in [messages/](messages/). Paraglide generates the runtime in `src/paraglide/` during development/build.
+- Route definitions live in [src/routes/](app/src/routes/). Keep route components thin and move reusable UI to [src/components/](app/src/components/) and server/domain behavior to [src/lib/](app/src/lib/).
+- [src/components/usfm/](app/src/components/usfm/) owns USFM parsing and pluggable React rendering. Verse identifiers and parsing belong in [src/lib/bible/verse.ts](packages/bible/src/verse.ts).
+- UI messages live in [messages/](app/messages/). Paraglide generates the runtime in `src/paraglide/` during development/build.
 - Use the `#/*` alias for imports from `src/`. TypeScript is strict and rejects unused locals and parameters.
 - Throw structured `AppError` values from application boundaries; this app runs as a client-only SPA and does not provide TanStack Start server middleware.
 - When referencing a verse, use the defined [`VerseId`](src/lib/bible/verse.ts) as a primary ID format whenever relevant.
+- ATProto, user identity and sessions, and XRPC are handled via the HappyView packaged all-in-one BFF. It uses configured lexicons and the procedure scripts in [/happyview](happyview).
+- Additional annotation query lookups are assisted by a sidecar indexer service, see [indexer](indexer/).
 
 ## ATProto Model And Flow
 
-- Treat [lexicons/](lexicons/) as the source of truth for `com.marginsbible.commentary`, `com.marginsbible.annotation`, and `com.marginsbible.highlight`. Commentary records name collections; annotations reference one or more verses and contain a comment; highlights reference one verse and contain a color.
+- Treat [lexicons/](packages/atproto/lexicons/) as the source of truth for `com.marginsbible.commentary`, `com.marginsbible.annotation`, and `com.marginsbible.highlight`. Commentary records name collections; annotations reference one or more verses and contain a comment; highlights reference one verse and contain a color.
 - Never hand-edit `src/lexicons/`; run `pnpm lexicons`. Import generated builders, parsers, validators, and NSIDs instead of duplicating protocol shapes or collection strings.
-- [src/lib/atproto/server.ts](src/lib/atproto/server.ts) owns `NodeOAuthClient` configuration and Kysely-backed OAuth state/session stores. [src/routes/oauth/callback.tsx](src/routes/oauth/callback.tsx) completes OAuth, resolves the repository handle, upserts the account, and creates the app cookie session.
-- `APP_URL` must be the exact public origin used for OAuth. Local OAuth requires `127.0.0.1`, not `localhost`; for the current Vite config use `http://127.0.0.1:7654`. `SESSION_PASSWORD` must be at least 32 characters. Do not expose either session data or secrets to client modules.
-- TAP delivers repository events to `POST /api/tap/webhook`. Keep transport authorization and event unwrapping in [src/lib/tap/server.ts](src/lib/tap/server.ts), and keep database queries in [src/lib/db/queries.ts](src/lib/db/queries.ts) independent of TAP event types.
-- Validate incoming records with generated `$parse` functions and validate verse IDs before persistence. Preserve protocol field casing such as `authorDid`, `commentaryId`, and `createdAt` in lexicon-backed database models.
-- SQLite commentary and annotation tables are a queryable local projection of ATProto records. Preserve AT URIs, CIDs, author DIDs, record keys, raw record JSON, and idempotent upsert/delete behavior. Annotation and verse rows must be updated transactionally.
-- `TAP_ADMIN_PASSWORD` is optional; when configured, the webhook must continue to verify TAP Basic authentication.
+- Happyview owns OAuth state/session stores. [app/src/routes/oauth/callback.tsx](app/src/routes/oauth/callback.tsx) completes OAuth by delegating to Happyview.
 
 ## Generated And Source Data
 
 Do not manually edit these generated outputs:
 
-- `src/routeTree.gen.ts`: regenerate with `pnpm generate-routes`.
-- `src/lexicons/`: regenerate with `pnpm lexicons`.
-- `src/paraglide/`: regenerate through `pnpm dev` or `pnpm build` after editing [messages/](messages/) or [project.inlang/settings.json](project.inlang/settings.json).
-
-Bible source files under `src/data/usfm-source/` are imported as raw text. Avoid reformatting or bulk-editing this corpus as part of unrelated changes.
+- `app/src/routeTree.gen.ts`: regenerate with `pnpm generate-routes`.
+- `packages/atproto/src/lexicons/`: regenerate with `pnpm lexicons`.
+- `app/src/paraglide/`: regenerate through `pnpm dev` or `pnpm build` after editing [app/messages/](app/messages/) or [app/project.inlang/settings.json](app/project.inlang/settings.json).
 
 ## React Development
 
