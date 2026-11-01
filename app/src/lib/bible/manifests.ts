@@ -4,23 +4,6 @@ import type { BookId } from './verse';
 
 export const defaultTranslationId = 'eng_webu';
 
-const webMetadata: TranslationMetadata = {
-  language: 'eng',
-  languageName: 'English',
-  direction: 'ltr',
-  attribution: 'Public domain',
-  attributionUrl: 'https://worldenglish.bible/',
-  licenses: [
-    {
-      name: 'Public domain',
-      url: 'https://worldenglish.bible/',
-      attributionRequired: false,
-      shareAlike: false,
-      noDerivatives: false,
-    },
-  ],
-};
-
 export interface BuiltInTranslation {
   id: string;
   title: string;
