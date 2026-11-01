@@ -77,6 +77,51 @@ describe('USFM paragraph semantics', () => {
     ]);
   });
 
+  it('continues the last inline verse into a quoted paragraph', () => {
+    const document = parseUSFM(String.raw`\c 7
+\p \v 41 Verse 41. \v 42 Verse 42 ends with a colon:
+\b
+\q1 Quoted text continues verse 42.
+\q2 The quotation continues.
+\q1 \v 43 Verse 43 begins.
+\q2 This line continues verse 43.`);
+
+    expect(document.children).toMatchObject([
+      {
+        marker: 'c',
+        children: [
+          {
+            marker: 'p',
+            children: [
+              {
+                marker: 'v',
+                argument: '41',
+                children: [
+                  { type: 'text', value: 'Verse 41. ' },
+                  {
+                    marker: 'v',
+                    argument: '42',
+                    children: [
+                      { type: 'text', value: 'Verse 42 ends with a colon:' },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          { marker: 'b' },
+          { marker: 'q1', continuationVerseArgument: '42' },
+          { marker: 'q2', continuationVerseArgument: '42' },
+          {
+            marker: 'q1',
+            children: [{ marker: 'v', argument: '43' }],
+          },
+          { marker: 'q2', continuationVerseArgument: '43' },
+        ],
+      },
+    ]);
+  });
+
   it('treats the Genesis creation narrative as paragraphs, not list entries', () => {
     const document = parseUSFM(String.raw`\c 1
 \s2 The First Day

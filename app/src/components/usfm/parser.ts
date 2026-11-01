@@ -423,6 +423,17 @@ function isContainerCategory(category: USFMNodeCategory): boolean {
   );
 }
 
+function findLastVerseArgument(nodes: USFMNode[]): string | undefined {
+  for (let index = nodes.length - 1; index >= 0; index--) {
+    const child = nodes[index];
+    if (child.type !== 'marker') continue;
+
+    const nestedArgument = findLastVerseArgument(child.children);
+    if (nestedArgument !== undefined) return nestedArgument;
+    if (child.category === 'verse') return child.argument;
+  }
+}
+
 function joinInlineLines(usfm: string): string[] {
   const lines: string[] = [];
 
@@ -512,10 +523,7 @@ export function parseUSFM(usfm: string): USFMDocument {
     const children = parseInline(value).nodes;
     const continuesVerse = isContainerCategory(category);
     const inlineVerseArgument = continuesVerse
-      ? children.find(
-          (child): child is USFMMarkerNode =>
-            child.type === 'marker' && child.category === 'verse',
-        )?.argument
+      ? findLastVerseArgument(children)
       : undefined;
     const node = createMarker(marker, children, {
       continuationVerseArgument:
