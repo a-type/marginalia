@@ -20,3 +20,4 @@ todos.json
 *.db-wal
 .vitest-attachments
 dist-indexer/
+__screenshots__/

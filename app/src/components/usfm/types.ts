@@ -30,6 +30,7 @@ export interface USFMMarkerNode {
   marker: string;
   category: USFMNodeCategory;
   argument?: string;
+  /** Associates only the content before the first verse child with a prior verse. */
   continuationVerseArgument?: string;
   attributes: Record<string, string>;
   children: USFMNode[];

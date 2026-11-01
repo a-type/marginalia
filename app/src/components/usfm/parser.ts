@@ -423,6 +423,52 @@ function isContainerCategory(category: USFMNodeCategory): boolean {
   );
 }
 
+// Verse boundaries can occur inside character marks. Split those marks rather
+// than nesting selectable verses, while preserving their formatting on both sides.
+function separateVerses(nodes: USFMNode[]): USFMNode[] {
+  const result: USFMNode[] = [];
+  let verse: USFMMarkerNode | undefined;
+  const append = (node: USFMNode) => {
+    (verse?.children ?? result).push(node);
+  };
+
+  for (const node of nodes) {
+    if (node.type === 'text' || node.category === 'note') {
+      append(node);
+      continue;
+    }
+
+    const children = separateVerses(node.children);
+    const firstVerse = children.findIndex(
+      (child) => child.type === 'marker' && child.category === 'verse',
+    );
+    const prefix = firstVerse === -1 ? children : children.slice(0, firstVerse);
+    if (node.category === 'verse') {
+      verse = { ...node, children: prefix };
+      result.push(verse);
+    } else if (firstVerse === -1 || prefix.length) {
+      append({ ...node, children: prefix });
+    }
+
+    if (firstVerse === -1) continue;
+    for (const child of children.slice(firstVerse)) {
+      if (child.type !== 'marker' || child.category !== 'verse') {
+        throw new Error('Expected separated verse node');
+      }
+      verse = {
+        ...child,
+        children:
+          node.category === 'verse'
+            ? child.children
+            : [{ ...node, children: child.children }],
+      };
+      result.push(verse);
+    }
+  }
+
+  return result;
+}
+
 function findLastVerseArgument(nodes: USFMNode[]): string | undefined {
   for (let index = nodes.length - 1; index >= 0; index--) {
     const child = nodes[index];
@@ -510,24 +556,26 @@ export function parseUSFM(usfm: string): USFMDocument {
       const verse = createMarker(marker, parseInline(content).nodes, {
         argument,
       });
-      if (container && isContainerCategory(container.category)) {
+      if (container && container.children.length === 0) {
         container.continuationVerseArgument = undefined;
       }
+      const verses = separateVerses([verse]);
       (container?.children ?? chapter?.children ?? document.children).push(
-        verse,
+        ...verses,
       );
-      activeVerseArgument = argument;
+      activeVerseArgument = findLastVerseArgument(verses);
       continue;
     }
 
-    const children = parseInline(value).nodes;
+    const children = separateVerses(parseInline(value).nodes);
     const continuesVerse = isContainerCategory(category);
     const inlineVerseArgument = continuesVerse
       ? findLastVerseArgument(children)
       : undefined;
     const node = createMarker(marker, children, {
       continuationVerseArgument:
-        continuesVerse && inlineVerseArgument === undefined
+        continuesVerse &&
+        !(children[0]?.type === 'marker' && children[0].category === 'verse')
           ? activeVerseArgument
           : undefined,
     });

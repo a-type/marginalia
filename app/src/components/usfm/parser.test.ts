@@ -3,6 +3,104 @@ import { describe, expect, it } from 'vitest';
 import { parseUSFM } from './parser';
 
 describe('USFM paragraph semantics', () => {
+  it('separates verse boundaries inside nested character marks', () => {
+    const document = parseUSFM(
+      String.raw`\p \v 1 Before \wj quoted \+it first \v 2 second\+it* ending\wj* after \v 3 Last.`,
+    );
+
+    expect(document.children).toMatchObject([
+      {
+        marker: 'p',
+        children: [
+          {
+            marker: 'v',
+            argument: '1',
+            children: [
+              { type: 'text', value: 'Before ' },
+              {
+                marker: 'wj',
+                children: [
+                  { type: 'text', value: 'quoted ' },
+                  { marker: 'it', children: [{ value: 'first ' }] },
+                ],
+              },
+            ],
+          },
+          {
+            marker: 'v',
+            argument: '2',
+            children: [
+              {
+                marker: 'wj',
+                children: [
+                  { marker: 'it', children: [{ value: 'second' }] },
+                  { value: ' ending' },
+                ],
+              },
+              { value: ' after ' },
+            ],
+          },
+          { marker: 'v', argument: '3', children: [{ value: 'Last.' }] },
+        ],
+      },
+    ]);
+  });
+
+  it.each(['p', 'q1', 'li1', 'tc1'])(
+    'retains a continuation prefix before a new verse in %s',
+    (marker) => {
+      const document = parseUSFM(
+        String.raw`\c 1
+\p \v 1 First.
+${'\\'}${marker} Continued. \v 2 Second. \v 3 Third.
+\q2 Third continues.`,
+      );
+      expect(document.children).toMatchObject([
+        {
+          marker: 'c',
+          children: [
+            { marker: 'p' },
+            {
+              marker,
+              continuationVerseArgument: '1',
+              children: [
+                { value: 'Continued. ' },
+                { marker: 'v', argument: '2' },
+                { marker: 'v', argument: '3' },
+              ],
+            },
+            { marker: 'q2', continuationVerseArgument: '3' },
+          ],
+        },
+      ]);
+    },
+  );
+
+  it('retains continuation text before a verse on a separate physical line', () => {
+    const document = parseUSFM(String.raw`\c 1
+\p \v 1 First.
+\p Continued.
+\v 2 Second. \v 3 Third.
+\q1 Third continues.`);
+    expect(document.children).toMatchObject([
+      {
+        children: [
+          { marker: 'p' },
+          {
+            marker: 'p',
+            continuationVerseArgument: '1',
+            children: [
+              { value: 'Continued.' },
+              { marker: 'v', argument: '2' },
+              { marker: 'v', argument: '3' },
+            ],
+          },
+          { marker: 'q1', continuationVerseArgument: '3' },
+        ],
+      },
+    ]);
+  });
+
   it('keeps list headers and footers separate from list entries', () => {
     const document = parseUSFM(String.raw`\lh Introduction
 \li1 First item
@@ -96,15 +194,13 @@ describe('USFM paragraph semantics', () => {
               {
                 marker: 'v',
                 argument: '41',
+                children: [{ type: 'text', value: 'Verse 41. ' }],
+              },
+              {
+                marker: 'v',
+                argument: '42',
                 children: [
-                  { type: 'text', value: 'Verse 41. ' },
-                  {
-                    marker: 'v',
-                    argument: '42',
-                    children: [
-                      { type: 'text', value: 'Verse 42 ends with a colon:' },
-                    ],
-                  },
+                  { type: 'text', value: 'Verse 42 ends with a colon:' },
                 ],
               },
             ],
@@ -138,7 +234,10 @@ describe('USFM paragraph semantics', () => {
           {
             marker: 'lf',
             category: 'paragraph',
-            children: [{ marker: 'v', argument: '3' }],
+            children: [
+              { marker: 'v', argument: '3' },
+              { marker: 'v', argument: '4' },
+            ],
           },
           { marker: 'lf', category: 'paragraph' },
           { marker: 's2', category: 'heading' },
@@ -235,12 +334,12 @@ describe('USFM physical line wrapping', () => {
                 ],
               },
               { type: 'text', value: ' ' },
-              {
-                marker: 'v',
-                argument: '20',
-                children: [{ marker: 'wj', closed: true }],
-              },
             ],
+          },
+          {
+            marker: 'v',
+            argument: '20',
+            children: [{ marker: 'wj', closed: true }],
           },
         ],
       },

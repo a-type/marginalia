@@ -1,4 +1,5 @@
 import { Divider, Popover, Heading as UIHeading } from '@a-type/ui';
+import { Children } from 'react';
 import { useIsAnnotationPaneActive } from '../annotations/annotationPaneStore';
 import { ChapterNumberProvider } from './contexts';
 import { Reference } from './Reference';
@@ -94,17 +95,25 @@ function VerseContinuation({
 }: Pick<USFMNodeComponentProps, 'node' | 'marker' | 'children'>) {
   if (!node.continuationVerseArgument) return children;
 
+  const firstVerse = node.children.findIndex(
+    (child) => child.type === 'marker' && child.category === 'verse',
+  );
+  const parts = Children.toArray(children);
+
   return (
-    <Verse
-      node={node}
-      marker={marker}
-      category={node.category}
-      argument={node.continuationVerseArgument}
-      attributes={node.attributes}
-      isContinuation
-    >
-      {children}
-    </Verse>
+    <>
+      <Verse
+        node={node}
+        marker={marker}
+        category={node.category}
+        argument={node.continuationVerseArgument}
+        attributes={node.attributes}
+        isContinuation
+      >
+        {firstVerse === -1 ? children : parts.slice(0, firstVerse)}
+      </Verse>
+      {firstVerse !== -1 && parts.slice(firstVerse)}
+    </>
   );
 }
 

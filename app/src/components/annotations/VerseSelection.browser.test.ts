@@ -15,6 +15,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { normalizeVerseSelection } from '../../lib/bible/selection';
 import type { VerseId } from '../../lib/bible/verse';
 import { InterlinearVerse } from '../bible/interlinear/InterlinearVerse';
+import { BookIdProvider } from '../usfm/contexts';
+import { USFMRenderer } from '../usfm/USFMRenderer';
 import {
   annotationPaneActions,
   annotationPaneStore,
@@ -41,7 +43,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-async function renderSelection(selection: string) {
+async function renderSelection(selection: string, source?: string) {
   const dbClient = new DbClient();
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -56,15 +58,25 @@ async function renderSelection(selection: string) {
     loader: () => ({
       location: { bookId: 'JHN', chapter: 3 },
       source:
+        source ??
         '\\id JHN\n\\c 3\n\\p\n\\v 1 One\n\\v 2 Two\n\\v 3 Three\n\\c 4\n\\p\n\\v 1 Four\n\\v 2 Five',
     }),
     component: () =>
       createElement(
         VerseSelectionProvider,
         null,
-        createElement(VerseButton, { id: 'JHN/3:1' }),
-        createElement(VerseButton, { id: 'JHN/3:2' }),
-        createElement(VerseButton, { id: 'JHN/3:3' }),
+        source
+          ? createElement(BookIdProvider, {
+              bookId: 'JHN',
+              children: createElement(USFMRenderer, { usfm: source }),
+            })
+          : createElement(
+              'div',
+              null,
+              createElement(VerseButton, { id: 'JHN/3:1' }),
+              createElement(VerseButton, { id: 'JHN/3:2' }),
+              createElement(VerseButton, { id: 'JHN/3:3' }),
+            ),
         createElement(AnnotationToolbar),
       ),
   });
@@ -106,6 +118,106 @@ async function renderSelection(selection: string) {
 }
 
 describe('URL verse range selection', () => {
+  describe('rendered USFM verse boundaries', () => {
+    const sources = [
+      String.raw`\c 3
+\p \v 1 First \wj quoted first.\wj* \v 2 \wj Second.\wj* \v 3 Third.`,
+      String.raw`\c 3
+\p \v 1 First \wj quoted \+it first. \v 2 Second.\+it* ending\wj* \v 3 Third.`,
+      String.raw`\c 3
+\p \v 1 First \qt-s |who="speaker"\*quotation\qt-e\* \w word|lemma="word"\w*.
+\q1 Continued first.
+\q2 \wj More first.\wj*
+\b
+\p Still first. \v 2 Second. \v 3 Third.
+\q2 Continued third.`,
+      ...['p', 'q1', 'li1', 'tc1'].map(
+        (marker) => String.raw`\c 3
+\p \v 1 First.
+${'\\'}${marker} Continued first. \v 2 Second. \v 3 Third.
+\q2 Continued third.`,
+      ),
+      String.raw`\c 3
+\p \v 1 First.
+\p Continued first.
+\v 2 Second. \v 3 Third.
+\q2 Continued third.`,
+    ];
+
+    it.each(sources.map((source, index) => ({ source, index })))(
+      'selects only the clicked verse in fixture $index',
+      async ({ source }) => {
+        const view = await renderSelection('', source);
+        try {
+          expect(
+            view.container.querySelector('[data-verse-id] [data-verse-id]'),
+          ).toBeNull();
+          for (const number of [1, 2, 3]) {
+            const id = `JHN/3:${number}`;
+            const fragments = view.container.querySelectorAll<HTMLElement>(
+              `[data-verse-id="${id}"]`,
+            );
+            expect(fragments.length).toBeGreaterThan(0);
+            for (const fragment of fragments) {
+              (
+                fragment.querySelector<HTMLElement>('.usfm-character') ??
+                fragment
+              ).click();
+              await expect
+                .poll(() => view.router.state.location.search.verses)
+                .toBe(String(number));
+              await expect
+                .poll(() =>
+                  [...view.container.querySelectorAll('[data-selected]')].map(
+                    (selected) => selected.getAttribute('data-verse-id'),
+                  ),
+                )
+                .toEqual(Array.from(fragments, () => id));
+              expect(
+                [...view.container.querySelectorAll('[data-selected]')]
+                  .map((selected) => selected.textContent)
+                  .join(' '),
+              ).not.toContain(
+                number === 1 ? 'Second.' : number === 2 ? 'Third.' : 'First.',
+              );
+              fragment.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+              );
+              await expect
+                .poll(() => view.router.state.location.search.verses)
+                .toBe('');
+              await expect
+                .poll(
+                  () =>
+                    view.container.querySelectorAll('[data-selected]').length,
+                )
+                .toBe(0);
+            }
+          }
+          view.container
+            .querySelector<HTMLElement>('[data-verse-id="JHN/3:1"]')!
+            .click();
+          await expect
+            .poll(() => view.router.state.location.search.verses)
+            .toBe('1');
+          await expect
+            .poll(() =>
+              view.container
+                .querySelector('[data-verse-id="JHN/3:1"]')
+                ?.getAttribute('data-selected'),
+            )
+            .toBe('true');
+          view.container
+            .querySelector<HTMLButtonElement>('[aria-label="Add annotation"]')!
+            .click();
+          expect(annotationPaneStore.state.draftVerses).toEqual(['JHN/3:1']);
+        } finally {
+          await view.cleanup();
+        }
+      },
+    );
+  });
+
   it('opens the interlinear for selected verses and switches word order', async () => {
     const fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
