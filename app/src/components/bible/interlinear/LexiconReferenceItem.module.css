@@ -1,0 +1,35 @@
+.popup {
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: min(70dvh, 36rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.trigger {
+  display: inline-flex;
+  vertical-align: middle;
+  min-height: 0;
+  padding: 0;
+  font: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+.passage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-sp-sm);
+  margin-block: var(--m-sp-sm);
+  padding: var(--m-sp-md);
+  border-radius: var(--m-rd-sm);
+  background: var(--m-gray-wash);
+}
+
+.passage p {
+  margin: 0;
+}
+
+.translation {
+  color: var(--m-gray);
+  font-size: var(--m-fs-sm);
+}

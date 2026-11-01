@@ -1,0 +1,67 @@
+.trigger {
+  min-height: 0;
+  padding: 0 var(--m-sp-xs);
+  font-size: inherit;
+  color: var(--m-gray);
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+.dialog {
+  max-height: min(85dvh, 60rem);
+  overscroll-behavior: contain;
+}
+
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--m-sp-sm);
+}
+
+.status p {
+  margin: 0;
+}
+
+.senses {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-sp-lg);
+}
+
+.sense {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-sp-sm);
+}
+
+.senseHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--m-sp-sm);
+}
+
+.lemma {
+  font-size: var(--m-fs-lg);
+  font-weight: var(--m-fw-bold);
+  color: var(--m-gray-heavy);
+}
+
+.meta {
+  color: var(--m-gray);
+  font-size: var(--m-fs-sm);
+}
+
+.gloss {
+  margin: 0;
+  font-weight: var(--m-fw-bold);
+}
+
+.attribution {
+  margin: 0;
+  padding-top: var(--m-sp-sm);
+  border-top: 1px solid var(--m-gray-light);
+  color: var(--m-gray);
+  font-size: var(--m-fs-sm);
+}

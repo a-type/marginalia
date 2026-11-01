@@ -11,8 +11,14 @@ import { createElement } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { page, userEvent } from 'vitest/browser';
 
 import { normalizeVerseSelection } from '../../lib/bible/selection';
+import type * as BibleSource from '../../lib/bible/source';
+import {
+  fetchTranslationManifest,
+  fetchTranslationSource,
+} from '../../lib/bible/source';
 import type { VerseId } from '../../lib/bible/verse';
 import { InterlinearVerse } from '../bible/interlinear/InterlinearVerse';
 import { BookIdProvider } from '../usfm/contexts';
@@ -27,6 +33,12 @@ import {
 } from './annotationPaneStore';
 import { AnnotationToolbar } from './AnnotationToolbar';
 import { VerseSelectionProvider } from './VerseSelection';
+
+vi.mock('../../lib/bible/source', async (importOriginal) => ({
+  ...(await importOriginal<typeof BibleSource>()),
+  fetchTranslationManifest: vi.fn(),
+  fetchTranslationSource: vi.fn(),
+}));
 
 function VerseButton({ id }: { id: VerseId }) {
   const selected = useIsSelectedVerse(id);
@@ -301,6 +313,267 @@ ${'\\'}${marker} Continued first. \v 2 Second. \v 3 Third.
       await view.cleanup();
     }
   });
+
+  it('looks up a Strong number in the lexicon', async () => {
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            entry: {
+              id: 'G3056',
+              senses: [
+                {
+                  id: 'G3056',
+                  lemma: 'λόγος',
+                  transliteration: 'logos',
+                  partOfSpeech: 'N-M',
+                  gloss: 'word',
+                  definition: 'λόγος, -ου, ὁ\n\n__1. a word, saying',
+                },
+              ],
+            },
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        ),
+    );
+    vi.stubGlobal('fetch', fetch);
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    flushSync(() =>
+      root.render(
+        createElement(
+          QueryClientProvider,
+          {
+            client: new QueryClient({
+              defaultOptions: { queries: { retry: false } },
+            }),
+          },
+          createElement(InterlinearVerse, {
+            verseId: 'JHN/1:1',
+            englishOrder: false,
+            verse: {
+              verse: 1,
+              words: [
+                {
+                  pos: 1,
+                  bsbPos: 1,
+                  language: 'greek',
+                  text: 'λόγος',
+                  transliteration: 'logos',
+                  strongs: 'G3056',
+                  gloss: 'Word',
+                },
+              ],
+            },
+          }),
+        ),
+      ),
+    );
+    try {
+      expect(fetch).not.toHaveBeenCalled();
+      container
+        .querySelector<HTMLButtonElement>(
+          '[aria-label="Look up G3056 in the lexicon"]',
+        )!
+        .click();
+
+      await expect
+        .poll(() => document.body.textContent)
+        .toContain('a word, saying');
+      expect(fetch).toHaveBeenCalledWith(
+        'https://bible.helloao.org/api/d/stepbible-lexicon/lexicon/G3056.json',
+        expect.any(Object),
+      );
+      const lemma = [...document.body.querySelectorAll('[lang="el"]')].find(
+        (element) => element.closest('[role="dialog"]'),
+      );
+      expect(lemma?.textContent).toBe('λόγος');
+      expect(document.body.textContent).toContain('N-M');
+      expect(
+        document.body.querySelector(
+          'a[href="https://creativecommons.org/licenses/by/4.0/"]',
+        ),
+      ).not.toBeNull();
+    } finally {
+      root.unmount();
+      container.remove();
+    }
+  });
+
+  it.each([400, 1000])(
+    'opens a nested lexicon dialog with usage popovers without shifting text or navigating at %ipx',
+    async (width) => {
+      await page.viewport(width, 800);
+      vi.mocked(fetchTranslationManifest).mockResolvedValue({
+        id: 'eng_webu',
+        title: 'World English Bible',
+        books: [{ id: 'JHN', title: 'John', chapters: 21, source: 'JHN.usfm' }],
+        metadata: {
+          language: 'eng',
+          languageName: 'English',
+          direction: 'ltr',
+          licenses: [],
+          attribution: 'Public domain',
+        },
+      });
+      vi.mocked(fetchTranslationSource).mockResolvedValue(
+        '\\id JHN\n\\c 1\n\\p\n\\v 1 In the beginning was the Word.\n\\v 2 He was with God in the beginning.\n\\v 3 All things were made through him.',
+      );
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (input: RequestInfo | URL) => {
+          const lexicon = String(input).includes('stepbible-lexicon');
+          return Response.json(
+            lexicon
+              ? {
+                  entry: {
+                    id: 'G3056',
+                    senses: [
+                      {
+                        id: 'G3056',
+                        lemma: 'λόγος',
+                        gloss: 'word',
+                        definition: '__Word: Jhn.1:1-2, 3; also cited.',
+                      },
+                    ],
+                  },
+                }
+              : {
+                  chapter: {
+                    number: 3,
+                    content: [
+                      {
+                        verse: 2,
+                        words: [
+                          {
+                            pos: 1,
+                            bsbPos: 1,
+                            language: 'greek',
+                            text: 'λόγος',
+                            transliteration: 'logos',
+                            strongs: 'G3056',
+                            gloss: 'Word',
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                },
+          );
+        }),
+      );
+      const view = await renderSelection('3:2');
+      try {
+        await expect
+          .poll(() =>
+            document.body.querySelector('[aria-label="Original text"]'),
+          )
+          .not.toBeNull();
+        document.body
+          .querySelector<HTMLButtonElement>('[aria-label="Original text"]')!
+          .click();
+        await expect
+          .poll(() =>
+            document.body.querySelector(
+              '[aria-label="Look up G3056 in the lexicon"]',
+            ),
+          )
+          .not.toBeNull();
+        const trigger = document.body.querySelector<HTMLButtonElement>(
+          '[aria-label="Look up G3056 in the lexicon"]',
+        )!;
+        trigger.click();
+        await expect
+          .poll(() => document.body.querySelectorAll('[role="dialog"]').length)
+          .toBe(2);
+        await expect
+          .poll(() => document.body.textContent)
+          .toContain('John 1:1-2');
+        const range = [
+          ...document.body.querySelectorAll<HTMLButtonElement>('button'),
+        ].find((button) => button.textContent === 'John 1:1-2')!;
+        const paragraph = range.closest('p')!;
+        expect(
+          [...paragraph.querySelectorAll('button')].map(
+            (item) => item.textContent,
+          ),
+        ).toEqual(['John 1:1-2', 'John 1:3']);
+        expect(paragraph.textContent).toBe(
+          'Word: John 1:1-2, John 1:3; also cited.',
+        );
+        expect(paragraph.querySelector('ul, li, p')).toBeNull();
+        expect(fetchTranslationSource).not.toHaveBeenCalled();
+        const second =
+          paragraph.querySelectorAll<HTMLButtonElement>('button')[1];
+        const secondTop = second.getBoundingClientRect().top;
+        expect(secondTop).toBeCloseTo(range.getBoundingClientRect().top, 0);
+        expect(second.getBoundingClientRect().left).toBeGreaterThan(
+          range.getBoundingClientRect().right,
+        );
+        await userEvent.click(range);
+        await expect
+          .poll(() => document.body.textContent)
+          .toContain('In the beginning was the Word.');
+        expect(document.body.textContent).toContain(
+          'He was with God in the beginning.',
+        );
+        expect(document.body.textContent).not.toContain(
+          'All things were made through him.',
+        );
+        expect(paragraph.textContent).not.toContain(
+          'In the beginning was the Word.',
+        );
+        expect(second.getBoundingClientRect().top).toBeCloseTo(secondTop, 0);
+        expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(
+          3,
+        );
+        expect(fetchTranslationManifest).toHaveBeenCalledWith('eng_webu');
+        expect(range.getAttribute('aria-expanded')).toBe('true');
+        await userEvent.click(range);
+        await expect
+          .poll(() => range.getAttribute('aria-expanded'))
+          .toBe('false');
+        await userEvent.click(range);
+        await expect
+          .poll(() => document.body.textContent)
+          .toContain('In the beginning was the Word.');
+        await userEvent.keyboard('{Escape}');
+        await expect
+          .poll(() => range.getAttribute('aria-expanded'))
+          .toBe('false');
+        await expect
+          .poll(() => document.body.querySelectorAll('[role="dialog"]').length)
+          .toBe(2);
+        await userEvent.click(second);
+        await expect
+          .poll(() => document.body.textContent)
+          .toContain('All things were made through him.');
+        expect(fetchTranslationSource).toHaveBeenCalledTimes(1);
+        expect(view.router.state.location.pathname).toBe('/eng_webu/JHN/3');
+        await userEvent.keyboard('{Escape}');
+        await expect
+          .poll(() => document.body.querySelectorAll('[role="dialog"]').length)
+          .toBe(2);
+        await userEvent.keyboard('{Escape}');
+        await expect
+          .poll(() => document.body.querySelectorAll('[role="dialog"]').length)
+          .toBe(1);
+        expect(document.body.textContent).toContain(
+          'Original-language interlinear',
+        );
+        trigger.click();
+        await expect
+          .poll(() => document.body.querySelectorAll('[role="dialog"]').length)
+          .toBe(2);
+      } finally {
+        await view.cleanup();
+        await page.viewport(1280, 720);
+        vi.mocked(fetchTranslationManifest).mockReset();
+        vi.mocked(fetchTranslationSource).mockReset();
+      }
+    },
+  );
 
   describe('interlinear word rendering', () => {
     it('sets language and direction for Hebrew/Aramaic and Greek words', () => {

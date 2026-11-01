@@ -1,6 +1,12 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { queryOptions } from '@tanstack/react-query';
 import { fetchBibleCatalog } from '../lib/bible/fetch-bible';
+import { extractVerses } from '../lib/bible/search';
+import {
+  fetchTranslationManifest,
+  fetchTranslationSource,
+  getTranslationBook,
+} from '../lib/bible/source';
 import {
   searchTranslation,
   startTranslationService,
@@ -24,6 +30,30 @@ export const translationsQueryOptions = queryOptions({
   staleTime: 0,
 });
 
+export const translationBookVersesQueryOptions = (
+  translationId: string,
+  bookId: string,
+) =>
+  queryOptions({
+    queryKey: ['translation-book-verses', translationId, bookId],
+    queryFn: async () => {
+      const manifest = await fetchTranslationManifest(translationId);
+      const book = getTranslationBook(manifest, bookId);
+      if (!book) return { available: false as const };
+      const source = await fetchTranslationSource(translationId, book);
+      return {
+        available: true as const,
+        title: manifest.title,
+        language: manifest.metadata?.language,
+        verses: extractVerses(source, bookId),
+      };
+    },
+    networkMode: 'offlineFirst',
+    staleTime: 60 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    retry: 1,
+  });
+
 export const bibleSearchQueryOptions = (
   translationId: string,
   query: string,
@@ -46,6 +76,7 @@ export function initializeTranslations(client: QueryClient) {
   subscribeTranslations(() => {
     void client.invalidateQueries({ queryKey: ['translations'] });
     void client.invalidateQueries({ queryKey: ['bible-search'] });
+    void client.invalidateQueries({ queryKey: ['translation-book-verses'] });
   });
   window.addEventListener('focus', () => {
     void client.invalidateQueries({ queryKey: ['translations'] });

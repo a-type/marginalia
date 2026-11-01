@@ -6,6 +6,7 @@ import type {
 } from '../../../lib/bible/interlinear';
 import type { VerseId } from '../../../lib/bible/verse';
 import cls from './InterlinearContent.module.css';
+import { LexiconDialog } from './LexiconDialog';
 
 const languageAttributes = {
   hebrew: { lang: 'he', dir: 'rtl' as const },
@@ -61,7 +62,9 @@ function InterlinearWordView({ word }: { word: InterlinearWord }) {
         {word.transliteration}
       </Text>
       <Text className={cls.strongs} dir="ltr" emphasis="ambient" dim>
-        {word.strongs ?? (
+        {word.strongs ? (
+          <LexiconDialog strongsId={word.strongs} />
+        ) : (
           <span role="img" aria-label={m.interlinear_strongs_missing()}>
             <span aria-hidden="true">—</span>
           </span>

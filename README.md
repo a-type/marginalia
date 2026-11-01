@@ -167,6 +167,25 @@ installation. Chapters that have not been cached require a network connection;
 unavailable verses or chapters are reported rather than inferred from the
 reading translation.
 
+### Strong's lexicon lookup
+
+Each Strong's number in the interlinear opens a nested lexicon dialog. It loads
+`https://bible.helloao.org/api/d/stepbible-lexicon/lexicon/{ID}.json`, with the
+ID zero-padded to four digits (for example `H0853`), and shows every sense:
+lemma, transliteration, part of speech, gloss, and definition. The data is the
+Translators Brief lexicons of Extended Strong's (TBESH/TBESG) by
+[STEPBible.org / Tyndale House, Cambridge](https://github.com/STEPBible/STEPBible-Data),
+licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) and
+adapted by the AO Bible API. That attribution is shown in every dialog.
+Recognized usage citations remain in the definition's paragraph flow as inline
+buttons, preserving surrounding spacing and punctuation. Open a reference to
+read the cited verse or range in a popover in the current reading
+translation, without navigating away or shifting the definition text. Passages load only when opened and
+reuse locally stored translation data where available. Unrecognized citation
+syntax remains visible as source text rather than being guessed.
+Entries are cached by the service worker (`lexicon-stepbible-v1`, up to 2000
+entries for one year).
+
 ## Production deployment
 
 Set `APP_URL` to the app's exact public HTTPS origin and `APP_DOMAIN` to its

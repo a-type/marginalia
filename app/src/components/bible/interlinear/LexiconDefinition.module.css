@@ -1,0 +1,17 @@
+.definition {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-sp-sm);
+  font-size: var(--m-fs-sm);
+  overflow-wrap: anywhere;
+  line-height: var(--m-lh-loose);
+}
+
+.paragraph {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.indented {
+  padding-inline-start: var(--m-sp-md);
+}

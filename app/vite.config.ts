@@ -189,6 +189,22 @@ const config = defineConfig(({ mode }) => {
                 },
               },
             },
+            {
+              urlPattern:
+                /^https:\/\/bible\.helloao\.org\/api\/d\/stepbible-lexicon\/lexicon\//,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'lexicon-stepbible-v1',
+                cacheableResponse: {
+                  statuses: [200],
+                  headers: { 'content-type': 'application/json' },
+                },
+                expiration: {
+                  maxEntries: 2000,
+                  maxAgeSeconds: 365 * 24 * 60 * 60,
+                },
+              },
+            },
           ],
         },
       }),
