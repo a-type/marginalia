@@ -10,6 +10,8 @@ export interface NavTabProps {
   onClose?: () => void;
   onClick?: () => void;
   location: string;
+  locationSearch?: { verses?: string };
+  locationHash?: string;
   locationState?: {
     activeReadingTabId?: string;
     skipHomeRestore?: boolean;
@@ -27,6 +29,8 @@ export function NavTab({
   className,
   tooltip,
   locationState,
+  locationSearch,
+  locationHash,
   ...rest
 }: NavTabProps) {
   const ref = useRef<any>(null);
@@ -50,7 +54,14 @@ export function NavTab({
           nativeButton={false}
           ref={ref}
           render={
-            <Link to={location} viewTransition state={locationState}>
+            <Link
+              to={location}
+              viewTransition
+              state={locationState}
+              search={locationSearch}
+              hash={locationHash}
+              hashScrollIntoView={{ block: 'center', behavior: 'instant' }}
+            >
               {children}
             </Link>
           }
@@ -73,7 +84,16 @@ export function NavTab({
           emphasis="ghost"
           onClick={onClick}
           nativeButton={false}
-          render={<Link to={location} viewTransition state={locationState} />}
+          render={
+            <Link
+              to={location}
+              viewTransition
+              state={locationState}
+              search={locationSearch}
+              hash={locationHash}
+              hashScrollIntoView={{ block: 'center', behavior: 'instant' }}
+            />
+          }
         >
           {children}
         </Button>

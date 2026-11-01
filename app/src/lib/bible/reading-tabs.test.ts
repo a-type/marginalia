@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  createReadingTab,
   getMostRecentlyVisitedReadingTab,
+  getReadingTabDestination,
   parseReadingTabsState,
   readReadingTabsState,
   storeReadingTabLocation,
+  visitReadingTab,
 } from './reading-tabs';
 
 const storageData = new Map<string, string>();
@@ -143,5 +146,72 @@ describe('reading tabs', () => {
     expect(readReadingTabsState().tabs[0].verses).toBe('3:8-4:2');
     storeReadingTabLocation('range', { bookId: 'JHN', chapter: 4 }, 'eng_webu');
     expect(readReadingTabsState().tabs[0].verses).toBeUndefined();
+  });
+
+  it.each(['2-3,5', '3:8-4:2', 'start-end'])(
+    'captures and restores the supplied selection %s without changing it on visits',
+    (verses) => {
+      const tab = createReadingTab('eng_webu', {
+        bookId: 'JHN',
+        chapter: 3,
+        verses,
+      });
+      const other = createReadingTab('eng_webu', { bookId: 'GEN', chapter: 1 });
+      visitReadingTab(other.id);
+      visitReadingTab(tab.id);
+      storeReadingTabLocation(tab.id, tab, tab.translationId, verses);
+      const restored = readReadingTabsState().tabs[0];
+      expect(restored.verses).toBe(verses);
+      expect(getReadingTabDestination(restored)).toMatchObject({
+        params: { translation: 'eng_webu', book: 'JHN', chapter: '3' },
+        state: { activeReadingTabId: tab.id },
+        search: { verses },
+        hash:
+          verses === 'start-end'
+            ? ''
+            : verses === '3:8-4:2'
+              ? 'verse-JHN/3:8'
+              : 'verse-JHN/3:2',
+      });
+    },
+  );
+
+  it.each([undefined, '2', '4-5'])(
+    'discards the saved range when selection changes to %s and never saves later selections',
+    (verses) => {
+      const tab = createReadingTab('eng_webu', {
+        bookId: 'JHN',
+        chapter: 3,
+        verses: '2-3',
+      });
+      const other = createReadingTab('eng_webu', {
+        bookId: 'JHN',
+        chapter: 3,
+        verses: '5-6',
+      });
+      storeReadingTabLocation(tab.id, tab, tab.translationId, verses);
+      expect(
+        getReadingTabDestination(readReadingTabsState().tabs[0]).search,
+      ).toEqual({});
+      storeReadingTabLocation(tab.id, tab, tab.translationId, '2-3');
+      expect(readReadingTabsState().tabs[0].verses).toBeUndefined();
+      expect(readReadingTabsState().tabs[1].verses).toBe(other.verses);
+    },
+  );
+
+  it('does not save a selection made in a tab opened without one', () => {
+    const tab = createReadingTab('eng_webu', { bookId: 'JHN', chapter: 3 });
+    storeReadingTabLocation(tab.id, tab, tab.translationId, '2-3');
+    expect(readReadingTabsState().tabs[0].verses).toBeUndefined();
+  });
+
+  it('normalizes supplied selections before storing them', () => {
+    const tab = createReadingTab('eng_webu', {
+      bookId: 'JHN',
+      chapter: 3,
+      verses: ' 2 - 3 , invalid ',
+    });
+    expect(tab.verses).toBe('2-3');
+    expect(readReadingTabsState().tabs[0].verses).toBe('2-3');
   });
 });

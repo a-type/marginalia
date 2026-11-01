@@ -12,7 +12,7 @@ export function LectionaryDatePicker({
 }) {
   const [open, setOpen] = useState(false);
   const label = value.toLocaleDateString(getLocale(), {
-    dateStyle: 'long',
+    dateStyle: 'short',
   });
   return (
     <Popover open={open} onOpenChange={setOpen}>

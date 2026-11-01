@@ -57,6 +57,7 @@ export function useReadingTabRouteState(): string | undefined {
       createReadingTab(translationId, {
         bookId,
         chapter: Number(chapterValue),
+        verses: search.verses,
       });
     if (matchingTab) visitReadingTab(matchingTab.id);
 

@@ -2,12 +2,11 @@ import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import {
   createReadingTab,
+  getReadingTabDestination,
   readReadingTabsState,
   subscribeToReadingTabs,
   visitReadingTab,
 } from '../../lib/bible/reading-tabs';
-import { parseVerseSelection } from '../../lib/bible/selection';
-import { formatVerseId } from '../../lib/bible/verse';
 import { setVisitedBefore } from '../../lib/firstTimeUse/visitedBeforeState';
 
 export function useReadingTabsState() {
@@ -22,27 +21,10 @@ export function useReadingTabsState() {
 export function useNavigateToReadingTab() {
   const navigate = useNavigate();
   const readingTabs = useReadingTabsState();
-  return (
-    tab: (typeof readingTabs.tabs)[number],
-    replace = false,
-    verses = tab.verses,
-  ) => {
-    const first = parseVerseSelection(verses).at(0)?.start;
-    const verse = typeof first?.verse === 'number' ? first.verse : undefined;
+  return (tab: (typeof readingTabs.tabs)[number], replace = false) => {
     visitReadingTab(tab.id);
     void navigate({
-      to: '/$translation/$book/$chapter',
-      params: {
-        translation: tab.translationId,
-        book: tab.bookId,
-        chapter: String(tab.chapter),
-      },
-      state: { activeReadingTabId: tab.id },
-      search: verses ? { verses } : {},
-      hash: verse
-        ? `verse-${formatVerseId(tab.bookId, first?.chapter ?? tab.chapter, verse)}`
-        : '',
-      hashScrollIntoView: { block: 'center', behavior: 'instant' },
+      ...getReadingTabDestination(tab),
       replace,
       viewTransition: true,
     });

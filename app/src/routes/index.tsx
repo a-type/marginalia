@@ -7,6 +7,7 @@ import { Introduction } from '../components/home/Introduction';
 import { Lectionary } from '../components/home/Lectionary';
 import {
   getMostRecentlyVisitedReadingTab,
+  getReadingTabDestination,
   visitReadingTab,
 } from '../lib/bible/reading-tabs';
 import { getVisitedBefore } from '../lib/firstTimeUse/visitedBeforeState';
@@ -21,13 +22,7 @@ export const Route = createFileRoute('/')({
     if (tab) {
       visitReadingTab(tab.id);
       throw redirect({
-        to: '/$translation/$book/$chapter',
-        params: {
-          translation: tab.translationId,
-          book: tab.bookId,
-          chapter: String(tab.chapter),
-        },
-        state: { activeReadingTabId: tab.id },
+        ...getReadingTabDestination(tab),
         replace: true,
       });
     }

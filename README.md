@@ -93,7 +93,10 @@ translation. Citations which cannot be resolved remain visible as text.
 Each reading opens a new Bible reading tab with all cited verses selected.
 Discontinuous, optional, cross-chapter, and whole-chapter readings are supported.
 Each group also offers **Open all in tabs**, which opens every resolvable
-reading in that group and activates the last new tab.
+reading in that group and activates the first new tab.
+Tabs restore their initial verse selection when revisited, including after
+reloading the app. Clearing or changing the selection, or navigating to another
+reading location, removes the tab's saved selection; later selections are not saved.
 
 Reader URLs accept a `verses` search parameter containing comma-separated verses
 and ranges, such as `?verses=3-8,12` or `?verses=3:8-4:2`. Endpoints without a

@@ -17,6 +17,7 @@ import { getInitialTranslationBook } from '../../lib/bible/manifests';
 import {
   closeReadingTab,
   getMostRecentlyVisitedReadingTab,
+  getReadingTabDestination,
   visitReadingTab,
 } from '../../lib/bible/reading-tabs';
 import { readStoredTranslationId } from '../../lib/bible/source';
@@ -73,14 +74,6 @@ export function AppNavigation() {
         contentClassName={cls.tabList}
       >
         <NavTab
-          tooltip={m.app_tab_search()}
-          location="/search"
-          active={pathname === '/search'}
-          aria-label={m.app_tab_search()}
-        >
-          <Icon name="search" />
-        </NavTab>
-        <NavTab
           tooltip={m.app_tab_home()}
           location="/"
           locationState={{ skipHomeRestore: true }}
@@ -88,6 +81,14 @@ export function AppNavigation() {
           aria-label={m.app_tab_home()}
         >
           <Icon name="home" />
+        </NavTab>
+        <NavTab
+          tooltip={m.app_tab_search()}
+          location="/search"
+          active={pathname === '/search'}
+          aria-label={m.app_tab_search()}
+        >
+          <Icon name="search" />
         </NavTab>
         <NavTab
           tooltip={m.app_tab_social()}
@@ -98,21 +99,26 @@ export function AppNavigation() {
           <Icon name="globe" />
         </NavTab>
 
-        {readingTabs.tabs.map((tab) => (
-          <NavTab
-            key={tab.id}
-            data-tab-id={tab.id}
-            location={`/${tab.translationId}/${tab.bookId}/${tab.chapter}`}
-            locationState={{ activeReadingTabId: tab.id }}
-            active={activeReadingTabId === tab.id}
-            tooltip={`${tab.bookId} ${tab.chapter}`}
-            onClick={() => visitReadingTab(tab.id)}
-            onClose={() => closeReadingTabHandler(tab.id)}
-            className={cls.tab}
-          >
-            {tab.bookId} {tab.chapter}
-          </NavTab>
-        ))}
+        {readingTabs.tabs.map((tab) => {
+          const destination = getReadingTabDestination(tab);
+          return (
+            <NavTab
+              key={tab.id}
+              data-tab-id={tab.id}
+              location={`/${tab.translationId}/${tab.bookId}/${tab.chapter}`}
+              locationState={{ activeReadingTabId: tab.id }}
+              locationSearch={destination.search}
+              locationHash={destination.hash}
+              active={activeReadingTabId === tab.id}
+              tooltip={`${tab.bookId} ${tab.chapter}`}
+              onClick={() => visitReadingTab(tab.id)}
+              onClose={() => closeReadingTabHandler(tab.id)}
+              className={cls.tab}
+            >
+              {tab.bookId} {tab.chapter}
+            </NavTab>
+          );
+        })}
         <Tooltip content={m.app_tab_add_bible()}>
           <Button
             size="small"

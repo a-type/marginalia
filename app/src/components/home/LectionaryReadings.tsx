@@ -11,7 +11,6 @@ import type {
   LectionaryReading,
   LectionarySection,
 } from '../../lib/lectionary';
-import { lectionaryTraditions } from '../../lib/lectionary';
 import { useAddReadingTab } from '../app/readingTabs';
 import cls from './LectionaryReadings.module.css';
 
@@ -34,9 +33,6 @@ export function LectionaryReadings({ day }: { day: LectionaryDay }) {
                 { dateStyle: 'long' },
               )}
             </time>
-            {' · '}
-            {lectionaryTraditions.find((item) => item.id === section.tradition)
-              ?.name ?? section.tradition}
           </Text>
           <SectionReadings section={section} />
         </Box>
@@ -47,7 +43,11 @@ export function LectionaryReadings({ day }: { day: LectionaryDay }) {
 
 function SectionReadings({ section }: { section: LectionarySection }) {
   if (!section.readings.length) {
-    return <P role="status">{m.lectionary_empty()}</P>;
+    return (
+      <P role="status" emphasis="ambient" dim>
+        {m.lectionary_empty()}
+      </P>
+    );
   }
   const offices = [
     ...new Set(section.readings.map((reading) => reading.office)),
@@ -84,7 +84,7 @@ function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
   });
   return (
     <Box col gap>
-      <Box col gap render={<ul style={{ margin: 0 }} />}>
+      <Box gap wrap items="center" render={<ul style={{ margin: 0 }} />}>
         {readings.map((reading, index) => (
           <Box
             render={<li />}
@@ -93,33 +93,30 @@ function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
             key={`${reading.citation}-${index}`}
           >
             <ReadingLink reading={reading} />
-            {reading.isAlternative && (
-              <Text emphasis="secondary">{m.lectionary_alternative()}</Text>
-            )}
           </Box>
         ))}
-      </Box>
-      <Button
-        emphasis="light"
-        size="small"
-        disabled={!targets.length}
-        onClick={() => {
-          const translation =
-            getMostRecentlyVisitedReadingTab()?.translationId ??
-            readStoredTranslationId();
-          targets.forEach((target, index) => {
-            addReadingTab({
-              translation,
-              book: target.bookId,
-              chapter: target.chapter,
-              verses: target.verses,
-              activate: index === targets.length - 1,
+        <Button
+          emphasis="light"
+          size="small"
+          disabled={!targets.length}
+          onClick={() => {
+            const translation =
+              getMostRecentlyVisitedReadingTab()?.translationId ??
+              readStoredTranslationId();
+            targets.forEach((target, index) => {
+              addReadingTab({
+                translation,
+                book: target.bookId,
+                chapter: target.chapter,
+                verses: target.verses,
+                activate: index === 0,
+              });
             });
-          });
-        }}
-      >
-        {m.lectionary_open_all_tabs()}
-      </Button>
+          }}
+        >
+          {m.lectionary_open_all_tabs()}
+        </Button>
+      </Box>
     </Box>
   );
 }
@@ -176,6 +173,9 @@ function ReadingLink({ reading }: { reading: LectionaryReading }) {
       }
     >
       {reading.citation}
+      {reading.isAlternative && (
+        <Text emphasis="secondary">{m.lectionary_alternative()}</Text>
+      )}
       <Icon name="arrowRight" className={cls.linkIcon} />
     </Chip>
   );

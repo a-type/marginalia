@@ -11,6 +11,7 @@ import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
+import { m } from '#/paraglide/messages';
 import {
   createReadingTab,
   readReadingTabsState,
@@ -296,11 +297,11 @@ describe('homepage lectionary', () => {
         .toBeVisible();
       const sections = view.container.querySelectorAll('section');
       const button = sections[1].querySelector('button');
-      expect(button?.textContent).toBe('Open all in tabs');
+      expect(button?.textContent).toBe(m.lectionary_open_all_tabs());
       button!.click();
       await expect
         .poll(() => view.router.state.location.pathname)
-        .toBe('/eng_msb/PSA/90');
+        .toBe('/eng_msb/MAT/22');
       const tabs = readReadingTabsState().tabs;
       expect(tabs).toHaveLength(4);
       expect(tabs[0]).toEqual(previousTab);
@@ -317,10 +318,10 @@ describe('homepage lectionary', () => {
       ]);
       expect(new Set(tabs.map(({ id }) => id)).size).toBe(4);
       expect(view.router.state.location.state.activeReadingTabId).toBe(
-        tabs[3].id,
+        tabs[1].id,
       );
       expect(view.router.state.location.search).toEqual({
-        verses: '1-6,13-17',
+        verses: '34-46',
       });
       expect(tabs.slice(1).map((tab) => tab.verses)).toEqual([
         '34-46',
@@ -342,14 +343,14 @@ describe('homepage lectionary', () => {
       const buttons =
         view.container.querySelectorAll<HTMLButtonElement>('section button');
       expect([...buttons].map((button) => button.textContent)).toEqual([
-        'Open all in tabs',
-        'Open all in tabs',
-        'Open all in tabs',
+        m.lectionary_open_all_tabs(),
+        m.lectionary_open_all_tabs(),
+        m.lectionary_open_all_tabs(),
       ]);
       buttons[0].click();
       await expect
         .poll(() => view.router.state.location.pathname)
-        .toBe('/eng_webu/JHN/14');
+        .toBe('/eng_webu/ACT/6');
       expect(
         readReadingTabsState().tabs.map(({ bookId, chapter }) => ({
           bookId,
@@ -359,8 +360,8 @@ describe('homepage lectionary', () => {
         { bookId: 'ACT', chapter: 6 },
         { bookId: 'JHN', chapter: 14 },
       ]);
-      expect(view.router.state.location.search).toEqual({ verses: '15-31' });
-      expect(view.router.state.location.hash).toBe('verse-JHN/14:15');
+      expect(view.router.state.location.search).toEqual({ verses: '1-7:16' });
+      expect(view.router.state.location.hash).toBe('verse-ACT/6:1');
     } finally {
       view.cleanup();
     }

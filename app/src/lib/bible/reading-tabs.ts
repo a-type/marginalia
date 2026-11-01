@@ -1,7 +1,8 @@
 import type { BibleLocation } from './location';
 import { parseBibleLocation } from './location';
 import { isTranslationId } from './manifests';
-import { normalizeVerseSelection } from './selection';
+import { normalizeVerseSelection, parseVerseSelection } from './selection';
+import { formatVerseId } from './verse';
 
 export interface ReadingTab extends BibleLocation {
   id: string;
@@ -78,6 +79,28 @@ export function getMostRecentlyVisitedReadingTab(): ReadingTab | undefined {
   );
 }
 
+export function getReadingTabDestination(tab: ReadingTab) {
+  const first = parseVerseSelection(tab.verses).at(0)?.start;
+  return {
+    to: '/$translation/$book/$chapter' as const,
+    params: {
+      translation: tab.translationId,
+      book: tab.bookId,
+      chapter: String(tab.chapter),
+    },
+    state: { activeReadingTabId: tab.id },
+    search: tab.verses ? { verses: tab.verses } : {},
+    hash:
+      typeof first?.verse === 'number'
+        ? `verse-${formatVerseId(tab.bookId, first.chapter ?? tab.chapter, first.verse)}`
+        : '',
+    hashScrollIntoView: {
+      block: 'center' as const,
+      behavior: 'instant' as const,
+    },
+  };
+}
+
 export function createReadingTab(
   translationId: string,
   location: BibleLocation & { verses?: string } = { bookId: 'GEN', chapter: 1 },
@@ -87,6 +110,7 @@ export function createReadingTab(
     id: crypto.randomUUID(),
     translationId,
     ...location,
+    verses: normalizeVerseSelection(location.verses) || undefined,
     createdAt: now,
     visitedAt: now,
   };
@@ -125,11 +149,20 @@ export function storeReadingTabLocation(
   if (!state.tabs.some((tab) => tab.id === activeReadingTabId)) return;
 
   writeReadingTabsState({
-    tabs: state.tabs.map((tab) =>
-      tab.id === activeReadingTabId
-        ? { ...tab, ...location, translationId, verses, visitedAt: Date.now() }
-        : tab,
-    ),
+    tabs: state.tabs.map((tab) => {
+      if (tab.id !== activeReadingTabId) return tab;
+      const keepSelection =
+        tab.bookId === location.bookId &&
+        tab.chapter === location.chapter &&
+        tab.verses === (normalizeVerseSelection(verses) || undefined);
+      return {
+        ...tab,
+        ...location,
+        translationId,
+        verses: keepSelection ? tab.verses : undefined,
+        visitedAt: Date.now(),
+      };
+    }),
   });
 }
 
