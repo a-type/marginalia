@@ -145,6 +145,28 @@ Running the command again overwrites the downloaded files. Downloading
 sources does not register a new translation in the reader's built-in catalog,
 which supplies edition titles that are not included in `extra.json`.
 
+## Original-language interlinear
+
+Selecting verses in the reader toolbar offers **Original text**. The dialog
+loads Berean Standard Bible Interlinear chapter data from the
+[AO Bible API](https://bible.helloao.org/), one chapter at a time. Words show
+the original Hebrew, Aramaic, or Greek text, transliteration, Strong's number,
+and English gloss. Some words have no gloss in the source. The dialog can
+reorder words using their BSB positions to approximate English word order;
+the default is the source-language order. This is not a word-by-word alignment
+to the currently selected reading translation.
+
+The [AO dataset listing](https://bible.helloao.org/docs/) identifies the BSB
+and its interlinear tables as public domain. The data is served by AO Lab and
+adapted to its API format. See the [Berean Bible](https://berean.bible/) and
+[AO Bible API](https://bible.helloao.org/) for source details.
+
+Previously loaded chapters are cached by the service worker for up to one year
+(subject to browser storage eviction). No interlinear corpus is downloaded at
+installation. Chapters that have not been cached require a network connection;
+unavailable verses or chapters are reported rather than inferred from the
+reading translation.
+
 ## Production deployment
 
 Set `APP_URL` to the app's exact public HTTPS origin and `APP_DOMAIN` to its

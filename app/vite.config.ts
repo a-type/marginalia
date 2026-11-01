@@ -172,6 +172,24 @@ const config = defineConfig(({ mode }) => {
         workbox: {
           navigateFallback: '/index.html',
           navigateFallbackDenylist: [/^\/(?:api|xrpc|lectserve)(?:\/|$)/],
+          runtimeCaching: [
+            {
+              urlPattern:
+                /^https:\/\/bible\.helloao\.org\/api\/d\/bsb-interlinear\//,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'interlinear-bsb-v1',
+                cacheableResponse: {
+                  statuses: [200],
+                  headers: { 'content-type': 'application/json' },
+                },
+                expiration: {
+                  maxEntries: 400,
+                  maxAgeSeconds: 365 * 24 * 60 * 60,
+                },
+              },
+            },
+          ],
         },
       }),
     ],

@@ -1,8 +1,10 @@
-import { Button, Icon } from '@a-type/ui';
+import { Button, Icon, Text } from '@a-type/ui';
 import { useDbClient } from '@tanstack/react-db';
 
+import { m } from '#/paraglide/messages';
 import { createHighlight } from '../../lib/highlights/create';
 import { highlightColors } from '../../lib/highlights/types';
+import { InterlinearDialog } from '../bible/interlinear/InterlinearDialog';
 import { annotationPaneActions } from './annotationPaneState';
 import {
   useIsAnnotationPaneActive,
@@ -47,12 +49,17 @@ export function AnnotationToolbar() {
       ))}
       <Button
         size="small"
-        emphasis="ghost"
+        emphasis="light"
         aria-label="Add annotation"
         onClick={() => annotationPaneActions.openEditor(selectedVerses)}
       >
         <Icon name="plus" />
       </Button>
+      <InterlinearDialog aria-label={m.interlinear_open()}>
+        <Button.Icon>
+          <Text bold>α</Text>
+        </Button.Icon>
+      </InterlinearDialog>
     </div>
   );
 }
