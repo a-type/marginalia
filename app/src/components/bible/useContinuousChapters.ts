@@ -49,6 +49,21 @@ export function useContinuousChapters({
     }
   }
   const bookIds = [...new Set(chapters.map((chapter) => chapter.bookId))];
+  const firstChapter = chapters[0];
+  const chaptersBefore =
+    manifest.books
+      .slice(
+        0,
+        manifest.books.findIndex((book) => book.id === firstChapter.bookId),
+      )
+      .reduce((total, book) => total + book.chapters, 0) +
+    firstChapter.chapter -
+    1;
+  const totalChapters = manifest.books.reduce(
+    (total, book) => total + book.chapters,
+    0,
+  );
+  const chaptersAfter = totalChapters - chaptersBefore - chapters.length;
   const queries = useQueries({
     queries: bookIds.map((bookId) => {
       const source = sources.find((entry) => entry.bookId === bookId)?.source;
@@ -65,7 +80,11 @@ export function useContinuousChapters({
     }),
   });
   const contentRef = useRef<HTMLDivElement>(null);
+  const beforeRef = useRef<HTMLDivElement>(null);
+  const afterRef = useRef<HTMLDivElement>(null);
+  const averageHeight = useRef(0);
   const anchor = useRef<{ key: string; top: number } | null>(null);
+  const jump = useRef<number | null>(null);
   const initialized = useRef(false);
   const frame = useRef<number | null>(null);
   const renderKey = chapters
@@ -80,20 +99,48 @@ export function useContinuousChapters({
     const viewport = content?.closest<HTMLElement>(
       '[data-scroll-direction="vertical"]',
     );
-    if (!content || !viewport) return;
+    const before = beforeRef.current;
+    const after = afterRef.current;
+    if (!content || !viewport || !before || !after) return;
     const elements = [
       ...content.querySelectorAll<HTMLElement>('[data-reader-chapter]'),
     ];
+    const updateBuffers = () => {
+      const loaded = elements.filter(
+        (element) => element.dataset.readerChapterLoaded === 'true',
+      );
+      if (loaded.length > 0) {
+        const heights = loaded.map(
+          (element) => element.getBoundingClientRect().height,
+        );
+        const height = heights.reduce((total, value) => total + value, 0);
+        if (height > 0) averageHeight.current = height / heights.length;
+      }
+      const visible = initialized.current
+        ? getMostVisibleChapter(content)
+        : undefined;
+      const top = visible?.getBoundingClientRect().top;
+      before.style.height = `${chaptersBefore * averageHeight.current}px`;
+      after.style.height = `${chaptersAfter * averageHeight.current}px`;
+      if (visible && top !== undefined) {
+        const adjustment = visible.getBoundingClientRect().top - top;
+        if (adjustment !== 0) viewport.scrollTop += adjustment;
+      }
+    };
+    updateBuffers();
     if (!initialized.current) {
       const element = elements.find(
         (entry) =>
           entry.dataset.readerChapter === `${active.bookId}/${active.chapter}`,
       );
       if (element) {
+        const bounds = element.getBoundingClientRect();
         viewport.scrollTop +=
-          element.getBoundingClientRect().top -
+          bounds.top +
+          bounds.height * (jump.current ?? 0) -
           viewport.getBoundingClientRect().top;
         initialized.current = true;
+        jump.current = null;
       }
     } else if (anchor.current) {
       const element = elements.find(
@@ -104,7 +151,10 @@ export function useContinuousChapters({
           element.getBoundingClientRect().top - anchor.current.top;
     }
     anchor.current = null;
+    const observer = new ResizeObserver(updateBuffers);
+    elements.forEach((element) => observer.observe(element));
     return () => {
+      observer.disconnect();
       if (anchor.current) return;
       const visible = getMostVisibleChapter(content);
       if (visible) {
@@ -114,7 +164,7 @@ export function useContinuousChapters({
         };
       }
     };
-  }, [renderKey, sourceKey]);
+  }, [renderKey, sourceKey, chaptersBefore, chaptersAfter]);
 
   useLayoutEffect(
     () => () => {
@@ -143,6 +193,40 @@ export function useContinuousChapters({
             ? current
             : chapter,
         );
+      } else {
+        const content = contentRef.current;
+        const viewport = content?.closest<HTMLElement>(
+          '[data-scroll-direction="vertical"]',
+        );
+        if (!viewport || averageHeight.current <= 0) return;
+        const viewportTop = viewport.getBoundingClientRect().top;
+        const before = beforeRef.current?.getBoundingClientRect();
+        const after = afterRef.current?.getBoundingClientRect();
+        let index: number;
+        let progress: number;
+        if (
+          before &&
+          viewportTop >= before.top &&
+          viewportTop < before.bottom
+        ) {
+          const offset = (viewportTop - before.top) / averageHeight.current;
+          index = Math.floor(offset);
+          progress = offset - index;
+        } else if (
+          after &&
+          viewportTop >= after.top &&
+          viewportTop < after.bottom
+        ) {
+          const offset = (viewportTop - after.top) / averageHeight.current;
+          index = chaptersBefore + chapters.length + Math.floor(offset);
+          progress = offset - Math.floor(offset);
+        } else return;
+        const target = getChapterAtIndex(manifest, index);
+        if (!target) return;
+        anchor.current = null;
+        initialized.current = false;
+        jump.current = progress;
+        setActive(target);
       }
     });
   };
@@ -151,6 +235,8 @@ export function useContinuousChapters({
     active,
     chapters,
     contentRef,
+    beforeRef,
+    afterRef,
     onScroll,
     getVisibleLocation() {
       const visible = getMostVisibleChapter(contentRef.current);
@@ -166,6 +252,7 @@ export function useContinuousChapters({
       if (frame.current !== null) cancelAnimationFrame(frame.current);
       frame.current = null;
       anchor.current = null;
+      jump.current = null;
       if (
         chapter.bookId === active.bookId &&
         chapter.chapter === active.chapter
@@ -195,6 +282,14 @@ export function useContinuousChapters({
       return queries[bookIds.indexOf(bookId)];
     },
   };
+}
+
+function getChapterAtIndex(manifest: TranslationManifest, index: number) {
+  for (const book of manifest.books) {
+    if (index < book.chapters) return { bookId: book.id, chapter: index + 1 };
+    index -= book.chapters;
+  }
+  return undefined;
 }
 
 function getMostVisibleChapter(content: HTMLDivElement | null) {

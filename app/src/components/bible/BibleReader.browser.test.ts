@@ -210,16 +210,16 @@ describe('multi-chapter reader', () => {
           'button[aria-label="Previous chapter"]',
         )!.disabled,
       ).toBe(true);
-      await moveTo('GEN/2', ['GEN/1', 'GEN/2', 'EXO/1']);
-      await moveTo('EXO/1', ['GEN/2', 'EXO/1', 'EXO/2']);
-      await moveTo('EXO/2', ['EXO/1', 'EXO/2']);
+      await moveTo('GEN/2', ['GEN/1', 'GEN/2', 'EXO/1', 'EXO/2']);
+      await moveTo('EXO/1', ['GEN/1', 'GEN/2', 'EXO/1', 'EXO/2']);
+      await moveTo('EXO/2', ['GEN/2', 'EXO/1', 'EXO/2']);
       expect(
         view.container.querySelector<HTMLButtonElement>(
           'button[aria-label="Next chapter"]',
         )!.disabled,
       ).toBe(true);
-      await moveTo('EXO/1', ['GEN/2', 'EXO/1', 'EXO/2']);
-      await moveTo('GEN/2', ['GEN/1', 'GEN/2', 'EXO/1']);
+      await moveTo('EXO/1', ['GEN/1', 'GEN/2', 'EXO/1', 'EXO/2']);
+      await moveTo('GEN/2', ['GEN/1', 'GEN/2', 'EXO/1', 'EXO/2']);
       expect(view.router.history.length).toBe(historyLength);
       expect(view.load.mock.calls.length - loadCount).toBeLessThanOrEqual(5);
       expect(view.router.state.location.search.verses).toBe('GEN/1:1-EXO/2:1');
@@ -228,7 +228,7 @@ describe('multi-chapter reader', () => {
       );
       expect(
         view.container.querySelectorAll('[data-selected="true"]').length,
-      ).toBe(3);
+      ).toBe(4);
     } finally {
       await view.cleanup();
     }
@@ -286,7 +286,7 @@ describe('multi-chapter reader', () => {
             ),
           ].map((element) => element.dataset.readerChapter),
         )
-        .toEqual(['GEN/2', 'EXO/1', 'EXO/2']);
+        .toEqual(['GEN/1', 'GEN/2', 'EXO/1', 'EXO/2']);
       expect(view.router.state.location.search.verses).toBe(selection);
       expect(view.router.state.location.state.readingPosition).toEqual({
         bookId: 'EXO',
@@ -422,7 +422,7 @@ describe('multi-chapter reader', () => {
             '[data-reader-chapter]',
           ),
         ].map((element) => element.dataset.readerChapter),
-      ).toEqual(['GEN/2', 'EXO/1', 'EXO/2']);
+      ).toEqual(['GEN/1', 'GEN/2', 'EXO/1', 'EXO/2']);
       expect(view.router.state.location.search.verses).toBe(selection);
     } finally {
       await view.cleanup();
@@ -470,7 +470,7 @@ describe('multi-chapter reader', () => {
     }
   });
 
-  it('starts with the active chapter and one adjacent chapter', async () => {
+  it('starts with the active chapter and two adjacent chapters', async () => {
     const view = await renderReader('EXO/1:1,GEN/1:1-GEN/2:1');
     try {
       const chapters = [
@@ -478,7 +478,7 @@ describe('multi-chapter reader', () => {
       ];
       expect(
         chapters.map((chapter) => chapter.getAttribute('data-reader-chapter')),
-      ).toEqual(['GEN/1', 'GEN/2']);
+      ).toEqual(['GEN/1', 'GEN/2', 'EXO/1']);
       expect(
         [...view.container.querySelectorAll('[data-reader-chapter] > h2')].map(
           (heading) => heading.textContent,
@@ -486,7 +486,7 @@ describe('multi-chapter reader', () => {
       ).toEqual([]);
       expect(
         view.container.querySelectorAll('[data-selected="true"]').length,
-      ).toBe(2);
+      ).toBe(3);
     } finally {
       await view.cleanup();
     }
@@ -521,10 +521,8 @@ describe('multi-chapter reader', () => {
           viewport.getBoundingClientRect().bottom,
         );
         await expect
-          .poll(() =>
-            view.container.querySelector('[data-reader-chapter="EXO/1"]'),
-          )
-          .not.toBeNull();
+          .poll(() => view.router.history.location.pathname)
+          .toBe('/eng_test/GEN/2');
         view.container
           .querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!
           .click();

@@ -49,6 +49,10 @@
   min-height: 100%;
 }
 
+.chapterBuffer {
+  flex: none;
+}
+
 .chapterDivider {
   border-block-start: var(--m-lw-sm) solid var(--m-gray-mid);
   color: var(--m-gray-ink);

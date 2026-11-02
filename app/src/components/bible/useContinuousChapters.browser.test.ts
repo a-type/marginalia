@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { BibleLocation } from '../../lib/bible/location';
 import type { TranslationManifest } from '../../lib/bible/source';
@@ -65,5 +65,154 @@ describe('continuous chapter buffer', () => {
     expect(renderChapters({ bookId: 'EXO', chapter: 3 })).toBe(
       'EXO/1,EXO/2,EXO/3',
     );
+  });
+});
+
+describe('continuous scroll space', () => {
+  const longManifest: TranslationManifest = {
+    id: 'long-test',
+    title: 'Test',
+    books: [
+      { id: 'GEN', title: 'Genesis', chapters: 8, source: 'gen.usfm' },
+      { id: 'EXO', title: 'Exodus', chapters: 8, source: 'exo.usfm' },
+    ],
+  };
+
+  function renderScrollArea(location: BibleLocation) {
+    const client = new QueryClient();
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+
+    function Reader() {
+      const { active, chapters, contentRef, beforeRef, afterRef, onScroll } =
+        useContinuousChapters({
+          location,
+          manifest: longManifest,
+          sources: longManifest.books.map((book) => ({
+            bookId: book.id,
+            source: 'source',
+          })),
+          translationId: longManifest.id,
+          readingPosition: undefined,
+        });
+      return createElement(
+        'div',
+        {
+          'data-scroll-direction': 'vertical',
+          'data-active': `${active.bookId}/${active.chapter}`,
+          onScroll,
+          style: { height: 150, overflowY: 'auto' },
+        },
+        createElement(
+          'div',
+          { ref: contentRef },
+          createElement('div', { ref: beforeRef, 'data-buffer': 'before' }),
+          ...chapters.map((chapter) =>
+            createElement('section', {
+              key: `${chapter.bookId}/${chapter.chapter}`,
+              'data-reader-chapter': `${chapter.bookId}/${chapter.chapter}`,
+              'data-reader-chapter-loaded': true,
+              style: { height: 240 },
+            }),
+          ),
+          createElement('div', { ref: afterRef, 'data-buffer': 'after' }),
+        ),
+      );
+    }
+
+    flushSync(() =>
+      root.render(
+        createElement(QueryClientProvider, { client }, createElement(Reader)),
+      ),
+    );
+    const viewport = container.querySelector<HTMLElement>(
+      '[data-scroll-direction]',
+    )!;
+    const before = container.querySelector<HTMLElement>(
+      '[data-buffer="before"]',
+    )!;
+    const after = container.querySelector<HTMLElement>(
+      '[data-buffer="after"]',
+    )!;
+    return {
+      viewport,
+      before,
+      after,
+      cleanup() {
+        flushSync(() => root.unmount());
+        container.remove();
+        client.clear();
+      },
+    };
+  }
+
+  it('estimates space on both sides and stops at translation boundaries', () => {
+    for (const [location, before, after] of [
+      [{ bookId: 'GEN', chapter: 1 }, 0, 13],
+      [{ bookId: 'EXO', chapter: 1 }, 6, 5],
+      [{ bookId: 'EXO', chapter: 8 }, 13, 0],
+    ] as const) {
+      const reader = renderScrollArea(location);
+      try {
+        expect(reader.before.getBoundingClientRect().height).toBe(before * 240);
+        expect(reader.after.getBoundingClientRect().height).toBe(after * 240);
+      } finally {
+        reader.cleanup();
+      }
+    }
+  });
+
+  it('loads the chapter reached by jumping into either estimated buffer', async () => {
+    const reader = renderScrollArea({ bookId: 'EXO', chapter: 1 });
+    try {
+      const jumpTo = (buffer: HTMLElement, offset: number) => {
+        reader.viewport.scrollTop +=
+          buffer.getBoundingClientRect().top -
+          reader.viewport.getBoundingClientRect().top +
+          offset;
+        reader.viewport.dispatchEvent(new Event('scroll'));
+      };
+      jumpTo(reader.after, 3.5 * 240);
+      await vi.waitFor(() =>
+        expect(reader.viewport.dataset.active).toBe('EXO/7'),
+      );
+      expect(reader.viewport.scrollTop).toBeGreaterThan(0);
+
+      jumpTo(reader.before, 1.5 * 240);
+      await vi.waitFor(() =>
+        expect(reader.viewport.dataset.active).toBe('GEN/2'),
+      );
+      const active = reader.viewport.querySelector<HTMLElement>(
+        '[data-reader-chapter="GEN/2"]',
+      )!;
+      expect(
+        reader.viewport.getBoundingClientRect().top -
+          active.getBoundingClientRect().top,
+      ).toBeCloseTo(120, 0);
+    } finally {
+      reader.cleanup();
+    }
+  });
+
+  it('updates estimates after chapter resizing without moving the visible chapter', async () => {
+    const reader = renderScrollArea({ bookId: 'EXO', chapter: 1 });
+    try {
+      const active = reader.viewport.querySelector<HTMLElement>(
+        '[data-reader-chapter="EXO/1"]',
+      )!;
+      const later = reader.viewport.querySelector<HTMLElement>(
+        '[data-reader-chapter="EXO/3"]',
+      )!;
+      const top = active.getBoundingClientRect().top;
+      later.style.height = '480px';
+      await vi.waitFor(() =>
+        expect(reader.before.getBoundingClientRect().height).toBe(6 * 288),
+      );
+      expect(reader.after.getBoundingClientRect().height).toBe(5 * 288);
+      expect(active.getBoundingClientRect().top).toBeCloseTo(top, 0);
+    } finally {
+      reader.cleanup();
+    }
   });
 });

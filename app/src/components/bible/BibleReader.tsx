@@ -14,11 +14,11 @@ import {
   storeReadingTabLocation,
   storeReadingTabPosition,
 } from '../../lib/bible/reading-tabs';
+import type { TranslationManifest } from '../../lib/bible/source';
 import {
   rememberTranslation,
   storeTranslationId,
 } from '../../lib/bible/source';
-import type { TranslationManifest } from '../../lib/bible/source';
 import type { VerseId } from '../../lib/bible/verse';
 import { parseVerseId } from '../../lib/bible/verse';
 import type { ChapterHighlightSnapshot } from '../../lib/highlights/collections';
@@ -89,6 +89,8 @@ function BibleReaderContent() {
     active,
     chapters,
     contentRef,
+    beforeRef,
+    afterRef,
     onScroll,
     getSource,
     getVisibleLocation,
@@ -180,12 +182,16 @@ function BibleReaderContent() {
                 }
               />
             </div>
+            <div className={cls.chapterBuffer} ref={beforeRef} aria-hidden />
             {chapters.map((chapter, index) => {
               const chapterSource = getSource(chapter.bookId);
               return (
                 <section
                   key={`${chapter.bookId}/${chapter.chapter}`}
                   data-reader-chapter={`${chapter.bookId}/${chapter.chapter}`}
+                  data-reader-chapter-loaded={
+                    chapterSource.data !== undefined && !chapterSource.isError
+                  }
                   ref={
                     chapterSource.data !== undefined &&
                     initialVerseTarget?.chapterKey ===
@@ -225,6 +231,7 @@ function BibleReaderContent() {
             >
               <AnnotationToolbar />
             </BibleChapterNavigation>
+            <div className={cls.chapterBuffer} ref={afterRef} aria-hidden />
           </div>
         </ScrollArea>
       </section>
