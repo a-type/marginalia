@@ -10,6 +10,8 @@ import { readerBookSourceQueryOptions } from '../../queries/translations';
 
 type BookSource = { bookId: string; source: string };
 
+const CHAPTER_BUFFER = 2;
+
 export function useContinuousChapters({
   location,
   manifest,
@@ -35,11 +37,17 @@ export function useContinuousChapters({
     }
     return location;
   });
-  const previous = getAdjacentChapter(manifest, active, -1);
-  const next = getAdjacentChapter(manifest, active, 1);
-  const chapters = [previous, active, next].filter(
-    (chapter): chapter is BibleLocation => chapter !== undefined,
-  );
+  const chapters = [active];
+  for (const direction of [-1, 1] as const) {
+    let chapter = active;
+    for (let i = 0; i < CHAPTER_BUFFER; i++) {
+      const adjacent = getAdjacentChapter(manifest, chapter, direction);
+      if (!adjacent) break;
+      if (direction === -1) chapters.unshift(adjacent);
+      else chapters.push(adjacent);
+      chapter = adjacent;
+    }
+  }
   const bookIds = [...new Set(chapters.map((chapter) => chapter.bookId))];
   const queries = useQueries({
     queries: bookIds.map((bookId) => {
