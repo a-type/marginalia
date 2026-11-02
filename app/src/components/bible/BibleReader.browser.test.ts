@@ -431,6 +431,39 @@ describe('multi-chapter reader', () => {
     }
   });
 
+  it('reserves a screen of space for an unloaded chapter', async () => {
+    const source = Promise.withResolvers<string>();
+    fetchSource.mockReturnValue(source.promise);
+    const view = await renderReader(
+      '',
+      undefined,
+      ['GEN'],
+      undefined,
+      false,
+      '[data-reader-chapter] { min-height: 0; }',
+    );
+    try {
+      const placeholder = view.container.querySelector<HTMLElement>(
+        '[data-reader-chapter="EXO/1"] [role="status"]',
+      )!;
+      expect(placeholder.getBoundingClientRect().height).toBeGreaterThanOrEqual(
+        window.innerHeight,
+      );
+      source.resolve(sources[1].source);
+      await expect
+        .poll(() => view.container.querySelector('[data-verse-id="EXO/1:1"]'))
+        .not.toBeNull();
+      expect(
+        view.container.querySelector(
+          '[data-reader-chapter="EXO/1"] [role="status"]',
+        ),
+      ).toBeNull();
+    } finally {
+      fetchSource.mockReset();
+      await view.cleanup();
+    }
+  });
+
   it('reports an unavailable neighboring book and retries loading it', async () => {
     fetchSource.mockRejectedValue(new Error('Unavailable'));
     const view = await renderReader('', undefined, ['GEN']);

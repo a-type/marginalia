@@ -43,6 +43,11 @@
   padding: var(--m-sp-md);
 }
 
+.chapterStatus[role='status'] {
+  box-sizing: border-box;
+  min-height: 100dvh;
+}
+
 .chapterContent {
   display: flex;
   flex-direction: column;
