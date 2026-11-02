@@ -10,6 +10,7 @@ export interface ReadingTab extends BibleLocation {
   createdAt: number;
   visitedAt: number;
   verses?: string;
+  position?: BibleLocation;
 }
 
 export interface ReadingTabsState {
@@ -28,6 +29,7 @@ export function readReadingTabsState(): ReadingTabsState {
   }
 }
 
+// TODO: use Zod for validation/parse here
 export function parseReadingTabsState(value: unknown): ReadingTabsState {
   if (!value || typeof value !== 'object') return { tabs: [] };
   const record = value as Record<string, unknown>;
@@ -55,6 +57,16 @@ export function parseReadingTabsState(value: unknown): ReadingTabsState {
     )
       return [];
 
+    const position =
+      tab.position &&
+      typeof tab.position === 'object' &&
+      'bookId' in tab.position &&
+      typeof tab.position.bookId === 'string' &&
+      'chapter' in tab.position &&
+      (typeof tab.position.chapter === 'number' ||
+        typeof tab.position.chapter === 'string')
+        ? parseBibleLocation(tab.position.bookId, tab.position.chapter)
+        : null;
     return [
       {
         id: tab.id,
@@ -65,6 +77,7 @@ export function parseReadingTabsState(value: unknown): ReadingTabsState {
         ...(normalizeVerseSelection(tab.verses)
           ? { verses: normalizeVerseSelection(tab.verses) }
           : {}),
+        ...(position ? { position } : {}),
       },
     ];
   });
@@ -88,10 +101,13 @@ export function getReadingTabDestination(tab: ReadingTab) {
       book: tab.bookId,
       chapter: String(tab.chapter),
     },
-    state: { activeReadingTabId: tab.id },
+    state: {
+      activeReadingTabId: tab.id,
+      ...(tab.position ? { readingPosition: tab.position } : {}),
+    },
     search: tab.verses ? { verses: tab.verses } : {},
     hash:
-      typeof first?.verse === 'number'
+      !tab.position && typeof first?.verse === 'number'
         ? `verse-${formatVerseId(first.bookId ?? tab.bookId, first.chapter ?? tab.chapter, first.verse)}`
         : '',
     hashScrollIntoView: {
@@ -160,9 +176,48 @@ export function storeReadingTabLocation(
         ...location,
         translationId,
         verses: keepSelection ? tab.verses : undefined,
+        position:
+          tab.bookId === location.bookId &&
+          tab.chapter === location.chapter &&
+          tab.translationId === translationId
+            ? tab.position
+            : undefined,
         visitedAt: Date.now(),
       };
     }),
+  });
+}
+
+export function storeReadingTabPosition(
+  activeReadingTabId: string | undefined,
+  routeLocation: BibleLocation,
+  translationId: string,
+  position: BibleLocation,
+): void {
+  if (!activeReadingTabId) return;
+  const state = readReadingTabsState();
+  const tab = state.tabs.find((entry) => entry.id === activeReadingTabId);
+  if (
+    !tab ||
+    tab.translationId !== translationId ||
+    tab.bookId !== routeLocation.bookId ||
+    tab.chapter !== routeLocation.chapter
+  )
+    return;
+  const next =
+    position.bookId === routeLocation.bookId &&
+    position.chapter === routeLocation.chapter
+      ? undefined
+      : position;
+  if (
+    tab.position?.bookId === next?.bookId &&
+    tab.position?.chapter === next?.chapter
+  )
+    return;
+  writeReadingTabsState({
+    tabs: state.tabs.map((entry) =>
+      entry.id === activeReadingTabId ? { ...entry, position: next } : entry,
+    ),
   });
 }
 

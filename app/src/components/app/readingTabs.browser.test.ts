@@ -12,7 +12,10 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 
-import { readReadingTabsState } from '../../lib/bible/reading-tabs';
+import {
+  readReadingTabsState,
+  storeReadingTabPosition,
+} from '../../lib/bible/reading-tabs';
 import { normalizeVerseSelection } from '../../lib/bible/selection';
 import {
   useSelectedVerseIds,
@@ -138,6 +141,20 @@ it('restores the supplied verses when revisiting a tab through app navigation', 
       .toHaveTextContent('JHN/3:2,JHN/3:3,JHN/4:1');
     expect(router.state.location.state.activeReadingTabId).toBe(tab.id);
     expect(readReadingTabsState().tabs[0].verses).toBe('2-3,4:1');
+
+    storeReadingTabPosition(tab.id, tab, tab.translationId, {
+      bookId: 'JHN',
+      chapter: 4,
+    });
+    await expect.element(page.getByText('JHN 4')).toBeVisible();
+    container.querySelector<HTMLAnchorElement>('a[href="/"]')!.click();
+    await expect
+      .element(page.getByRole('button', { name: 'Open reading' }))
+      .toBeVisible();
+    router.history.back();
+    await expect
+      .poll(() => router.state.location.state.readingPosition)
+      .toEqual({ bookId: 'JHN', chapter: 4 });
   } finally {
     root.unmount();
     container.remove();

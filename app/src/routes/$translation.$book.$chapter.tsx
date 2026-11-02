@@ -10,12 +10,14 @@ import {
   selectionBookRanges,
 } from '../lib/bible/selection';
 import {
-  fetchTranslationManifest,
-  fetchTranslationSource,
   getTranslationBook,
   hasTranslationChapter,
   isTranslationId,
 } from '../lib/bible/source';
+import {
+  readerBookSourceQueryOptions,
+  readerManifestQueryOptions,
+} from '../queries/translations';
 
 export const Route = createFileRoute('/$translation/$book/$chapter')({
   ssr: ({ params }) =>
@@ -37,11 +39,13 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
   loaderDeps: ({ search }) => ({
     bookRanges: selectionBookRanges(search.verses),
   }),
-  loader: async ({ params, deps }) => {
+  loader: async ({ params, deps, context }) => {
     const location = parseBibleLocation(params.book, params.chapter);
     if (!location || !isTranslationId(params.translation)) throw notFound();
 
-    const manifest = await fetchTranslationManifest(params.translation);
+    const manifest = await context.queryClient.fetchQuery(
+      readerManifestQueryOptions(params.translation),
+    );
     const book = getTranslationBook(manifest, location.bookId);
     if (!hasTranslationChapter(book, location.chapter)) throw notFound();
 
@@ -52,9 +56,8 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
         if (!selectedBook) throw notFound();
         return {
           bookId,
-          source: await fetchTranslationSource(
-            params.translation,
-            selectedBook,
+          source: await context.queryClient.fetchQuery(
+            readerBookSourceQueryOptions(params.translation, selectedBook),
           ),
         };
       }),

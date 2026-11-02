@@ -64,5 +64,6 @@ declare module '@tanstack/react-router' {
     activeReadingTabId?: string;
     skipHomeRestore?: boolean;
     noUpdate?: boolean;
+    readingPosition?: { bookId: string; chapter: number };
   }
 }

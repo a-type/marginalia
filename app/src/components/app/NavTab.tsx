@@ -14,6 +14,7 @@ export interface NavTabProps {
   locationHash?: string;
   locationState?: {
     activeReadingTabId?: string;
+    readingPosition?: { bookId: string; chapter: number };
     skipHomeRestore?: boolean;
   };
   className?: string;
@@ -51,6 +52,7 @@ export function NavTab({
           size="small"
           className={clsx(cls.root, className)}
           aria-current={active ? 'page' : undefined}
+          onClick={onClick}
           nativeButton={false}
           ref={ref}
           render={

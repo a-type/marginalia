@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
-import { useLocation } from '@tanstack/react-router';
+import { useLocation, useRouter } from '@tanstack/react-router';
+import { checkpointReadingPosition } from '../../lib/bible/reading-history';
 import {
   fetchTranslationManifest,
   fetchTranslationSource,
@@ -22,6 +23,7 @@ export function useSelectTranslation({
 }) {
   const search = readerRoute.useSearch();
   const navigate = readerRoute.useNavigate();
+  const router = useRouter();
   const activeReadingTabId = useLocation({
     select: (routeLocation) => routeLocation.state.activeReadingTabId,
   });
@@ -43,9 +45,14 @@ export function useSelectTranslation({
         )
           selectedExists = true;
       }
+      checkpointReadingPosition(router.history, { bookId, chapter });
       await navigate({
         params: { translation, book: book.id, chapter: String(nextChapter) },
-        state: (previous) => ({ ...previous, activeReadingTabId }),
+        state: (previous) => ({
+          ...previous,
+          activeReadingTabId,
+          readingPosition: undefined,
+        }),
         search:
           selectedExists && book.id === bookId && nextChapter === chapter
             ? { verses: search.verses }

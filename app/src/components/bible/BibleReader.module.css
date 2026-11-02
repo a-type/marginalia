@@ -34,6 +34,14 @@
   min-height: 0;
 }
 
+.scrollArea :global([data-scroll-direction='vertical']) {
+  overflow-anchor: none;
+}
+
+.chapterStatus {
+  padding: var(--m-sp-md);
+}
+
 .chapterContent {
   display: flex;
   flex-direction: column;

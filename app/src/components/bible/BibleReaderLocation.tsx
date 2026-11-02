@@ -1,8 +1,9 @@
 import { Button, clsx, Icon, Popover } from '@a-type/ui';
-import { getRouteApi, useLocation } from '@tanstack/react-router';
+import { getRouteApi, useLocation, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import { m } from '#/paraglide/messages';
+import { checkpointReadingPosition } from '../../lib/bible/reading-history';
 import type { TranslationManifest } from '../../lib/bible/source';
 import { readRecentTranslations } from '../../lib/bible/source';
 import type { BookId } from '../../lib/bible/verse';
@@ -20,6 +21,7 @@ export interface BibleReaderLocationProps {
   translationId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCurrentRouteChapterChange: (bookId: BookId, chapter: number) => void;
   className?: string;
 }
 
@@ -30,9 +32,12 @@ export function BibleReaderLocation({
   translationId,
   open,
   onOpenChange,
+  onCurrentRouteChapterChange,
   className,
 }: BibleReaderLocationProps) {
   const navigate = readerRoute.useNavigate();
+  const router = useRouter();
+  const { location } = readerRoute.useLoaderData();
   const activeReadingTabId = useLocation({
     select: (routeLocation) => routeLocation.state.activeReadingTabId,
   });
@@ -51,15 +56,22 @@ export function BibleReaderLocation({
   });
 
   const navigateTo = async (nextBookId: BookId, nextChapter: number) => {
+    checkpointReadingPosition(router.history, { bookId, chapter });
     await navigate({
       params: {
         translation: translationId,
         book: nextBookId,
         chapter: String(nextChapter),
       },
-      state: (previous) => ({ ...previous, activeReadingTabId }),
+      state: (previous) => ({
+        ...previous,
+        activeReadingTabId,
+        readingPosition: undefined,
+      }),
       search: {},
     });
+    if (location.bookId === nextBookId && location.chapter === nextChapter)
+      onCurrentRouteChapterChange(nextBookId, nextChapter);
     onOpenChange(false);
   };
 

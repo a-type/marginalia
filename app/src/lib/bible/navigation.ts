@@ -18,8 +18,9 @@ export function getAdjacentChapter(
   if (chapter >= 1 && chapter <= book.chapters)
     return { bookId: book.id, chapter };
 
-  const adjacentIndex =
-    (bookIndex + direction + manifest.books.length) % manifest.books.length;
+  const adjacentIndex = bookIndex + direction;
+  if (adjacentIndex < 0 || adjacentIndex >= manifest.books.length)
+    return undefined;
   const adjacentBook = manifest.books.at(adjacentIndex);
   if (!adjacentBook) return undefined;
   return {

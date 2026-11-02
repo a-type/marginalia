@@ -7,6 +7,7 @@ import {
   parseReadingTabsState,
   readReadingTabsState,
   storeReadingTabLocation,
+  storeReadingTabPosition,
   visitReadingTab,
 } from './reading-tabs';
 
@@ -123,6 +124,29 @@ describe('reading tabs', () => {
       id: 'existing',
       bookId: 'GEN',
       chapter: 2,
+    });
+  });
+
+  it('restores a scrolled position without losing the original selection', () => {
+    const tab = createReadingTab('eng_webu', {
+      bookId: 'JHN',
+      chapter: 3,
+      verses: '3:8-4:2',
+    });
+    storeReadingTabPosition(tab.id, tab, tab.translationId, {
+      bookId: 'JHN',
+      chapter: 4,
+    });
+    const restored = readReadingTabsState().tabs[0];
+    expect(restored.verses).toBe('3:8-4:2');
+    expect(getReadingTabDestination(restored)).toMatchObject({
+      params: { book: 'JHN', chapter: '3' },
+      search: { verses: '3:8-4:2' },
+      state: {
+        activeReadingTabId: tab.id,
+        readingPosition: { bookId: 'JHN', chapter: 4 },
+      },
+      hash: '',
     });
   });
 

@@ -105,12 +105,19 @@ and last available verses of a chapter, for example `?verses=10-end` or
 `?verses=3:start-4:end`. Book-qualified endpoints also support selections across
 books, for example `?verses=GEN/50:26-EXO/1:2`. Endpoints without a book use the
 book in the URL. Ranges resolve against the selected translation. All chapters
-containing selected verses appear in reading order, with dividers between them.
+can be read in order, including across book boundaries, with dividers between
+them. The reader keeps the most visible chapter and one neighboring chapter on
+each side rendered; scrolling loads further chapters as needed and stops at the
+ends of the translation. A tab remembers its visible chapter separately from its
+original URL selection. Scrolling updates the current history entry rather than
+adding entries, while explicit location changes and tab switches add entries.
+The address remains the tab's original reading URL while scrolling. Browser
+find-in-page can only search the chapters currently rendered.
 Chapter navigation uses the most visible chapter and clears the selection.
 The first selected verse is primary for scrolling, highlights, and viewing
 annotations; starting a new annotation includes the entire selection, which must
 belong to one book. Clicking a verse replaces the URL selection with that single
-verse, rather than extending it.
+verse without repositioning the reader, rather than extending the selection.
 
 Vite and Caddy proxy `/lectserve/date/YYYY-MM-DD` to LectServe's
 `/date/YYYY-MM-DD` endpoint because the API does not allow cross-origin browser

@@ -1,4 +1,4 @@
-import { parseUSFM } from '../../components/usfm/parser';
+import { parseUSFMCached } from '../../components/usfm/parser';
 import type { USFMNode } from '../../components/usfm/types';
 import { AppError } from '../error';
 import type { VerseId } from './verse';
@@ -91,7 +91,7 @@ export function extractVerses(source: string, bookId: string): SearchVerse[] {
     }
   }
 
-  walk(parseUSFM(source).children, true);
+  walk(parseUSFMCached(source).children, true);
   return verses.map((verse) => ({
     ...verse,
     text: verse.text.replace(/\s+/g, ' ').trim(),

@@ -5,7 +5,7 @@ import {
   Tooltip,
   useLocalStorage,
 } from '@a-type/ui';
-import { useLocation, useNavigate } from '@tanstack/react-router';
+import { useLocation, useNavigate, useRouter } from '@tanstack/react-router';
 import {
   useAddReadingTab,
   useNavigateToReadingTab,
@@ -14,6 +14,7 @@ import {
 
 import { m } from '#/paraglide/messages';
 import { getInitialTranslationBook } from '../../lib/bible/manifests';
+import { checkpointActiveReadingPosition } from '../../lib/bible/reading-history';
 import {
   closeReadingTab,
   getMostRecentlyVisitedReadingTab,
@@ -32,6 +33,8 @@ export function AppNavigation() {
     false,
   );
   const navigate = useNavigate();
+  const router = useRouter();
+  const checkpoint = () => checkpointActiveReadingPosition(router.history);
   const pathname = useLocation({ select: (location) => location.pathname });
   const activeReadingTabId = useReadingTabRouteState();
   const { data: selectedTranslation } = useTranslationManifest(
@@ -79,6 +82,7 @@ export function AppNavigation() {
           locationState={{ skipHomeRestore: true }}
           active={pathname === '/'}
           aria-label={m.app_tab_home()}
+          onClick={checkpoint}
         >
           <Icon name="home" />
         </NavTab>
@@ -87,6 +91,7 @@ export function AppNavigation() {
           location="/search"
           active={pathname === '/search'}
           aria-label={m.app_tab_search()}
+          onClick={checkpoint}
         >
           <Icon name="search" />
         </NavTab>
@@ -95,6 +100,7 @@ export function AppNavigation() {
           location="/social"
           active={pathname === '/social'}
           aria-label={m.app_tab_social()}
+          onClick={checkpoint}
         >
           <Icon name="globe" />
         </NavTab>
@@ -106,16 +112,20 @@ export function AppNavigation() {
               key={tab.id}
               data-tab-id={tab.id}
               location={`/${tab.translationId}/${tab.bookId}/${tab.chapter}`}
-              locationState={{ activeReadingTabId: tab.id }}
+              locationState={destination.state}
               locationSearch={destination.search}
               locationHash={destination.hash}
               active={activeReadingTabId === tab.id}
-              tooltip={`${tab.bookId} ${tab.chapter}`}
-              onClick={() => visitReadingTab(tab.id)}
+              tooltip={`${tab.position?.bookId ?? tab.bookId} ${tab.position?.chapter ?? tab.chapter}`}
+              onClick={() => {
+                checkpoint();
+                visitReadingTab(tab.id);
+              }}
               onClose={() => closeReadingTabHandler(tab.id)}
               className={cls.tab}
             >
-              {tab.bookId} {tab.chapter}
+              {tab.position?.bookId ?? tab.bookId}{' '}
+              {tab.position?.chapter ?? tab.chapter}
             </NavTab>
           );
         })}

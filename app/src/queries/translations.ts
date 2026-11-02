@@ -6,6 +6,7 @@ import {
   fetchTranslationManifest,
   fetchTranslationSource,
   getTranslationBook,
+  type TranslationBook,
 } from '../lib/bible/source';
 import {
   searchTranslation,
@@ -29,6 +30,29 @@ export const translationsQueryOptions = queryOptions({
   networkMode: 'always',
   staleTime: 0,
 });
+
+export const readerManifestQueryOptions = (translationId: string) =>
+  queryOptions({
+    queryKey: ['reader-manifest', translationId],
+    queryFn: () => fetchTranslationManifest(translationId),
+    networkMode: 'offlineFirst',
+    staleTime: 60 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+
+export const readerBookSourceQueryOptions = (
+  translationId: string,
+  book: TranslationBook,
+) =>
+  queryOptions({
+    queryKey: ['reader-book-source', translationId, book.id],
+    queryFn: () => fetchTranslationSource(translationId, book),
+    networkMode: 'offlineFirst',
+    staleTime: 60 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: 1,
+  });
 
 export const translationBookVersesQueryOptions = (
   translationId: string,
@@ -77,6 +101,8 @@ export function initializeTranslations(client: QueryClient) {
     void client.invalidateQueries({ queryKey: ['translations'] });
     void client.invalidateQueries({ queryKey: ['bible-search'] });
     void client.invalidateQueries({ queryKey: ['translation-book-verses'] });
+    void client.invalidateQueries({ queryKey: ['reader-manifest'] });
+    void client.invalidateQueries({ queryKey: ['reader-book-source'] });
   });
   window.addEventListener('focus', () => {
     void client.invalidateQueries({ queryKey: ['translations'] });

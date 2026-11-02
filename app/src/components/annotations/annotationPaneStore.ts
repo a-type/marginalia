@@ -111,7 +111,7 @@ export function useSetSelectedVerseNumber() {
         ...(verse ? { verses: formatVerseSelection([verse]) } : {}),
         ...(annotation ? { annotation } : {}),
       },
-      state: (previous) => previous,
+      state: (previous) => ({ ...previous, readingPosition: undefined }),
       replace: true,
       resetScroll: false,
     });
@@ -119,23 +119,18 @@ export function useSetSelectedVerseNumber() {
 
 export function useSetSelectedVerseId() {
   const navigate = readerRoute.useNavigate();
-  const { location, translationId } = readerRoute.useLoaderData();
+  const { location } = readerRoute.useLoaderData();
   const setSelectedVerseNumber = useSetSelectedVerseNumber();
   return (verseId: VerseId, annotation?: string) => {
     const verse = parseVerseId(verseId);
     if (verse.bookId === location.bookId && verse.chapter === location.chapter)
       return setSelectedVerseNumber(verse.verse, annotation);
     return navigate({
-      params: {
-        translation: translationId,
-        book: verse.bookId,
-        chapter: String(verse.chapter),
-      },
       search: {
-        verses: formatVerseSelection([verse.verse]),
+        verses: verseId,
         ...(annotation ? { annotation } : {}),
       },
-      state: (previous) => previous,
+      state: (previous) => ({ ...previous, readingPosition: undefined }),
       replace: true,
       resetScroll: false,
     });
