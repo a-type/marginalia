@@ -18,6 +18,8 @@ import {
   rememberTranslation,
   storeTranslationId,
 } from '../../lib/bible/source';
+import type { TranslationManifest } from '../../lib/bible/source';
+import type { VerseId } from '../../lib/bible/verse';
 import { parseVerseId } from '../../lib/bible/verse';
 import type { ChapterHighlightSnapshot } from '../../lib/highlights/collections';
 import { reconcileChapterHighlights } from '../../lib/highlights/reconcile';
@@ -60,7 +62,6 @@ export function BibleReader() {
 function BibleReaderContent() {
   const { location, manifest, sources, translationId } =
     readerRoute.useLoaderData();
-  const router = useRouter();
   const selectedVerses = useSelectedVerseIds();
   const selectedVerse = selectedVerses.at(0);
   const search = readerRoute.useSearch();
@@ -114,7 +115,9 @@ function BibleReaderContent() {
     selectedLocation?.bookId === location.bookId &&
     selectedLocation.chapter === location.chapter &&
     !restoredPosition;
-  useScrollToSelectedVerse(scrollToSelection ? selectedVerse : undefined);
+  const initialVerseTarget = useScrollToSelectedVerse(
+    scrollToSelection ? selectedVerse : undefined,
+  );
   useStoreBibleReaderLocation(
     pathname,
     activeReadingTabId,
@@ -123,90 +126,26 @@ function BibleReaderContent() {
     manifest.title,
     selection,
   );
-  useEffect(() => {
-    storeReadingTabPosition(
-      activeReadingTabId,
-      location,
-      translationId,
-      active,
-    );
-  }, [activeReadingTabId, location, translationId, active]);
-  // TODO: extract to named hooks?
-  // TODO: is this good to model as an effect?
-  useEffect(() => {
-    const currentLocation = router.parseLocation(router.history.location);
-    if (
-      pathname !== `/${translationId}/${location.bookId}/${location.chapter}` ||
-      currentLocation.pathname !== pathname ||
-      currentLocation.state.activeReadingTabId !== activeReadingTabId
-    )
-      return;
-    const mask = getReadingMask(translationId, location, active, search);
-    const currentMask = router.state.location.maskedLocation;
-    const savedPosition = router.state.location.state.readingPosition;
-    if (
-      savedPosition?.bookId === active.bookId &&
-      savedPosition.chapter === active.chapter &&
-      (mask
-        ? currentMask?.pathname ===
-            `/${translationId}/${active.bookId}/${active.chapter}` &&
-          (currentMask.search.verses || undefined) === mask.search.verses &&
-          (currentMask.search.annotation || undefined) ===
-            mask.search.annotation
-        : !currentMask)
-    )
-      return;
-    if (!mask && !currentMask && !savedPosition) return;
-    void router.navigate({
-      to: '/$translation/$book/$chapter',
-      params: {
-        translation: translationId,
-        book: location.bookId,
-        chapter: String(location.chapter),
-      },
-      search,
-      state: (previous) => ({
-        ...previous,
-        readingPosition: active,
-      }),
-      mask,
-      replace: true,
-      resetScroll: false,
-    });
-  }, [
-    router,
+  useStoreReadingTabPosition(
+    activeReadingTabId,
+    location,
+    translationId,
+    active,
+  );
+  useSyncReadingMask(
     pathname,
     activeReadingTabId,
     translationId,
     location,
     active,
     search,
-  ]);
-  // TODO: extract to named hooks?
-  // TODO: is this good to model as an effect?
-  useEffect(
-    () =>
-      router.history.subscribe(({ location: historyLocation, action }) => {
-        if (
-          action.type !== 'BACK' &&
-          action.type !== 'FORWARD' &&
-          action.type !== 'GO'
-        )
-          return;
-        const parsedLocation = router.parseLocation(historyLocation);
-        if (
-          parsedLocation.pathname !== pathname ||
-          parsedLocation.state.activeReadingTabId !== activeReadingTabId
-        )
-          return;
-        const position = parsedLocation.state.readingPosition ?? location;
-        const book = manifest.books.find(
-          (entry) => entry.id === position.bookId,
-        );
-        if (book && position.chapter >= 1 && position.chapter <= book.chapters)
-          goTo(position);
-      }),
-    [router, pathname, activeReadingTabId, location, manifest, goTo],
+  );
+  useRestoreReadingPositionOnHistoryNavigation(
+    pathname,
+    activeReadingTabId,
+    location,
+    manifest,
+    goTo,
   );
 
   return (
@@ -247,6 +186,13 @@ function BibleReaderContent() {
                 <section
                   key={`${chapter.bookId}/${chapter.chapter}`}
                   data-reader-chapter={`${chapter.bookId}/${chapter.chapter}`}
+                  ref={
+                    chapterSource.data !== undefined &&
+                    initialVerseTarget?.chapterKey ===
+                      `${chapter.bookId}/${chapter.chapter}`
+                      ? initialVerseTarget.ref
+                      : undefined
+                  }
                 >
                   {index > 0 && <Box className={cls.chapterDivider} />}
                   {chapterSource.isError ? (
@@ -333,19 +279,142 @@ function ReaderChapter({
   );
 }
 
-function useScrollToSelectedVerse(verseId: string | undefined) {
-  const [initialVerseId] = useState(() => verseId);
+function useScrollToSelectedVerse(verseId: VerseId | undefined) {
+  const [target] = useState(() => {
+    if (!verseId) return undefined;
+    const { bookId, chapter } = parseVerseId(verseId);
+    let scrolled = false;
+    return {
+      chapterKey: `${bookId}/${chapter}`,
+      ref(element: HTMLElement | null) {
+        if (!element || scrolled) return;
+        const frame = requestAnimationFrame(() => {
+          const verse = document.getElementById(`verse-${verseId}`);
+          if (!verse || !element.contains(verse)) return;
+          scrolled = true;
+          verse.scrollIntoView({
+            block: 'start',
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)')
+              .matches
+              ? 'auto'
+              : 'smooth',
+          });
+        });
+        return () => cancelAnimationFrame(frame);
+      },
+    };
+  });
+  return target;
+}
+
+function useStoreReadingTabPosition(
+  activeReadingTabId: string | undefined,
+  location: BibleLocation,
+  translationId: string,
+  active: BibleLocation,
+) {
   useEffect(() => {
-    if (!initialVerseId) return;
-    const element = document.getElementById(`verse-${initialVerseId}`);
-    if (!element) return;
-    element.scrollIntoView({
-      block: 'start',
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        ? 'auto'
-        : 'smooth',
+    storeReadingTabPosition(
+      activeReadingTabId,
+      location,
+      translationId,
+      active,
+    );
+  }, [activeReadingTabId, location, translationId, active]);
+}
+
+function useSyncReadingMask(
+  pathname: string,
+  activeReadingTabId: string | undefined,
+  translationId: string,
+  location: BibleLocation,
+  active: BibleLocation,
+  search: ReturnType<typeof readerRoute.useSearch>,
+) {
+  const router = useRouter();
+  useEffect(() => {
+    const currentLocation = router.parseLocation(router.history.location);
+    if (
+      pathname !== `/${translationId}/${location.bookId}/${location.chapter}` ||
+      currentLocation.pathname !== pathname ||
+      currentLocation.state.activeReadingTabId !== activeReadingTabId
+    )
+      return;
+    const mask = getReadingMask(translationId, location, active, search);
+    const currentMask = router.state.location.maskedLocation;
+    const savedPosition = router.state.location.state.readingPosition;
+    if (
+      savedPosition?.bookId === active.bookId &&
+      savedPosition.chapter === active.chapter &&
+      (mask
+        ? currentMask?.pathname ===
+            `/${translationId}/${active.bookId}/${active.chapter}` &&
+          (currentMask.search.verses || undefined) === mask.search.verses &&
+          (currentMask.search.annotation || undefined) ===
+            mask.search.annotation
+        : !currentMask)
+    )
+      return;
+    if (!mask && !currentMask && !savedPosition) return;
+    void router.navigate({
+      to: '/$translation/$book/$chapter',
+      params: {
+        translation: translationId,
+        book: location.bookId,
+        chapter: String(location.chapter),
+      },
+      search,
+      state: (previous) => ({
+        ...previous,
+        readingPosition: active,
+      }),
+      mask,
+      replace: true,
+      resetScroll: false,
     });
-  }, [initialVerseId]);
+  }, [
+    router,
+    pathname,
+    activeReadingTabId,
+    translationId,
+    location,
+    active,
+    search,
+  ]);
+}
+
+function useRestoreReadingPositionOnHistoryNavigation(
+  pathname: string,
+  activeReadingTabId: string | undefined,
+  location: BibleLocation,
+  manifest: TranslationManifest,
+  goTo: (location: BibleLocation) => void,
+) {
+  const router = useRouter();
+  useEffect(
+    () =>
+      router.history.subscribe(({ location: historyLocation, action }) => {
+        if (
+          action.type !== 'BACK' &&
+          action.type !== 'FORWARD' &&
+          action.type !== 'GO'
+        )
+          return;
+        const parsedLocation = router.parseLocation(historyLocation);
+        if (
+          parsedLocation.pathname !== pathname ||
+          parsedLocation.state.activeReadingTabId !== activeReadingTabId
+        )
+          return;
+        const position = parsedLocation.state.readingPosition ?? location;
+        const book = manifest.books.find(
+          (entry) => entry.id === position.bookId,
+        );
+        if (book && position.chapter >= 1 && position.chapter <= book.chapters)
+          goTo(position);
+      }),
+    [router, pathname, activeReadingTabId, location, manifest, goTo],
+  );
 }
 
 function useStoreBibleReaderLocation(

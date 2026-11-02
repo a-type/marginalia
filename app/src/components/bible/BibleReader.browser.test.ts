@@ -722,7 +722,7 @@ describe('multi-chapter reader', () => {
       const verse = view.container.querySelector<HTMLElement>(
         '[data-verse-id="GEN/1:1"]',
       )!;
-      expect(scrollIntoView.mock.contexts).toContain(verse);
+      await expect.poll(() => scrollIntoView.mock.contexts).toContain(verse);
       expect(scrollIntoView).toHaveBeenCalledWith(
         expect.objectContaining({ block: 'start' }),
       );
@@ -735,6 +735,32 @@ describe('multi-chapter reader', () => {
       await expect.poll(() => verse.getAttribute('data-selected')).toBe('true');
       expect(scrollIntoView).not.toHaveBeenCalled();
     } finally {
+      scrollIntoView.mockRestore();
+      await view.cleanup();
+    }
+  });
+
+  it('respects reduced motion when scrolling to the initial selection', async () => {
+    const scrollIntoView = vi
+      .spyOn(Element.prototype, 'scrollIntoView')
+      .mockImplementation(() => {});
+    const matchMedia = window.matchMedia.bind(window);
+    const mediaQuery = vi
+      .spyOn(window, 'matchMedia')
+      .mockImplementation((query) => {
+        const result = matchMedia(query);
+        if (query === '(prefers-reduced-motion: reduce)') {
+          Object.defineProperty(result, 'matches', { value: true });
+        }
+        return result;
+      });
+    const view = await renderReader('GEN/1:1');
+    try {
+      await expect
+        .poll(() => scrollIntoView.mock.calls)
+        .toContainEqual([expect.objectContaining({ behavior: 'auto' })]);
+    } finally {
+      mediaQuery.mockRestore();
       scrollIntoView.mockRestore();
       await view.cleanup();
     }
