@@ -102,10 +102,15 @@ Reader URLs accept a `verses` search parameter containing comma-separated verses
 and ranges, such as `?verses=3-8,12` or `?verses=3:8-4:2`. Endpoints without a
 chapter use the chapter in the URL. The `start` and `end` tokens refer to the first
 and last available verses of a chapter, for example `?verses=10-end` or
-`?verses=3:start-4:end`. Ranges resolve against the selected translation.
+`?verses=3:start-4:end`. Book-qualified endpoints also support selections across
+books, for example `?verses=GEN/50:26-EXO/1:2`. Endpoints without a book use the
+book in the URL. Ranges resolve against the selected translation. All chapters
+containing selected verses appear in reading order, with dividers between them.
+Chapter navigation uses the most visible chapter and clears the selection.
 The first selected verse is primary for scrolling, highlights, and viewing
-annotations; starting a new annotation includes the entire selection. Clicking a
-verse replaces the URL selection with that single verse, rather than extending it.
+annotations; starting a new annotation includes the entire selection, which must
+belong to one book. Clicking a verse replaces the URL selection with that single
+verse, rather than extending it.
 
 Vite and Caddy proxy `/lectserve/date/YYYY-MM-DD` to LectServe's
 `/date/YYYY-MM-DD` endpoint because the API does not allow cross-origin browser

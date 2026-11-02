@@ -5,7 +5,10 @@ import {
   normalizeVerseSelection,
   parseVerseSelection,
   resolveVerseSelection,
+  selectionBookIds,
+  selectionBookRanges,
 } from './selection';
+import type { TranslationManifest } from './manifests';
 import type { VerseId } from './verse';
 
 const availableVerses: VerseId[] = [
@@ -76,5 +79,46 @@ describe('verse selection search value', () => {
     expect(
       resolveVerseSelection('5-2,4:2-3:1,8:start-8:end', 3, availableVerses),
     ).toEqual([]);
+  });
+
+  it('resolves book-qualified ranges and discontinuous chapters in manifest order', () => {
+    const verses: VerseId[] = [
+      'GEN/50:25',
+      'GEN/50:26',
+      'EXO/1:1',
+      'EXO/1:2',
+      'EXO/2:1',
+    ];
+    const manifest: TranslationManifest = {
+      id: 'test',
+      title: 'Test',
+      books: [
+        { id: 'GEN', title: 'Genesis', chapters: 50 },
+        { id: 'EXO', title: 'Exodus', chapters: 40 },
+      ],
+    };
+    const selection = 'EXO/2:1,GEN/50:26-EXO/1:2';
+    expect(normalizeVerseSelection(selection)).toBe(selection);
+    expect(
+      selectionBookIds(selectionBookRanges(selection), 'GEN', manifest),
+    ).toEqual(['GEN', 'EXO']);
+    expect(resolveVerseSelection(selection, 50, verses, 'GEN')).toEqual(
+      verses.slice(1),
+    );
+    expect(
+      resolveVerseSelection('EXO/1:1-GEN/50:26', 50, verses, 'GEN'),
+    ).toEqual([]);
+    expect(normalizeVerseSelection('EXO/1')).toBe('');
+    expect(normalizeVerseSelection('CUSTOM-BOOK/1:1-EXO/1:2')).toBe(
+      'CUSTOM-BOOK/1:1-EXO/1:2',
+    );
+    expect(resolveVerseSelection('26-EXO/1:1', 50, verses, 'GEN')).toEqual([
+      'GEN/50:26',
+      'EXO/1:1',
+    ]);
+    expect(selectionBookRanges('1-2,3:1')).toEqual([]);
+    expect(selectionBookRanges('GEN/50:1,GEN/50:2')).toEqual([
+      { start: 'GEN', end: 'GEN' },
+    ]);
   });
 });

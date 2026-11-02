@@ -69,9 +69,14 @@ async function renderSelection(selection: string, source?: string) {
     }),
     loader: () => ({
       location: { bookId: 'JHN', chapter: 3 },
-      source:
-        source ??
-        '\\id JHN\n\\c 3\n\\p\n\\v 1 One\n\\v 2 Two\n\\v 3 Three\n\\c 4\n\\p\n\\v 1 Four\n\\v 2 Five',
+      sources: [
+        {
+          bookId: 'JHN',
+          source:
+            source ??
+            '\\id JHN\n\\c 3\n\\p\n\\v 1 One\n\\v 2 Two\n\\v 3 Three\n\\c 4\n\\p\n\\v 1 Four\n\\v 2 Five',
+        },
+      ],
     }),
     component: () =>
       createElement(

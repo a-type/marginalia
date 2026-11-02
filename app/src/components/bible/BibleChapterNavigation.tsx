@@ -14,11 +14,13 @@ const readerRoute = getRouteApi('/$translation/$book/$chapter');
 export function BibleChapterNavigation({
   children,
   location,
+  getLocation,
   manifest,
   translationId,
 }: {
   children: ReactNode;
   location: BibleLocation;
+  getLocation: () => BibleLocation;
   manifest: TranslationManifest;
   translationId: string;
 }) {
@@ -29,7 +31,8 @@ export function BibleChapterNavigation({
   const previous = getAdjacentChapter(manifest, location, -1);
   const next = getAdjacentChapter(manifest, location, 1);
 
-  const navigateTo = (target: BibleLocation | undefined) => {
+  const navigateTo = (direction: -1 | 1) => {
+    const target = getAdjacentChapter(manifest, getLocation(), direction);
     if (!target) return;
     void navigate({
       params: {
@@ -68,7 +71,7 @@ export function BibleChapterNavigation({
             className={cls.chapterNavigationButton}
             aria-label={m.bible_previous_chapter()}
             disabled={!previous}
-            onClick={() => navigateTo(previous)}
+            onClick={() => navigateTo(-1)}
           >
             <Icon name="arrowLeft" />
           </Button>
@@ -81,7 +84,7 @@ export function BibleChapterNavigation({
             className={cls.chapterNavigationButton}
             aria-label={m.bible_next_chapter()}
             disabled={!next}
-            onClick={() => navigateTo(next)}
+            onClick={() => navigateTo(1)}
           >
             <Icon name="arrowRight" />
           </Button>

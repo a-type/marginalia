@@ -92,7 +92,7 @@ export function getReadingTabDestination(tab: ReadingTab) {
     search: tab.verses ? { verses: tab.verses } : {},
     hash:
       typeof first?.verse === 'number'
-        ? `verse-${formatVerseId(tab.bookId, first.chapter ?? tab.chapter, first.verse)}`
+        ? `verse-${formatVerseId(first.bookId ?? tab.bookId, first.chapter ?? tab.chapter, first.verse)}`
         : '',
     hashScrollIntoView: {
       block: 'center' as const,

@@ -1,7 +1,8 @@
+import { Box, ScrollArea } from '@a-type/ui';
 import { useDbClient } from '@tanstack/react-db';
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, useLocation } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { ChapterAnnotationSnapshot } from '../../lib/annotations/collections';
 import { reconcileChapterAnnotations } from '../../lib/annotations/reconcile';
@@ -11,6 +12,8 @@ import {
   rememberTranslation,
   storeTranslationId,
 } from '../../lib/bible/source';
+import { parseVerseId } from '../../lib/bible/verse';
+import { AppError } from '../../lib/error';
 import type { ChapterHighlightSnapshot } from '../../lib/highlights/collections';
 import { reconcileChapterHighlights } from '../../lib/highlights/reconcile';
 import { chapterAnnotationsQueryOptions } from '../../queries/annotations';
@@ -18,6 +21,7 @@ import { chapterHighlightsQueryOptions } from '../../queries/highlights';
 import { currentUserDidQueryOptions } from '../../queries/user';
 import { AnnotationPane } from '../annotations/AnnotationPane';
 import { useResetAnnotationPaneOnRouteChange } from '../annotations/annotationPaneStore';
+import { AnnotationToolbar } from '../annotations/AnnotationToolbar';
 import { useChapterAnnotations } from '../annotations/useChapterAnnotations';
 import { useHighlightSync } from '../annotations/useChapterHighlights';
 import {
@@ -25,6 +29,7 @@ import {
   useSelectedVerseIds,
 } from '../annotations/VerseSelection';
 import { AnnotatedBibleChapter } from './AnnotatedBibleChapter';
+import { BibleChapterNavigation } from './BibleChapterNavigation';
 import cls from './BibleReader.module.css';
 import { BibleReaderLocation } from './BibleReaderLocation';
 
@@ -41,9 +46,23 @@ export function BibleReader() {
 }
 
 function BibleReaderContent() {
-  const { location, manifest, source, translationId } =
+  const { location, manifest, sources, translationId } =
     readerRoute.useLoaderData();
-  const selectedVerse = useSelectedVerseIds().at(0);
+  const selectedVerses = useSelectedVerseIds();
+  const selectedVerse = selectedVerses.at(0);
+  const chapters = selectedVerses.length
+    ? selectedVerses.reduce<BibleLocation[]>((result, id) => {
+        const { bookId, chapter } = parseVerseId(id);
+        if (
+          !result.some(
+            (entry) => entry.bookId === bookId && entry.chapter === chapter,
+          )
+        )
+          result.push({ bookId, chapter });
+        return result;
+      }, [])
+    : [location];
+  const contentRef = useRef<HTMLDivElement>(null);
   const selection = readerRoute.useSearch({
     select: (search) => search.verses,
   });
@@ -54,7 +73,12 @@ function BibleReaderContent() {
     }),
   });
   const [locationOpen, setLocationOpen] = useState(false);
-  const { accountDid, annotations } = useBibleReaderData(location);
+  const userDidQuery = useQuery({
+    ...currentUserDidQueryOptions,
+    enabled: typeof window !== 'undefined',
+  });
+  const accountDid = userDidQuery.data ?? null;
+  useHighlightSync(accountDid);
 
   useResetAnnotationPaneOnRouteChange();
   useScrollToSelectedVerse(selectedVerse, translationId);
@@ -70,10 +94,12 @@ function BibleReaderContent() {
   return (
     <div className={cls.root}>
       <section className={cls.content}>
-        <AnnotatedBibleChapter
-          key={`${translationId}/${location.bookId}/${location.chapter}`}
-          className={cls.chapter}
-          header={
+        <ScrollArea
+          direction="vertical"
+          className={cls.scrollArea}
+          data-reader-scroll-area
+        >
+          <div className={cls.chapterContent} ref={contentRef}>
             <div className={cls.readerHeader}>
               <BibleReaderLocation
                 bookId={location.bookId}
@@ -84,43 +110,76 @@ function BibleReaderContent() {
                 onOpenChange={setLocationOpen}
               />
             </div>
-          }
-          annotations={annotations}
-          location={location}
-          manifest={manifest}
-          source={source}
-          translationId={translationId}
-        />
+            {chapters.map((chapter, index) => {
+              const chapterSource = sources.find(
+                (entry) => entry.bookId === chapter.bookId,
+              );
+              if (!chapterSource)
+                throw new AppError(
+                  AppError.Code.NotFound,
+                  `Book ${chapter.bookId} is unavailable`,
+                );
+              return (
+                <section
+                  key={`${chapter.bookId}/${chapter.chapter}`}
+                  data-reader-chapter={`${chapter.bookId}/${chapter.chapter}`}
+                >
+                  {index > 0 && <Box className={cls.chapterDivider} />}
+                  <ReaderChapter
+                    location={chapter}
+                    source={chapterSource.source}
+                    accountDid={accountDid}
+                    userQueryIsSuccess={userDidQuery.isSuccess}
+                  />
+                </section>
+              );
+            })}
+            <BibleChapterNavigation
+              location={location}
+              manifest={manifest}
+              translationId={translationId}
+              getLocation={() =>
+                getMostVisibleChapter(contentRef.current, chapters) ?? location
+              }
+            >
+              <AnnotationToolbar />
+            </BibleChapterNavigation>
+          </div>
+        </ScrollArea>
       </section>
       <AnnotationPane accountDid={accountDid} className={cls.annotationPane} />
     </div>
   );
 }
 
-function useBibleReaderData(location: BibleLocation) {
+function ReaderChapter({
+  location,
+  source,
+  accountDid,
+  userQueryIsSuccess,
+}: {
+  location: BibleLocation;
+  source: string;
+  accountDid: string | null;
+  userQueryIsSuccess: boolean;
+}) {
   const dbClient = useDbClient();
-  const userDidQuery = useQuery({
-    ...currentUserDidQueryOptions,
-    enabled: typeof window !== 'undefined',
-  });
-  const accountDid = userDidQuery.data ?? null;
   const chapterAnnotationsQuery = useQuery({
     ...chapterAnnotationsQueryOptions(location),
-    enabled: typeof window !== 'undefined' && userDidQuery.isSuccess,
+    enabled: typeof window !== 'undefined' && userQueryIsSuccess,
   });
   const chapterHighlightsQuery = useQuery({
     ...chapterHighlightsQueryOptions(location),
-    enabled: typeof window !== 'undefined' && userDidQuery.isSuccess,
+    enabled: typeof window !== 'undefined' && userQueryIsSuccess,
   });
   const annotations = useChapterAnnotations(location);
-  useHighlightSync(accountDid);
   useReconcileChapterAnnotations({
     accountDid,
     dbClient,
     location,
     queryData: chapterAnnotationsQuery.data,
     queryIsSuccess: chapterAnnotationsQuery.isSuccess,
-    userQueryIsSuccess: userDidQuery.isSuccess,
+    userQueryIsSuccess,
   });
   useReconcileChapterHighlights({
     accountDid,
@@ -128,9 +187,40 @@ function useBibleReaderData(location: BibleLocation) {
     location,
     queryData: chapterHighlightsQuery.data,
     queryIsSuccess: chapterHighlightsQuery.isSuccess,
-    userQueryIsSuccess: userDidQuery.isSuccess,
+    userQueryIsSuccess,
   });
-  return { accountDid, annotations };
+  return (
+    <AnnotatedBibleChapter
+      annotations={annotations}
+      location={location}
+      source={source}
+    />
+  );
+}
+
+function getMostVisibleChapter(
+  content: HTMLElement | null,
+  chapters: BibleLocation[],
+): BibleLocation | undefined {
+  const viewport = content?.closest('[data-scroll-direction="vertical"]');
+  if (!content || !viewport) return undefined;
+  const bounds = viewport.getBoundingClientRect();
+  let mostVisible = 0;
+  let result: BibleLocation | undefined;
+  content
+    .querySelectorAll<HTMLElement>('[data-reader-chapter]')
+    .forEach((element, index) => {
+      const rect = element.getBoundingClientRect();
+      const visible = Math.max(
+        0,
+        Math.min(rect.bottom, bounds.bottom) - Math.max(rect.top, bounds.top),
+      );
+      if (visible > mostVisible) {
+        mostVisible = visible;
+        result = chapters[index];
+      }
+    });
+  return result;
 }
 
 function useScrollToSelectedVerse(
@@ -195,12 +285,13 @@ function useReconcileChapterAnnotations({
   queryIsSuccess: boolean;
   userQueryIsSuccess: boolean;
 }) {
+  const { bookId, chapter } = location;
   useEffect(() => {
     if (!userQueryIsSuccess) return;
     if (!accountDid || !queryIsSuccess) return;
     void reconcileChapterAnnotations(
       dbClient,
-      location,
+      { bookId, chapter },
       queryData ?? emptyChapterAnnotations,
     );
   }, [
@@ -209,7 +300,8 @@ function useReconcileChapterAnnotations({
     queryData,
     queryIsSuccess,
     dbClient,
-    location,
+    bookId,
+    chapter,
   ]);
 }
 
@@ -228,12 +320,13 @@ function useReconcileChapterHighlights({
   queryIsSuccess: boolean;
   userQueryIsSuccess: boolean;
 }) {
+  const { bookId, chapter } = location;
   useEffect(() => {
     if (!userQueryIsSuccess) return;
     if (accountDid && !queryIsSuccess) return;
     void reconcileChapterHighlights(
       dbClient,
-      location,
+      { bookId, chapter },
       queryData ?? emptyChapterHighlights,
     );
   }, [
@@ -242,6 +335,7 @@ function useReconcileChapterHighlights({
     queryData,
     queryIsSuccess,
     dbClient,
-    location,
+    bookId,
+    chapter,
   ]);
 }

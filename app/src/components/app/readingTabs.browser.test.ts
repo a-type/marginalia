@@ -90,8 +90,13 @@ it('restores the supplied verses when revisiting a tab through app navigation', 
     }),
     loader: () => ({
       location: { bookId: 'JHN', chapter: 3 },
-      source:
-        '\\id JHN\n\\c 3\n\\p\n\\v 1 One\n\\v 2 Two\n\\v 3 Three\n\\c 4\n\\p\n\\v 1 Four',
+      sources: [
+        {
+          bookId: 'JHN',
+          source:
+            '\\id JHN\n\\c 3\n\\p\n\\v 1 One\n\\v 2 Two\n\\v 3 Three\n\\c 4\n\\p\n\\v 1 Four',
+        },
+      ],
     }),
     component: () =>
       createElement(VerseSelectionProvider, null, createElement(Selection)),

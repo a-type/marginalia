@@ -117,6 +117,31 @@ export function useSetSelectedVerseNumber() {
     });
 }
 
+export function useSetSelectedVerseId() {
+  const navigate = readerRoute.useNavigate();
+  const { location, translationId } = readerRoute.useLoaderData();
+  const setSelectedVerseNumber = useSetSelectedVerseNumber();
+  return (verseId: VerseId, annotation?: string) => {
+    const verse = parseVerseId(verseId);
+    if (verse.bookId === location.bookId && verse.chapter === location.chapter)
+      return setSelectedVerseNumber(verse.verse, annotation);
+    return navigate({
+      params: {
+        translation: translationId,
+        book: verse.bookId,
+        chapter: String(verse.chapter),
+      },
+      search: {
+        verses: formatVerseSelection([verse.verse]),
+        ...(annotation ? { annotation } : {}),
+      },
+      state: (previous) => previous,
+      replace: true,
+      resetScroll: false,
+    });
+  };
+}
+
 export function usePrimarySelectedVerseId() {
   return useSelectedVerseIds().at(0);
 }
@@ -138,6 +163,7 @@ export function useToggleVerseSelected(verseId: VerseId) {
   const singleSelected =
     selectedVerses.length === 1 && selectedVerses[0] === verseId;
   const setSelectedNumber = useSetSelectedVerseNumber();
+  const setSelectedVerse = useSetSelectedVerseId();
   return () => {
     const phase = annotationPaneStore.state.phase;
     if (phase === 'editing') {
@@ -149,9 +175,8 @@ export function useToggleVerseSelected(verseId: VerseId) {
       return;
     }
 
-    void setSelectedNumber(
-      singleSelected ? undefined : parseVerseId(verseId).verse,
-    );
+    if (singleSelected) void setSelectedNumber();
+    else void setSelectedVerse(verseId);
   };
 }
 
