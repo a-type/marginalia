@@ -153,8 +153,7 @@ function BibleReaderContent() {
   return (
     <div className={cls.root}>
       <section className={cls.content}>
-        <ScrollArea
-          direction="vertical"
+        <ScrollArea.Root
           className={cls.scrollArea}
           data-reader-scroll-area
           onScrollCapture={(event) => {
@@ -168,72 +167,79 @@ function BibleReaderContent() {
               onScroll();
           }}
         >
-          <div className={cls.chapterContent} ref={contentRef}>
-            <div className={cls.readerHeader}>
-              <BibleReaderLocation
-                bookId={active.bookId}
-                chapter={active.chapter}
+          <ScrollArea.Viewport direction="vertical">
+            <div className={cls.chapterContent} ref={contentRef}>
+              <div className={cls.readerHeader}>
+                <BibleReaderLocation
+                  bookId={active.bookId}
+                  chapter={active.chapter}
+                  manifest={manifest}
+                  translationId={translationId}
+                  open={locationOpen}
+                  onOpenChange={setLocationOpen}
+                  onCurrentRouteChapterChange={(bookId, chapter) =>
+                    goTo({ bookId, chapter })
+                  }
+                />
+              </div>
+              <div className={cls.chapterBuffer} ref={beforeRef} aria-hidden />
+              {chapters.map((chapter, index) => {
+                const chapterSource = getSource(chapter.bookId);
+                return (
+                  <section
+                    key={`${chapter.bookId}/${chapter.chapter}`}
+                    data-reader-chapter={`${chapter.bookId}/${chapter.chapter}`}
+                    data-reader-chapter-loaded={
+                      chapterSource.data !== undefined && !chapterSource.isError
+                    }
+                    ref={
+                      chapterSource.data !== undefined &&
+                      initialVerseTarget?.chapterKey ===
+                        `${chapter.bookId}/${chapter.chapter}`
+                        ? initialVerseTarget.ref
+                        : undefined
+                    }
+                  >
+                    {index > 0 && <Box className={cls.chapterDivider} />}
+                    {chapterSource.isError ? (
+                      <div className={cls.chapterStatus} role="alert">
+                        <p>{m.bible_load_error()}</p>
+                        <Button onClick={() => void chapterSource.refetch()}>
+                          {m.translation_retry()}
+                        </Button>
+                      </div>
+                    ) : chapterSource.data === undefined ? (
+                      <p className={cls.chapterStatus} role="status">
+                        {m.bible_loading()}
+                      </p>
+                    ) : (
+                      <ReaderChapter
+                        location={chapter}
+                        source={chapterSource.data}
+                        accountDid={accountDid}
+                        userQueryIsSuccess={userDidQuery.isSuccess}
+                      />
+                    )}
+                  </section>
+                );
+              })}
+              <BibleChapterNavigation
+                location={active}
                 manifest={manifest}
                 translationId={translationId}
-                open={locationOpen}
-                onOpenChange={setLocationOpen}
-                onCurrentRouteChapterChange={(bookId, chapter) =>
-                  goTo({ bookId, chapter })
-                }
-              />
+                getLocation={getVisibleLocation}
+              >
+                <AnnotationToolbar />
+              </BibleChapterNavigation>
+              <div className={cls.chapterBuffer} ref={afterRef} aria-hidden />
             </div>
-            <div className={cls.chapterBuffer} ref={beforeRef} aria-hidden />
-            {chapters.map((chapter, index) => {
-              const chapterSource = getSource(chapter.bookId);
-              return (
-                <section
-                  key={`${chapter.bookId}/${chapter.chapter}`}
-                  data-reader-chapter={`${chapter.bookId}/${chapter.chapter}`}
-                  data-reader-chapter-loaded={
-                    chapterSource.data !== undefined && !chapterSource.isError
-                  }
-                  ref={
-                    chapterSource.data !== undefined &&
-                    initialVerseTarget?.chapterKey ===
-                      `${chapter.bookId}/${chapter.chapter}`
-                      ? initialVerseTarget.ref
-                      : undefined
-                  }
-                >
-                  {index > 0 && <Box className={cls.chapterDivider} />}
-                  {chapterSource.isError ? (
-                    <div className={cls.chapterStatus} role="alert">
-                      <p>{m.bible_load_error()}</p>
-                      <Button onClick={() => void chapterSource.refetch()}>
-                        {m.translation_retry()}
-                      </Button>
-                    </div>
-                  ) : chapterSource.data === undefined ? (
-                    <p className={cls.chapterStatus} role="status">
-                      {m.bible_loading()}
-                    </p>
-                  ) : (
-                    <ReaderChapter
-                      location={chapter}
-                      source={chapterSource.data}
-                      accountDid={accountDid}
-                      userQueryIsSuccess={userDidQuery.isSuccess}
-                    />
-                  )}
-                </section>
-              );
-            })}
-            <BibleChapterNavigation
-              location={active}
-              manifest={manifest}
-              translationId={translationId}
-              getLocation={getVisibleLocation}
-            >
-              <AnnotationToolbar />
-            </BibleChapterNavigation>
-            <div className={cls.chapterBuffer} ref={afterRef} aria-hidden />
-          </div>
-        </ScrollArea>
+            <ScrollArea.ViewportFades />
+          </ScrollArea.Viewport>
+          <ScrollArea.Scrollbar orientation="vertical">
+            <ScrollArea.Thumb />
+          </ScrollArea.Scrollbar>
+          <ScrollArea.Corner />
+        </ScrollArea.Root>
       </section>
       <AnnotationPane accountDid={accountDid} className={cls.annotationPane} />
     </div>
