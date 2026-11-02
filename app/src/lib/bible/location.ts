@@ -1,7 +1,6 @@
 import { resolveBookName } from './book-names';
-import { normalizeVerseSelection, parseVerseSelection } from './selection';
-import type { BookId } from './verse';
-import { isBookId } from './verse';
+import type { BookId, VerseId } from './verse';
+import { formatVerseId, isBookId, parseVerseId } from './verse';
 
 export interface BibleLocation {
   bookId: BookId;
@@ -10,7 +9,18 @@ export interface BibleLocation {
 
 export interface BibleReference extends BibleLocation {
   verse?: number;
-  verses: string;
+  verseLabel: string;
+  ranges: CitationRange[];
+}
+
+interface CitationEndpoint {
+  chapter: number;
+  verse: number | 'start' | 'end';
+}
+
+interface CitationRange {
+  start: CitationEndpoint;
+  end: CitationEndpoint;
 }
 
 function parsePassage(value: string): Omit<BibleReference, 'bookId'> | null {
@@ -39,15 +49,80 @@ function parsePassage(value: string): Omit<BibleReference, 'bookId'> | null {
     : match[3]
       ? `${chapter}:start-${match[3]}:end`
       : 'start-end';
-  const ranges = parseVerseSelection(selection);
-  if (!ranges.length || ranges.length !== selection.split(',').length)
-    return null;
+  const ranges: CitationRange[] = [];
+  for (const part of selection.split(',')) {
+    const rangeMatch =
+      /^((?:[1-9]\d*:)?(?:[1-9]\d*|start|end))(?:-((?:[1-9]\d*:)?(?:[1-9]\d*|start|end)))?$/.exec(
+        part,
+      );
+    if (!rangeMatch) return null;
+    const endpoint = (text: string): CitationEndpoint | null => {
+      const [chapterPart, versePart] = text.includes(':')
+        ? text.split(':')
+        : [String(chapter), text];
+      const endpointChapter = Number(chapterPart);
+      const verse =
+        versePart === 'start' || versePart === 'end'
+          ? versePart
+          : Number(versePart);
+      if (
+        !Number.isSafeInteger(endpointChapter) ||
+        (typeof verse === 'number' && !Number.isSafeInteger(verse))
+      )
+        return null;
+      return { chapter: endpointChapter, verse };
+    };
+    const start = endpoint(rangeMatch[1]);
+    const end = endpoint(rangeMatch[2] ? rangeMatch[2] : rangeMatch[1]);
+    if (!start || !end) return null;
+    ranges.push({ start, end });
+  }
   const firstVerse = ranges[0].start.verse;
   return {
     chapter,
     ...(typeof firstVerse === 'number' ? { verse: firstVerse } : {}),
-    verses: normalizeVerseSelection(selection),
+    verseLabel: selection,
+    ranges,
   };
+}
+
+export function referenceNeedsVerses(reference: BibleReference): boolean {
+  return reference.ranges.some(
+    ({ start, end }) =>
+      typeof start.verse !== 'number' || typeof end.verse !== 'number',
+  );
+}
+
+export function referenceVerseSelection(
+  reference: BibleReference,
+  availableVerses: readonly VerseId[] = [],
+): string | undefined {
+  const verses = availableVerses.map(parseVerseId);
+  const endpointId = ({
+    chapter,
+    verse,
+  }: CitationEndpoint): VerseId | undefined => {
+    if (typeof verse === 'number')
+      return formatVerseId(reference.bookId, chapter, verse);
+    const chapterVerses = verses.filter(
+      (item) => item.bookId === reference.bookId && item.chapter === chapter,
+    );
+    if (!chapterVerses.length) return undefined;
+    const numbers = chapterVerses.map((item) => item.verse);
+    return formatVerseId(
+      reference.bookId,
+      chapter,
+      verse === 'start' ? Math.min(...numbers) : Math.max(...numbers),
+    );
+  };
+  const ranges: string[] = [];
+  for (const { start, end } of reference.ranges) {
+    const first = endpointId(start);
+    const last = endpointId(end);
+    if (!first || !last) return undefined;
+    ranges.push(first === last ? first : `${first}-${last}`);
+  }
+  return ranges.join(',');
 }
 
 export function parseBibleLocation(

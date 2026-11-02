@@ -1,9 +1,8 @@
 import { Button, clsx, Icon, Popover } from '@a-type/ui';
-import { getRouteApi, useLocation, useRouter } from '@tanstack/react-router';
+import { getRouteApi, useLocation } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import { m } from '#/paraglide/messages';
-import { checkpointReadingPosition } from '../../lib/bible/reading-history';
 import type { TranslationManifest } from '../../lib/bible/source';
 import { readRecentTranslations } from '../../lib/bible/source';
 import type { BookId } from '../../lib/bible/verse';
@@ -36,7 +35,6 @@ export function BibleReaderLocation({
   className,
 }: BibleReaderLocationProps) {
   const navigate = readerRoute.useNavigate();
-  const router = useRouter();
   const { location } = readerRoute.useLoaderData();
   const activeReadingTabId = useLocation({
     select: (routeLocation) => routeLocation.state.activeReadingTabId,
@@ -56,7 +54,6 @@ export function BibleReaderLocation({
   });
 
   const navigateTo = async (nextBookId: BookId, nextChapter: number) => {
-    checkpointReadingPosition(router.history, { bookId, chapter });
     await navigate({
       params: {
         translation: translationId,

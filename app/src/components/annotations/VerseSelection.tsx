@@ -10,7 +10,7 @@ const readerRoute = getRouteApi('/$translation/$book/$chapter');
 const VerseSelectionContext = createContext<readonly VerseId[]>([]);
 
 export function VerseSelectionProvider({ children }: { children: ReactNode }) {
-  const { location, sources } = readerRoute.useLoaderData();
+  const { sources } = readerRoute.useLoaderData();
   const selection = readerRoute.useSearch({
     select: (search) => search.verses,
   });
@@ -19,12 +19,7 @@ export function VerseSelectionProvider({ children }: { children: ReactNode }) {
         extractVerses(entry.source, entry.bookId).map((verse) => verse.id),
       )
     : [];
-  const verses = resolveVerseSelection(
-    selection,
-    location.chapter,
-    availableVerses,
-    location.bookId,
-  );
+  const verses = resolveVerseSelection(selection, availableVerses);
   return (
     <VerseSelectionContext value={verses}>{children}</VerseSelectionContext>
   );

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { LexiconReference } from '../../../lib/bible/lexicon-definition';
+import { referenceVerseSelection } from '../../../lib/bible/location';
 import { resolveVerseSelection } from '../../../lib/bible/selection';
 import { AppError } from '../../../lib/error';
 import { translationBookVersesQueryOptions } from '../../../queries/translations';
@@ -66,8 +67,10 @@ function PassagePreview({ reference }: { reference: LexiconReference }) {
   }
   const ids = new Set(
     resolveVerseSelection(
-      reference.passage.verses,
-      reference.passage.chapter,
+      referenceVerseSelection(
+        reference.passage,
+        query.data.verses.map(({ id }) => id),
+      ),
       query.data.verses.map(({ id }) => id),
     ),
   );

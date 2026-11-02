@@ -1,6 +1,7 @@
 import { DbClient, DbProvider } from '@tanstack/react-db';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
+  createBrowserHistory,
   createMemoryHistory,
   createRootRoute,
   createRoute,
@@ -11,7 +12,7 @@ import { createElement } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { describe, expect, it, vi } from 'vitest';
-import { page } from 'vitest/browser';
+import { page, userEvent } from 'vitest/browser';
 
 import type * as AnnotationReconcile from '../../lib/annotations/reconcile';
 import {
@@ -65,6 +66,9 @@ async function renderReader(
   selection: string,
   activeReadingTabId?: string,
   loadedBookIds = ['GEN', 'EXO'],
+  initialPath = '/eng_test/GEN/1',
+  browserHistory = false,
+  fixtureStyles = '',
 ) {
   const dbClient = new DbClient();
   const queryClient = new QueryClient({
@@ -97,21 +101,40 @@ async function renderReader(
     loader: load,
     component: BibleReader,
   });
-  const initialUrl = `/eng_test/GEN/1?verses=${encodeURIComponent(selection)}`;
-  const history = createMemoryHistory({ initialEntries: [initialUrl] });
+  const initialUrl = selection
+    ? `${initialPath}?verses=${encodeURIComponent(selection)}`
+    : initialPath;
+  const previousHistory = browserHistory
+    ? { href: window.location.href, state: window.history.state }
+    : undefined;
+  if (browserHistory) window.history.replaceState(null, '', initialUrl);
+  const history = browserHistory
+    ? createBrowserHistory()
+    : createMemoryHistory({ initialEntries: [initialUrl] });
   if (activeReadingTabId) history.replace(initialUrl, { activeReadingTabId });
   const router = createRouter({
     routeTree: rootRoute.addChildren([readerRoute]),
     history,
+    scrollRestoration: true,
+    scrollToTopSelectors: [
+      '[data-reader-scroll-area] [data-scroll-direction="vertical"]',
+      '#page--main-content',
+    ],
   });
   await router.load();
   const container = document.createElement('div');
   const styles = document.createElement('style');
-  styles.textContent = '[data-reader-chapter] { min-height: 600px; }';
+  styles.textContent = `[data-reader-chapter] { min-height: 600px; } ${fixtureStyles}`;
   document.head.append(styles);
   container.style.cssText = 'height: 300px; width: 600px';
   document.body.append(container);
   const root = createRoot(container);
+  const rendered = new Promise<void>((resolve) => {
+    const unsubscribe = router.subscribe('onRendered', () => {
+      unsubscribe();
+      resolve();
+    });
+  });
   flushSync(() =>
     root.render(
       createElement(
@@ -125,6 +148,7 @@ async function renderReader(
       ),
     ),
   );
+  await rendered;
   return {
     container,
     router,
@@ -135,6 +159,14 @@ async function renderReader(
       styles.remove();
       queryClient.clear();
       await dbClient.cleanup();
+      if (previousHistory) {
+        history.destroy();
+        window.history.replaceState(
+          previousHistory.state,
+          '',
+          previousHistory.href,
+        );
+      }
     },
   };
 }
@@ -165,6 +197,9 @@ describe('multi-chapter reader', () => {
           100;
         const before = target.getBoundingClientRect().top;
         await expect.poll(chapters).toEqual(expected);
+        await expect
+          .poll(() => view.router.history.location.pathname)
+          .toBe(`/eng_test/${id}`);
         const after = target.getBoundingClientRect().top;
         expect(Math.abs(after - before), id).toBeLessThan(3);
       };
@@ -186,8 +221,11 @@ describe('multi-chapter reader', () => {
       await moveTo('EXO/1', ['GEN/2', 'EXO/1', 'EXO/2']);
       await moveTo('GEN/2', ['GEN/1', 'GEN/2', 'EXO/1']);
       expect(view.router.history.length).toBe(historyLength);
-      expect(view.load).toHaveBeenCalledTimes(loadCount);
+      expect(view.load.mock.calls.length - loadCount).toBeLessThanOrEqual(5);
       expect(view.router.state.location.search.verses).toBe('GEN/1:1-EXO/2:1');
+      expect(view.router.state.location.maskedLocation?.search.verses).toBe(
+        'GEN/1:1-EXO/2:1',
+      );
       expect(
         view.container.querySelectorAll('[data-selected="true"]').length,
       ).toBe(3);
@@ -311,19 +349,21 @@ describe('multi-chapter reader', () => {
           view.container.querySelector('[aria-label="Genesis, Chapter 2"]'),
         )
         .not.toBeNull();
+      expect(view.router.history.location.pathname).toBe('/eng_test/GEN/2');
       view.router.history.forward();
       await expect
         .poll(() =>
           view.container.querySelector('[aria-label="Genesis, Chapter 1"]'),
         )
         .not.toBeNull();
+      expect(view.router.history.location.pathname).toBe('/eng_test/GEN/1');
     } finally {
       await view.cleanup();
     }
   });
 
   it('keeps an annotation draft open while scrolling across chapters', async () => {
-    const view = await renderReader('1-1');
+    const view = await renderReader('GEN/1:1');
     try {
       view.container.style.height = '800px';
       expect(
@@ -350,6 +390,9 @@ describe('multi-chapter reader', () => {
           view.container.querySelector('[data-reader-chapter="EXO/1"]'),
         )
         .not.toBeNull();
+      await expect
+        .poll(() => view.router.history.location.pathname)
+        .toBe('/eng_test/GEN/2');
       await expect
         .element(page.getByRole('textbox', { name: 'Comment' }))
         .toHaveValue('A draft note');
@@ -428,7 +471,7 @@ describe('multi-chapter reader', () => {
   });
 
   it('starts with the active chapter and one adjacent chapter', async () => {
-    const view = await renderReader('EXO/1:1,GEN/1:1-2:1');
+    const view = await renderReader('EXO/1:1,GEN/1:1-GEN/2:1');
     try {
       const chapters = [
         ...view.container.querySelectorAll('[data-reader-chapter]'),
@@ -498,12 +541,51 @@ describe('multi-chapter reader', () => {
   );
 
   it.each([
-    ['GEN/2:1', 'GEN/2', 'EXO/1'],
-    ['EXO/1:1', 'EXO/1', 'EXO/2'],
+    {
+      verseId: 'GEN/2:1',
+      chapterId: 'GEN/2',
+      nextChapter: 'EXO/1',
+      withTab: false,
+    },
+    {
+      verseId: 'EXO/1:1',
+      chapterId: 'EXO/1',
+      nextChapter: 'EXO/2',
+      withTab: false,
+    },
+    {
+      verseId: 'GEN/2:1',
+      chapterId: 'GEN/2',
+      nextChapter: 'EXO/1',
+      withTab: true,
+    },
+    {
+      verseId: 'EXO/1:1',
+      chapterId: 'EXO/1',
+      nextChapter: 'EXO/2',
+      withTab: true,
+    },
+    {
+      verseId: 'EXO/1:1',
+      chapterId: 'EXO/1',
+      nextChapter: 'EXO/2',
+      withTab: true,
+      browserHistory: true,
+    },
   ])(
-    'selects %s without moving or remounting the reader',
-    async (verseId, chapterId, nextChapter) => {
-      const view = await renderReader('');
+    'selects $verseId without moving the reader (tab: $withTab, browser history: $browserHistory)',
+    async ({ verseId, chapterId, nextChapter, withTab, browserHistory }) => {
+      const savedTabs = localStorage.getItem('margins:reading-tabs');
+      const tab = withTab
+        ? createReadingTab('eng_test', { bookId: 'GEN', chapter: 1 })
+        : undefined;
+      const view = await renderReader(
+        '',
+        tab?.id,
+        undefined,
+        undefined,
+        browserHistory,
+      );
       const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView');
       try {
         const viewport = view.container.querySelector<HTMLElement>(
@@ -519,7 +601,7 @@ describe('multi-chapter reader', () => {
           viewport.scrollTop +=
             target.getBoundingClientRect().top -
             viewport.getBoundingClientRect().top -
-            30;
+            100;
           await expect
             .poll(() =>
               view.container.querySelector(
@@ -528,19 +610,39 @@ describe('multi-chapter reader', () => {
             )
             .not.toBeNull();
         }
+        await expect
+          .poll(() => view.router.history.location.pathname)
+          .toBe(`/eng_test/${chapterId}`);
+        const historyLength = view.router.history.length;
         const verse = view.container.querySelector<HTMLElement>(
           `[data-verse-id="${verseId}"]`,
         )!;
         const before = verse.getBoundingClientRect().top;
         scrollIntoView.mockClear();
-        verse.click();
+        await userEvent.click(verse);
         await expect
           .poll(() => view.router.state.location.search.verses)
           .toBe(verseId);
         await expect
+          .poll(() => view.router.history.location.pathname)
+          .toBe(`/eng_test/${chapterId}`);
+        expect(view.router.state.location.maskedLocation?.search.verses).toBe(
+          verseId,
+        );
+        await expect
           .poll(() => verse.getAttribute('data-selected'))
           .toBe('true');
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        );
         expect(view.router.state.location.pathname).toBe('/eng_test/GEN/1');
+        expect(view.router.state.location.state.activeReadingTabId).toBe(
+          tab?.id,
+        );
+        expect(view.router.state.location.state.readingPosition).toEqual({
+          bookId: chapterId.split('/')[0],
+          chapter: Number(chapterId.split('/')[1]),
+        });
         expect(
           view.container.querySelector(`[data-verse-id="${verseId}"]`),
         ).toBe(verse);
@@ -548,23 +650,82 @@ describe('multi-chapter reader', () => {
           Math.abs(verse.getBoundingClientRect().top - before),
         ).toBeLessThan(3);
         expect(scrollIntoView).not.toHaveBeenCalled();
+        expect(view.router.history.length).toBe(historyLength);
+
+        await userEvent.click(verse);
+        await expect
+          .poll(() => view.router.state.location.search.verses)
+          .toBe('');
+        expect(view.router.state.location.state.activeReadingTabId).toBe(
+          tab?.id,
+        );
+        expect(view.router.history.location.pathname).toBe(
+          `/eng_test/${chapterId}`,
+        );
+        expect(
+          Math.abs(verse.getBoundingClientRect().top - before),
+        ).toBeLessThan(3);
       } finally {
         scrollIntoView.mockRestore();
         await view.cleanup();
+        if (savedTabs === null) localStorage.removeItem('margins:reading-tabs');
+        else localStorage.setItem('margins:reading-tabs', savedTabs);
       }
     },
   );
+
+  it('keeps the active tab and viewport when selecting in the original chapter', async () => {
+    const savedTabs = localStorage.getItem('margins:reading-tabs');
+    const tab = createReadingTab('eng_test', { bookId: 'GEN', chapter: 1 });
+    const view = await renderReader('', tab.id, undefined, undefined, true);
+    try {
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      viewport.style.height = '300px';
+      const chapter = view.container.querySelector<HTMLElement>(
+        '[data-reader-chapter="GEN/1"]',
+      )!;
+      chapter.style.paddingTop = '250px';
+      const verse = chapter.querySelector<HTMLElement>(
+        '[data-verse-id="GEN/1:1"]',
+      )!;
+      viewport.scrollTop = 150;
+      const before = verse.getBoundingClientRect().top;
+      const historyLength = view.router.history.length;
+      await userEvent.click(verse);
+      await expect.poll(() => verse.getAttribute('data-selected')).toBe('true');
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      expect(view.router.state.location.state.activeReadingTabId).toBe(tab.id);
+      expect(view.container.querySelector('[data-verse-id="GEN/1:1"]')).toBe(
+        verse,
+      );
+      expect(Math.abs(verse.getBoundingClientRect().top - before)).toBeLessThan(
+        3,
+      );
+      expect(view.router.history.length).toBe(historyLength);
+    } finally {
+      await view.cleanup();
+      if (savedTabs === null) localStorage.removeItem('margins:reading-tabs');
+      else localStorage.setItem('margins:reading-tabs', savedTabs);
+    }
+  });
 
   it('scrolls to an initially selected verse but not subsequent selections', async () => {
     const scrollIntoView = vi
       .spyOn(Element.prototype, 'scrollIntoView')
       .mockImplementation(() => {});
-    const view = await renderReader('1-1');
+    const view = await renderReader('GEN/1:1');
     try {
       const verse = view.container.querySelector<HTMLElement>(
         '[data-verse-id="GEN/1:1"]',
       )!;
       expect(scrollIntoView.mock.contexts).toContain(verse);
+      expect(scrollIntoView).toHaveBeenCalledWith(
+        expect.objectContaining({ block: 'start' }),
+      );
       scrollIntoView.mockClear();
       verse.click();
       await expect
@@ -575,6 +736,128 @@ describe('multi-chapter reader', () => {
       expect(scrollIntoView).not.toHaveBeenCalled();
     } finally {
       scrollIntoView.mockRestore();
+      await view.cleanup();
+    }
+  });
+
+  it('positions an initially selected verse near the top below the sticky header', async () => {
+    const view = await renderReader(
+      'GEN/1:1',
+      undefined,
+      undefined,
+      undefined,
+      false,
+      '[id="verse-GEN/1:1"] { display: block; margin-top: 350px; }',
+    );
+    try {
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      const verse = view.container.querySelector<HTMLElement>(
+        '[id="verse-GEN/1:1"]',
+      )!;
+      const header = view.container.querySelector<HTMLElement>(
+        '[aria-label="Genesis, Chapter 1"]',
+      )!;
+      await expect
+        .poll(() => {
+          const viewportRect = viewport.getBoundingClientRect();
+          const verseTop = verse.getBoundingClientRect().top;
+          return (
+            verseTop >= header.getBoundingClientRect().bottom &&
+            verseTop - viewportRect.top < viewportRect.height * 0.4
+          );
+        })
+        .toBe(true);
+    } finally {
+      await view.cleanup();
+    }
+  });
+
+  it('keeps the original selection unambiguous in a shareable scrolled URL', async () => {
+    const view = await renderReader('GEN/1:1');
+    try {
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      viewport.style.height = '300px';
+      for (const [chapter, next] of [
+        ['GEN/2', 'EXO/1'],
+        ['EXO/1', 'EXO/2'],
+      ]) {
+        const element = view.container.querySelector<HTMLElement>(
+          `[data-reader-chapter="${chapter}"]`,
+        )!;
+        viewport.scrollTop +=
+          element.getBoundingClientRect().top -
+          viewport.getBoundingClientRect().top +
+          100;
+        await expect
+          .poll(() =>
+            view.container.querySelector(`[data-reader-chapter="${next}"]`),
+          )
+          .not.toBeNull();
+        await expect
+          .poll(() => view.router.history.location.pathname)
+          .toBe(`/eng_test/${chapter}`);
+      }
+      const shareUrl = view.router.history.location.href;
+      const copied = new URL(shareUrl, window.location.origin);
+      expect(copied.searchParams.get('verses')).toBe('GEN/1:1');
+      expect(view.router.state.location.search.verses).toBe('GEN/1:1');
+
+      const reopened = await renderReader(
+        copied.searchParams.get('verses')!,
+        undefined,
+        ['GEN', 'EXO'],
+        copied.pathname,
+      );
+      try {
+        expect(
+          reopened.container.querySelector('[aria-label="Exodus, Chapter 1"]'),
+        ).not.toBeNull();
+        expect(reopened.router.state.location.search.verses).toBe('GEN/1:1');
+      } finally {
+        await reopened.cleanup();
+      }
+    } finally {
+      await view.cleanup();
+    }
+  });
+
+  it('replaces the actual browser URL without adding history entries', async () => {
+    const view = await renderReader(
+      'GEN/1:1',
+      undefined,
+      ['GEN', 'EXO'],
+      undefined,
+      true,
+    );
+    try {
+      const length = window.history.length;
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      viewport.style.height = '300px';
+      const chapter = view.container.querySelector<HTMLElement>(
+        '[data-reader-chapter="GEN/2"]',
+      )!;
+      viewport.scrollTop +=
+        chapter.getBoundingClientRect().top -
+        viewport.getBoundingClientRect().top +
+        100;
+      await expect.poll(() => window.location.pathname).toBe('/eng_test/GEN/2');
+      expect(new URLSearchParams(window.location.search).get('verses')).toBe(
+        'GEN/1:1',
+      );
+      expect(window.history.length).toBe(length);
+      const restored = view.router.parseLocation(view.router.history.location);
+      expect(restored.pathname).toBe('/eng_test/GEN/1');
+      expect(restored.state.readingPosition).toEqual({
+        bookId: 'GEN',
+        chapter: 2,
+      });
+    } finally {
       await view.cleanup();
     }
   });

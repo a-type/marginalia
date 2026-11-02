@@ -5,7 +5,7 @@ import {
   useDbClient,
   useLiveQuery,
 } from '@tanstack/react-db';
-import { getRouteApi } from '@tanstack/react-router';
+import { getRouteApi, useLocation } from '@tanstack/react-router';
 import { useStore } from '@tanstack/react-store';
 import { useEffect } from 'react';
 
@@ -13,9 +13,8 @@ import {
   annotationCollectionOptions,
   getAnnotationCollections,
 } from '../../lib/annotations/collections';
-import { formatVerseSelection } from '../../lib/bible/selection';
+import { getReadingMask } from '../../lib/bible/reading-mask';
 import type { VerseId } from '../../lib/bible/verse';
-import { parseVerseId } from '../../lib/bible/verse';
 import { useSelectedVerseIds } from './VerseSelection';
 import {
   annotationPaneActions,
@@ -47,18 +46,9 @@ export function useResetAnnotationPaneOnRouteChange() {
 }
 
 export function useSetOpenAnnotation() {
-  const navigate = readerRoute.useNavigate();
-  return (annotation?: string) => {
-    navigate({
-      from: '/$translation/$book/$chapter',
-      search: (search) => ({
-        ...(search.verses ? { verses: search.verses } : {}),
-        ...(search.verses && annotation ? { annotation } : {}),
-      }),
-      replace: true,
-      resetScroll: false,
-    });
-  };
+  const setSelection = useNavigateSelection();
+  const verses = readerRoute.useSearch({ select: (search) => search.verses });
+  return (annotation?: string) => setSelection(verses, annotation);
 }
 
 export function useOpenAnnotation() {
@@ -103,38 +93,31 @@ export function useIsAnnotationPaneActive() {
   return !!explicitAnnotation || editing;
 }
 
-export function useSetSelectedVerseNumber() {
+function useNavigateSelection() {
   const navigate = readerRoute.useNavigate();
-  return (verse?: number, annotation?: string) =>
-    navigate({
-      search: {
-        ...(verse ? { verses: formatVerseSelection([verse]) } : {}),
-        ...(annotation ? { annotation } : {}),
-      },
-      state: (previous) => ({ ...previous, readingPosition: undefined }),
-      replace: true,
-      resetScroll: false,
-    });
-}
-
-export function useSetSelectedVerseId() {
-  const navigate = readerRoute.useNavigate();
-  const { location } = readerRoute.useLoaderData();
-  const setSelectedVerseNumber = useSetSelectedVerseNumber();
-  return (verseId: VerseId, annotation?: string) => {
-    const verse = parseVerseId(verseId);
-    if (verse.bookId === location.bookId && verse.chapter === location.chapter)
-      return setSelectedVerseNumber(verse.verse, annotation);
+  const { location, translationId } = readerRoute.useLoaderData();
+  const position = useLocation({
+    select: (routeLocation) => routeLocation.state.readingPosition,
+  });
+  return (verses?: string, annotation?: string) => {
+    const search = {
+      ...(verses ? { verses } : {}),
+      ...(verses && annotation ? { annotation } : {}),
+    };
     return navigate({
-      search: {
-        verses: verseId,
-        ...(annotation ? { annotation } : {}),
-      },
-      state: (previous) => ({ ...previous, readingPosition: undefined }),
+      search,
+      mask: getReadingMask(translationId, location, position, search),
+      state: true,
       replace: true,
       resetScroll: false,
     });
   };
+}
+
+export function useSetSelectedVerseId() {
+  const setSelection = useNavigateSelection();
+  return (verseId?: VerseId, annotation?: string) =>
+    setSelection(verseId, annotation);
 }
 
 export function usePrimarySelectedVerseId() {
@@ -157,7 +140,6 @@ export function useToggleVerseSelected(verseId: VerseId) {
   const selectedVerses = useSelectedVerseIds();
   const singleSelected =
     selectedVerses.length === 1 && selectedVerses[0] === verseId;
-  const setSelectedNumber = useSetSelectedVerseNumber();
   const setSelectedVerse = useSetSelectedVerseId();
   return () => {
     const phase = annotationPaneStore.state.phase;
@@ -170,7 +152,7 @@ export function useToggleVerseSelected(verseId: VerseId) {
       return;
     }
 
-    if (singleSelected) void setSelectedNumber();
+    if (singleSelected) void setSelectedVerse();
     else void setSelectedVerse(verseId);
   };
 }

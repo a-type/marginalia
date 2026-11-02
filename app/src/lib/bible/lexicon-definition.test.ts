@@ -38,7 +38,7 @@ describe('lexicon usage citations', () => {
   it('handles ranges, bracketed verses, and single-chapter books', () => {
     expect(
       references('Mat.13:20-23, Mrk.16:[20], 2Jn.5-6, Ju 6').map(
-        ({ passage }) => [passage.bookId, passage.chapter, passage.verses],
+        ({ passage }) => [passage.bookId, passage.chapter, passage.verseLabel],
       ),
     ).toEqual([
       ['MAT', 13, '20-23'],

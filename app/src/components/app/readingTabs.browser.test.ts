@@ -59,7 +59,7 @@ function AddTab() {
           translation: 'eng_webu',
           book: 'JHN',
           chapter: 3,
-          verses: '2-3,4:1',
+          verses: 'JHN/3:2-JHN/3:3,JHN/4:1',
         }),
     },
     'Open reading',
@@ -122,7 +122,7 @@ it('restores the supplied verses when revisiting a tab through app navigation', 
       .element(page.getByRole('status'))
       .toHaveTextContent('JHN/3:2,JHN/3:3,JHN/4:1');
     const tab = readReadingTabsState().tabs[0];
-    expect(tab.verses).toBe('2-3,4:1');
+    expect(tab.verses).toBe('JHN/3:2-JHN/3:3,JHN/4:1');
 
     container.querySelector<HTMLAnchorElement>('a[href="/"]')!.click();
     await expect
@@ -133,14 +133,16 @@ it('restores the supplied verses when revisiting a tab through app navigation', 
     )!;
     const url = new URL(link.href);
     expect(url.pathname).toBe('/eng_webu/JHN/3');
-    expect(url.searchParams.get('verses')).toBe('2-3,4:1');
+    expect(url.searchParams.get('verses')).toBe('JHN/3:2-JHN/3:3,JHN/4:1');
     expect(url.hash).toBe('#verse-JHN/3:2');
     link.click();
     await expect
       .element(page.getByRole('status'))
       .toHaveTextContent('JHN/3:2,JHN/3:3,JHN/4:1');
     expect(router.state.location.state.activeReadingTabId).toBe(tab.id);
-    expect(readReadingTabsState().tabs[0].verses).toBe('2-3,4:1');
+    expect(readReadingTabsState().tabs[0].verses).toBe(
+      'JHN/3:2-JHN/3:3,JHN/4:1',
+    );
 
     storeReadingTabPosition(tab.id, tab, tab.translationId, {
       bookId: 'JHN',
@@ -151,7 +153,9 @@ it('restores the supplied verses when revisiting a tab through app navigation', 
     await expect
       .element(page.getByRole('button', { name: 'Open reading' }))
       .toBeVisible();
-    router.history.back();
+    container
+      .querySelector<HTMLAnchorElement>(`[data-tab-id="${tab.id}"] a`)!
+      .click();
     await expect
       .poll(() => router.state.location.state.readingPosition)
       .toEqual({ bookId: 'JHN', chapter: 4 });

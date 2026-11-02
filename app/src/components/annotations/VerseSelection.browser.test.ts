@@ -182,7 +182,7 @@ ${'\\'}${marker} Continued first. \v 2 Second. \v 3 Third.
               ).click();
               await expect
                 .poll(() => view.router.state.location.search.verses)
-                .toBe(String(number));
+                .toBe(id);
               await expect
                 .poll(() =>
                   [...view.container.querySelectorAll('[data-selected]')].map(
@@ -216,7 +216,7 @@ ${'\\'}${marker} Continued first. \v 2 Second. \v 3 Third.
             .click();
           await expect
             .poll(() => view.router.state.location.search.verses)
-            .toBe('1');
+            .toBe('JHN/3:1');
           await expect
             .poll(() =>
               view.container
@@ -275,7 +275,7 @@ ${'\\'}${marker} Continued first. \v 2 Second. \v 3 Third.
     });
     vi.stubGlobal('fetch', fetch);
 
-    const view = await renderSelection('3:2-4:1');
+    const view = await renderSelection('JHN/3:2-JHN/4:1');
     try {
       const trigger = document.body.querySelector<HTMLButtonElement>(
         '[aria-label="Original text"]',
@@ -468,7 +468,7 @@ ${'\\'}${marker} Continued first. \v 2 Second. \v 3 Third.
           );
         }),
       );
-      const view = await renderSelection('3:2');
+      const view = await renderSelection('JHN/3:2');
       try {
         await expect
           .poll(() =>
@@ -673,7 +673,7 @@ ${'\\'}${marker} Continued first. \v 2 Second. \v 3 Third.
   });
 
   it('marks the range selected and starts an annotation with every verse', async () => {
-    const view = await renderSelection('3:2-4:2');
+    const view = await renderSelection('JHN/3:2-JHN/4:2');
     try {
       expect(
         [...view.container.querySelectorAll('button[aria-pressed="true"]')].map(
@@ -697,7 +697,7 @@ ${'\\'}${marker} Continued first. \v 2 Second. \v 3 Third.
   it.each(['JHN/3:1', 'JHN/3:2', 'JHN/3:3'] as const)(
     'replaces a range with only the clicked verse %s',
     async (verse) => {
-      const view = await renderSelection('2-3');
+      const view = await renderSelection('JHN/3:2-JHN/3:3');
       try {
         [...view.container.querySelectorAll('button')]
           .find((button) => button.textContent === verse)!
@@ -705,7 +705,7 @@ ${'\\'}${marker} Continued first. \v 2 Second. \v 3 Third.
         await expect
           .poll(() => view.router.state.location.search)
           .toEqual({
-            verses: verse.split(':')[1],
+            verses: verse,
           });
         await expect
           .poll(() =>

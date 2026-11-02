@@ -36,6 +36,7 @@
 
 .scrollArea :global([data-scroll-direction='vertical']) {
   overflow-anchor: none;
+  scroll-padding-block-start: calc(var(--m-sp-xl) + var(--m-sp-lg));
 }
 
 .chapterStatus {
@@ -49,8 +50,6 @@
 }
 
 .chapterDivider {
-  margin: var(--m-sp-lg) var(--m-sp-sm) var(--m-sp-sm);
-  padding: var(--m-sp-sm);
   border-block-start: var(--m-lw-sm) solid var(--m-gray-mid);
   color: var(--m-gray-ink);
 }

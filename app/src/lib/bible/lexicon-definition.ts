@@ -32,7 +32,7 @@ function reference(
   );
   if (!passage) return undefined;
   return {
-    label: `${bookNames[bookId][0]} ${passage.chapter}:${passage.verses}`,
+    label: `${bookNames[bookId][0]} ${passage.chapter}:${passage.verseLabel}`,
     passage,
   };
 }

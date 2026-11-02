@@ -4,6 +4,7 @@ import {
   parseBibleLocation,
   parseBibleReference,
   parseScriptureCitation,
+  referenceVerseSelection,
 } from './location';
 
 describe('parseBibleLocation', () => {
@@ -27,29 +28,30 @@ describe('parseBibleLocation', () => {
 
 describe('parseBibleReference', () => {
   it.each([
-    ['JHN 1:1', '1'],
-    ['JHN 1:1-5', '1-5'],
-    ['JHN 1:1-2:3', '1-2:3'],
+    ['JHN 1:1', 'JHN/1:1'],
+    ['JHN 1:1-5', 'JHN/1:1-JHN/1:5'],
+    ['JHN 1:1-2:3', 'JHN/1:1-JHN/2:3'],
   ])('selects the verses of %s', (reference, verses) => {
-    expect(parseBibleReference(reference)).toEqual({
+    const parsed = parseBibleReference(reference)!;
+    expect(parsed).toMatchObject({
       bookId: 'JHN',
       chapter: 1,
       verse: 1,
-      verses,
     });
+    expect(referenceVerseSelection(parsed)).toBe(verses);
   });
 
   it('accepts numbered books, chapter references, and surrounding whitespace', () => {
-    expect(parseBibleReference(' 1CO 13 ')).toEqual({
+    expect(parseBibleReference(' 1CO 13 ')).toMatchObject({
       bookId: '1CO',
       chapter: 13,
-      verses: 'start-end',
+      verseLabel: 'start-end',
     });
-    expect(parseBibleReference('HEB 11:1-3')).toEqual({
+    expect(parseBibleReference('HEB 11:1-3')).toMatchObject({
       bookId: 'HEB',
       chapter: 11,
       verse: 1,
-      verses: '1-3',
+      verseLabel: '1-3',
     });
   });
 
@@ -88,12 +90,34 @@ describe('parseScriptureCitation', () => {
     ['Luke 1:39-45(46-55)', 'LUK', 1, 39, '39-45,46-55'],
     ['John 3:start-end', 'JHN', 3, undefined, 'start-end'],
   ])('selects the verses of %s', (citation, bookId, chapter, verse, verses) => {
-    expect(parseScriptureCitation(citation)).toEqual({
+    expect(parseScriptureCitation(citation)).toMatchObject({
       bookId,
       chapter,
       ...(verse === undefined ? {} : { verse }),
-      verses,
+      verseLabel: verses,
     });
+  });
+
+  it("resolves chapter boundaries using the translation's actual verses", () => {
+    const verses = [
+      'GEN/1:2',
+      'GEN/1:4',
+      'GEN/2:1',
+      'GEN/3:3',
+      'GEN/3:7',
+    ] as const;
+    const chapters = parseScriptureCitation('Genesis 1-3')!;
+    expect(referenceVerseSelection(chapters)).toBeUndefined();
+    expect(referenceVerseSelection(chapters, verses)).toBe('GEN/1:2-GEN/3:7');
+    expect(
+      referenceVerseSelection(
+        parseScriptureCitation('Genesis 1:4-end')!,
+        verses,
+      ),
+    ).toBe('GEN/1:4');
+    expect(
+      referenceVerseSelection(parseScriptureCitation('Genesis 4')!, verses),
+    ).toBeUndefined();
   });
 
   it.each([

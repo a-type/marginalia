@@ -5,8 +5,6 @@ import type { BibleLocation } from '../../lib/bible/location';
 import { getAdjacentChapter } from '../../lib/bible/navigation';
 import type { TranslationManifest } from '../../lib/bible/source';
 import { getTranslationBook } from '../../lib/bible/source';
-import type { VerseId } from '../../lib/bible/verse';
-import { parseVerseId } from '../../lib/bible/verse';
 import { AppError } from '../../lib/error';
 import { readerBookSourceQueryOptions } from '../../queries/translations';
 
@@ -17,14 +15,12 @@ export function useContinuousChapters({
   manifest,
   sources,
   translationId,
-  selectedVerse,
   readingPosition,
 }: {
   location: BibleLocation;
   manifest: TranslationManifest;
   sources: BookSource[];
   translationId: string;
-  selectedVerse: VerseId | undefined;
   readingPosition: BibleLocation | undefined;
 }) {
   const [active, setActive] = useState<BibleLocation>(() => {
@@ -36,10 +32,6 @@ export function useContinuousChapters({
         readingPosition.chapter <= book.chapters
       )
         return readingPosition;
-    }
-    if (selectedVerse) {
-      const { bookId, chapter } = parseVerseId(selectedVerse);
-      return { bookId, chapter };
     }
     return location;
   });

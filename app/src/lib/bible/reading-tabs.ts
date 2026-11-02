@@ -2,7 +2,7 @@ import type { BibleLocation } from './location';
 import { parseBibleLocation } from './location';
 import { isTranslationId } from './manifests';
 import { normalizeVerseSelection, parseVerseSelection } from './selection';
-import { formatVerseId } from './verse';
+import { verseHashScrollIntoView } from './verse-scroll';
 
 export interface ReadingTab extends BibleLocation {
   id: string;
@@ -106,14 +106,8 @@ export function getReadingTabDestination(tab: ReadingTab) {
       ...(tab.position ? { readingPosition: tab.position } : {}),
     },
     search: tab.verses ? { verses: tab.verses } : {},
-    hash:
-      !tab.position && typeof first?.verse === 'number'
-        ? `verse-${formatVerseId(first.bookId ?? tab.bookId, first.chapter ?? tab.chapter, first.verse)}`
-        : '',
-    hashScrollIntoView: {
-      block: 'center' as const,
-      behavior: 'instant' as const,
-    },
+    hash: !tab.position && first ? `verse-${first}` : '',
+    hashScrollIntoView: verseHashScrollIntoView,
   };
 }
 

@@ -21,6 +21,10 @@ Margins is a Bible reader with decentralized social commentary. It renders Bible
 
 The app is in very early development. Backwards compatibility is not important unless a task explicitly requires it, including for application APIs, persisted SQLite data and schema, and published ATProto lexicons. Prefer the cleanest current design over compatibility layers; breaking migrations and lexicon changes are acceptable.
 
+## Communication
+
+Be concise. Surface ambiguities and edge cases for user decisions. After fixing a bug or regression, briefly summarize the root cause and nature of the fix.
+
 ## Toolchain
 
 - Use pnpm 11 and Node.js 24; versions are declared in [mise.toml](mise.toml).

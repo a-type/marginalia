@@ -98,23 +98,27 @@ Tabs restore their initial verse selection when revisited, including after
 reloading the app. Clearing or changing the selection, or navigating to another
 reading location, removes the tab's saved selection; later selections are not saved.
 
-Reader URLs accept a `verses` search parameter containing comma-separated verses
-and ranges, such as `?verses=3-8,12` or `?verses=3:8-4:2`. Endpoints without a
-chapter use the chapter in the URL. The `start` and `end` tokens refer to the first
-and last available verses of a chapter, for example `?verses=10-end` or
-`?verses=3:start-4:end`. Book-qualified endpoints also support selections across
-books, for example `?verses=GEN/50:26-EXO/1:2`. Endpoints without a book use the
-book in the URL. Ranges resolve against the selected translation. All chapters
+Reader URLs accept a `verses` search parameter containing comma-separated full
+verse IDs and ranges, such as `?verses=JHN/3:8-JHN/4:2,JHN/4:5` or
+`?verses=GEN/50:26-EXO/1:2`. Both endpoints of each range must be full verse IDs.
+Whole-chapter citations are resolved to the translation's actual first and last
+verses before navigation. Ranges resolve against the selected translation. All chapters
 can be read in order, including across book boundaries, with dividers between
 them. The reader keeps the most visible chapter and one neighboring chapter on
 each side rendered; scrolling loads further chapters as needed and stops at the
-ends of the translation. A tab remembers its visible chapter separately from its
-original URL selection. Scrolling updates the current history entry rather than
-adding entries, while explicit location changes and tab switches add entries.
-The address remains the tab's original reading URL while scrolling. Browser
-find-in-page can only search the chapters currently rendered.
+ends of the translation. Scrolling replaces the current URL with the visible
+chapter without adding history entries; explicit location changes and tab
+switches add entries. The router masks the visible URL while keeping the
+original reading route active, and full verse IDs retain their meaning in the
+visible URL when shared. A tab remembers its visible
+chapter and original selection. Opening a URL with a selection outside its
+chapter starts at the URL's chapter. Otherwise, opening a selection positions
+its first verse near the top when possible, unless a saved reading position is
+restored.
+Browser find-in-page can only search the
+chapters currently rendered.
 Chapter navigation uses the most visible chapter and clears the selection.
-The first selected verse is primary for scrolling, highlights, and viewing
+The first selected verse is primary for highlights and viewing
 annotations; starting a new annotation includes the entire selection, which must
 belong to one book. Clicking a verse replaces the URL selection with that single
 verse without repositioning the reader, rather than extending the selection.

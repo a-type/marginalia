@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react';
 
 import { Button, Icon, Tooltip } from '@a-type/ui';
-import { getRouteApi, useLocation, useRouter } from '@tanstack/react-router';
+import { getRouteApi, useLocation } from '@tanstack/react-router';
 
 import { m } from '#/paraglide/messages';
 import type { BibleLocation } from '../../lib/bible/location';
 import { getAdjacentChapter } from '../../lib/bible/navigation';
-import { checkpointReadingPosition } from '../../lib/bible/reading-history';
 import type { TranslationManifest } from '../../lib/bible/source';
 import cls from './BibleChapterNavigation.module.css';
 
@@ -26,7 +25,6 @@ export function BibleChapterNavigation({
   translationId: string;
 }) {
   const navigate = readerRoute.useNavigate();
-  const router = useRouter();
   const activeReadingTabId = useLocation({
     select: (routeLocation) => routeLocation.state.activeReadingTabId,
   });
@@ -37,7 +35,6 @@ export function BibleChapterNavigation({
     const current = getLocation();
     const target = getAdjacentChapter(manifest, current, direction);
     if (!target) return;
-    checkpointReadingPosition(router.history, current);
     void navigate({
       params: {
         translation: translationId,

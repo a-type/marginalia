@@ -1,11 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
-import { useLocation, useRouter } from '@tanstack/react-router';
-import { checkpointReadingPosition } from '../../lib/bible/reading-history';
+import { useLocation } from '@tanstack/react-router';
+import { extractVerses } from '../../lib/bible/search';
 import {
   fetchTranslationManifest,
   fetchTranslationSource,
 } from '../../lib/bible/source';
-import { parseVerseLabel } from '../../lib/bible/verse';
+import { parseVerseId } from '../../lib/bible/verse';
 import { readerRoute } from '../annotations/AnnotationPane';
 
 export function useSelectTranslation({
@@ -23,7 +23,6 @@ export function useSelectTranslation({
 }) {
   const search = readerRoute.useSearch();
   const navigate = readerRoute.useNavigate();
-  const router = useRouter();
   const activeReadingTabId = useLocation({
     select: (routeLocation) => routeLocation.state.activeReadingTabId,
   });
@@ -35,17 +34,10 @@ export function useSelectTranslation({
       const book = sameBook ?? next.books[0];
       const nextChapter = sameBook ? Math.min(chapter, book.chapters) : 1;
       const source = await fetchTranslationSource(translation, book);
-      let selectedExists = false;
-      let sourceChapter = 0;
-      for (const match of source.matchAll(/^\\(c|v)\s+(\S+)/gm)) {
-        if (match[1] === 'c') sourceChapter = Number(match[2]);
-        else if (
-          sourceChapter === nextChapter &&
-          String(parseVerseLabel(match[2])) === search.verses
-        )
-          selectedExists = true;
-      }
-      checkpointReadingPosition(router.history, { bookId, chapter });
+      const selectedExists = extractVerses(source, book.id).some(
+        ({ id }) =>
+          id === search.verses && parseVerseId(id).chapter === nextChapter,
+      );
       await navigate({
         params: { translation, book: book.id, chapter: String(nextChapter) },
         state: (previous) => ({

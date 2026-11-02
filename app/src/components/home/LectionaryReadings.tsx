@@ -2,16 +2,21 @@ import { m } from '#/paraglide/messages';
 import { getLocale } from '#/paraglide/runtime';
 import { Box, Button, Chip, Heading, Icon, P, Text } from '@a-type/ui';
 import { Link } from '@tanstack/react-router';
-import { parseScriptureCitation } from '../../lib/bible/location';
+import {
+  parseScriptureCitation,
+  type BibleReference,
+} from '../../lib/bible/location';
 import { getMostRecentlyVisitedReadingTab } from '../../lib/bible/reading-tabs';
 import { readStoredTranslationId } from '../../lib/bible/source';
 import { formatVerseId } from '../../lib/bible/verse';
+import { verseHashScrollIntoView } from '../../lib/bible/verse-scroll';
 import type {
   LectionaryDay,
   LectionaryReading,
   LectionarySection,
 } from '../../lib/lectionary';
 import { useAddReadingTab } from '../app/readingTabs';
+import { useReferenceSelections } from '../bible/useReferenceSelections';
 import cls from './LectionaryReadings.module.css';
 
 export function LectionaryReadings({ day }: { day: LectionaryDay }) {
@@ -78,37 +83,57 @@ function SectionReadings({ section }: { section: LectionarySection }) {
 
 function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
   const addReadingTab = useAddReadingTab();
-  const targets = readings.flatMap((reading) => {
-    const target = parseScriptureCitation(reading.citation);
-    return target ? [target] : [];
+  const translation =
+    getMostRecentlyVisitedReadingTab()?.translationId ??
+    readStoredTranslationId();
+  const targets = readings.map((reading) =>
+    parseScriptureCitation(reading.citation),
+  );
+  const validTargets = targets.filter(
+    (target): target is BibleReference => target !== null,
+  );
+  const selections = useReferenceSelections(translation, validTargets);
+  const openable = validTargets.flatMap((target, index) => {
+    const verses = selections[index].verses;
+    return verses ? [{ target, verses }] : [];
   });
+  let validIndex = 0;
   return (
     <Box col gap>
       <Box gap wrap items="center" render={<ul style={{ margin: 0 }} />}>
-        {readings.map((reading, index) => (
-          <Box
-            render={<li />}
-            col
-            gap="xs"
-            key={`${reading.citation}-${index}`}
-          >
-            <ReadingLink reading={reading} />
-          </Box>
-        ))}
+        {readings.map((reading, index) => {
+          const target = targets[index];
+          const selection = target ? selections[validIndex++] : undefined;
+          return (
+            <Box
+              render={<li />}
+              col
+              gap="xs"
+              key={`${reading.citation}-${index}`}
+            >
+              <ReadingLink
+                reading={reading}
+                target={target}
+                selection={selection}
+                translation={translation}
+              />
+            </Box>
+          );
+        })}
         <Button
           emphasis="light"
           size="small"
-          disabled={!targets.length}
+          disabled={
+            !openable.length ||
+            selections.some((selection) => selection.loading)
+          }
           onClick={() => {
-            const translation =
-              getMostRecentlyVisitedReadingTab()?.translationId ??
-              readStoredTranslationId();
-            targets.forEach((target, index) => {
+            openable.forEach(({ target, verses }, index) => {
               addReadingTab({
                 translation,
                 book: target.bookId,
                 chapter: target.chapter,
-                verses: target.verses,
+                verses,
                 activate: index === 0,
               });
             });
@@ -121,11 +146,25 @@ function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
   );
 }
 
-function ReadingLink({ reading }: { reading: LectionaryReading }) {
+function ReadingLink({
+  reading,
+  target,
+  selection,
+  translation,
+}: {
+  reading: LectionaryReading;
+  target: BibleReference | null;
+  selection:
+    | {
+        verses?: string;
+        loading: boolean;
+        unavailable: boolean;
+        retry?: () => unknown;
+      }
+    | undefined;
+  translation: string;
+}) {
   const addReadingTab = useAddReadingTab();
-  const target = parseScriptureCitation(reading.citation);
-  const tab = getMostRecentlyVisitedReadingTab();
-  const translation = tab?.translationId ?? readStoredTranslationId();
   if (!target) {
     return (
       <>
@@ -134,6 +173,27 @@ function ReadingLink({ reading }: { reading: LectionaryReading }) {
       </>
     );
   }
+  if (!selection?.verses) {
+    return (
+      <>
+        <Text>{reading.citation}</Text>
+        <Text
+          role={selection?.unavailable ? 'alert' : 'status'}
+          emphasis="secondary"
+        >
+          {selection?.unavailable
+            ? m.lexicon_passage_unavailable()
+            : m.lexicon_passage_loading()}
+        </Text>
+        {selection?.retry && (
+          <Button size="small" onClick={() => selection.retry?.()}>
+            {m.interlinear_retry()}
+          </Button>
+        )}
+      </>
+    );
+  }
+  const verses = selection.verses;
   return (
     <Chip
       className="justify-between"
@@ -159,16 +219,16 @@ function ReadingLink({ reading }: { reading: LectionaryReading }) {
               translation,
               book: target.bookId,
               chapter: target.chapter,
-              verses: target.verses,
+              verses,
             });
           }}
-          search={{ verses: target.verses }}
+          search={{ verses }}
           hash={
             target.verse
               ? `verse-${formatVerseId(target.bookId, target.chapter, target.verse)}`
               : ''
           }
-          hashScrollIntoView={{ block: 'center', behavior: 'instant' }}
+          hashScrollIntoView={verseHashScrollIntoView}
         />
       }
     >

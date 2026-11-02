@@ -39,7 +39,7 @@ afterEach(() => {
   });
 });
 
-async function renderLectionary() {
+async function renderLectionary(unavailableIsaiah = false) {
   const rootRoute = createRootRoute();
   const homeRoute = createRoute({
     getParentRoute: () => rootRoute,
@@ -61,6 +61,19 @@ async function renderLectionary() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  queryClient.setQueryData(
+    ['translation-book-verses', 'eng_webu', 'ISA'],
+    unavailableIsaiah
+      ? { available: false }
+      : {
+          available: true,
+          title: 'Test',
+          verses: [
+            { id: 'ISA/10:1', label: '1', text: 'First' },
+            { id: 'ISA/10:34', label: '34', text: 'Last' },
+          ],
+        },
+  );
   await router.load();
   const container = document.createElement('div');
   document.body.append(container);
@@ -202,7 +215,7 @@ describe('homepage lectionary', () => {
       const url = new URL(link!.href);
       expect(url.pathname).toBe('/eng_webu/MAT/22');
       expect(url.hash).toBe('#verse-MAT/22:34');
-      expect(url.searchParams.get('verses')).toBe('34-46');
+      expect(url.searchParams.get('verses')).toBe('MAT/22:34-MAT/22:46');
       await expect.element(page.getByText('Alternative reading')).toBeVisible();
       await expect
         .element(
@@ -266,7 +279,9 @@ describe('homepage lectionary', () => {
       await expect
         .poll(() => view.router.state.location.pathname)
         .toBe('/eng_webu/LUK/1');
-      expect(view.router.state.location.search).toEqual({ verses: '1-4' });
+      expect(view.router.state.location.search).toEqual({
+        verses: 'LUK/1:1-LUK/1:4',
+      });
       expect(view.router.state.location.hash).toBe('verse-LUK/1:1');
       const tabs = readReadingTabsState().tabs;
       expect(tabs).toHaveLength(2);
@@ -321,12 +336,12 @@ describe('homepage lectionary', () => {
         tabs[1].id,
       );
       expect(view.router.state.location.search).toEqual({
-        verses: '34-46',
+        verses: 'MAT/22:34-MAT/22:46',
       });
       expect(tabs.slice(1).map((tab) => tab.verses)).toEqual([
-        '34-46',
-        '20-26',
-        '1-6,13-17',
+        'MAT/22:34-MAT/22:46',
+        'LUK/6:20-LUK/6:26',
+        'PSA/90:1-PSA/90:6,PSA/90:13-PSA/90:17',
       ]);
     } finally {
       view.cleanup();
@@ -360,7 +375,9 @@ describe('homepage lectionary', () => {
         { bookId: 'ACT', chapter: 6 },
         { bookId: 'JHN', chapter: 14 },
       ]);
-      expect(view.router.state.location.search).toEqual({ verses: '1-7:16' });
+      expect(view.router.state.location.search).toEqual({
+        verses: 'ACT/6:1-ACT/7:16',
+      });
       expect(view.router.state.location.hash).toBe('verse-ACT/6:1');
     } finally {
       view.cleanup();
@@ -380,9 +397,32 @@ describe('homepage lectionary', () => {
         .toBe('/eng_webu/ISA/10');
       expect(readReadingTabsState().tabs).toHaveLength(1);
       expect(view.router.state.location.search).toEqual({
-        verses: 'start-end',
+        verses: 'ISA/10:1-ISA/10:34',
       });
-      expect(view.router.state.location.hash).toBe('');
+
+      expect(view.router.state.location.hash).toBe('verse-ISA/10:1');
+    } finally {
+      view.cleanup();
+    }
+  });
+
+  it('reports an unavailable chapter but can open other readings in its group', async () => {
+    mockLectServe({ weekday: true });
+    const view = await renderLectionary(true);
+    try {
+      await expect
+        .element(page.getByRole('alert'))
+        .toHaveTextContent('This passage is unavailable');
+      const buttons =
+        view.container.querySelectorAll<HTMLButtonElement>('section button');
+      expect(buttons[1].disabled).toBe(false);
+      buttons[1].click();
+      await expect
+        .poll(() => view.router.state.location.pathname)
+        .toBe('/eng_webu/MRK/9');
+      expect(readReadingTabsState().tabs).toMatchObject([
+        { bookId: 'MRK', verses: 'MRK/9:1-MRK/9:29' },
+      ]);
     } finally {
       view.cleanup();
     }

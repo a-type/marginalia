@@ -9,7 +9,7 @@ import { annotationPaneActions } from './annotationPaneState';
 import {
   useIsAnnotationPaneActive,
   usePrimarySelectedVerseId,
-  useSetSelectedVerseNumber,
+  useSetSelectedVerseId,
 } from './annotationPaneStore';
 import cls from './AnnotationToolbar.module.css';
 import { useSelectedVerseIds } from './VerseSelection';
@@ -18,7 +18,7 @@ export function AnnotationToolbar() {
   const dbClient = useDbClient();
   const selectedVerse = usePrimarySelectedVerseId();
   const selectedVerses = useSelectedVerseIds();
-  const setSelectedVerseNumber = useSetSelectedVerseNumber();
+  const setSelectedVerse = useSetSelectedVerseId();
   const paneOpen = useIsAnnotationPaneActive();
 
   if (!selectedVerse || paneOpen) return null;
@@ -29,7 +29,7 @@ export function AnnotationToolbar() {
         size="small"
         emphasis="ghost"
         aria-label="Deselect verse"
-        onClick={() => setSelectedVerseNumber()}
+        onClick={() => setSelectedVerse()}
       >
         <Icon name="x" />
       </Button>
