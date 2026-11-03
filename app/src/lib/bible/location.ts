@@ -158,6 +158,7 @@ export function parseScriptureCitation(
     match[2]
       .replace(/(\d)\s*\(/g, '$1,(')
       .replace(/[\s()[\]]/g, '')
+      .replace(/^([1-9]\d*)†/, '$1:')
       .replace(/[\u2013\u2014]/g, '-')
       .replace(/(\d)[a-f]/gi, '$1'),
   );

@@ -6,6 +6,8 @@ import {
   parseScriptureCitation,
   referenceVerseSelection,
 } from './location';
+import { resolveVerseSelection } from './selection';
+import { formatVerseId } from './verse';
 
 describe('parseBibleLocation', () => {
   it('accepts translation-defined book IDs and positive chapters', () => {
@@ -89,6 +91,9 @@ describe('parseScriptureCitation', () => {
     ['John 1:4-2:3, 5-7', 'JHN', 1, 4, '4-2:3,2:5-2:7'],
     ['Luke 1:39-45(46-55)', 'LUK', 1, 39, '39-45,46-55'],
     ['John 3:start-end', 'JHN', 3, undefined, 'start-end'],
+    ['2 Chronicles 29 † 1-11,20-30,35-36', '2CH', 29, 1, '1-11,20-30,35-36'],
+    ['Psalm 23†4', 'PSA', 23, 4, '4'],
+    ['John 3 † 16, 18–21', 'JHN', 3, 16, '16,18-21'],
   ])('selects the verses of %s', (citation, bookId, chapter, verse, verses) => {
     expect(parseScriptureCitation(citation)).toMatchObject({
       bookId,
@@ -120,6 +125,26 @@ describe('parseScriptureCitation', () => {
     ).toBeUndefined();
   });
 
+  it('selects only the specified verses from a dagger-delimited chapter', () => {
+    const reference = parseScriptureCitation(
+      '2 Chronicles 29 † 1-11,20-30,35-36',
+    )!;
+    const availableVerses = Array.from({ length: 36 }, (_, index) =>
+      formatVerseId('2CH', 29, index + 1),
+    );
+
+    expect(
+      resolveVerseSelection(
+        referenceVerseSelection(reference)!,
+        availableVerses,
+      ),
+    ).toEqual([
+      ...availableVerses.slice(0, 11),
+      ...availableVerses.slice(19, 30),
+      ...availableVerses.slice(34, 36),
+    ]);
+  });
+
   it.each([
     '',
     'Unknown 1:1',
@@ -130,6 +155,10 @@ describe('parseScriptureCitation', () => {
     'John 1:1junk',
     'John 9007199254740992:1',
     'John 1:9007199254740992',
+    'John 3 †',
+    'John 3 † 0',
+    'John 3 † 16junk',
+    'John 3 † 16 † 18',
   ])('rejects unresolvable citation %s', (citation) => {
     expect(parseScriptureCitation(citation)).toBeNull();
   });
