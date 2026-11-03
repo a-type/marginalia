@@ -11,13 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/setup@v1
         with:
-          run_install: true
+          runtime: node@24
       - name: Build
         run: pnpm run -r build
       - name: Install playwright
-        run: pnpm run -r playwright install
+        run: pnpx playwright install
       - name: Run tests
         run: pnpm run -r test
       - name: Run browser tests
