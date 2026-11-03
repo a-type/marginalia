@@ -89,6 +89,7 @@ function BibleReaderContent() {
   const {
     active,
     chapters,
+    viewportRef,
     contentRef,
     beforeRef,
     afterRef,
@@ -162,17 +163,10 @@ function BibleReaderContent() {
           className={cls.scrollArea}
           data-reader-scroll-area
           onScrollCapture={(event) => {
-            if (
-              event.target instanceof HTMLElement &&
-              event.target ===
-                contentRef.current?.closest(
-                  '[data-scroll-direction="vertical"]',
-                )
-            )
-              onScroll();
+            if (event.target === viewportRef.current) onScroll();
           }}
         >
-          <ScrollArea.Viewport direction="vertical">
+          <ScrollArea.Viewport direction="vertical" ref={viewportRef}>
             <div className={cls.chapterContent} ref={contentRef}>
               <div className={cls.readerHeader}>
                 <BibleReaderLocation
@@ -257,6 +251,7 @@ function BibleReaderContent() {
               location={scrubLocation}
               manifest={manifest}
               thumbRef={scrollThumbRef}
+              viewportRef={viewportRef}
             />
           )}
           <ScrollArea.Corner />
@@ -282,10 +277,12 @@ function ScrubLocationCallout({
   location,
   manifest,
   thumbRef,
+  viewportRef,
 }: {
   location: BibleLocation;
   manifest: TranslationManifest;
   thumbRef: RefObject<HTMLDivElement | null>;
+  viewportRef: RefObject<HTMLDivElement | null>;
 }) {
   const calloutRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -297,9 +294,7 @@ function ScrubLocationCallout({
     const thumb = thumbRef.current;
     const callout = calloutRef.current;
     const root = thumb?.closest<HTMLElement>('[data-reader-scroll-area]');
-    const viewport = root?.querySelector<HTMLElement>(
-      '[data-scroll-direction="vertical"]',
-    );
+    const viewport = viewportRef.current;
     if (!thumb || !callout || !root || !viewport) return;
     let frame: number | null = null;
     const update = () => {
@@ -334,7 +329,7 @@ function ScrubLocationCallout({
       observer.disconnect();
       if (frame !== null) cancelAnimationFrame(frame);
     };
-  }, [thumbRef]);
+  }, [thumbRef, viewportRef]);
   return (
     <div
       className={cls.scrubLocation}

@@ -79,6 +79,7 @@ export function useContinuousChapters({
       };
     }),
   });
+  const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const beforeRef = useRef<HTMLDivElement>(null);
   const afterRef = useRef<HTMLDivElement>(null);
@@ -106,9 +107,7 @@ export function useContinuousChapters({
 
   useLayoutEffect(() => {
     const content = contentRef.current;
-    const viewport = content?.closest<HTMLElement>(
-      '[data-scroll-direction="vertical"]',
-    );
+    const viewport = viewportRef.current;
     const before = beforeRef.current;
     const after = afterRef.current;
     if (!content || !viewport || !before || !after) return;
@@ -134,7 +133,7 @@ export function useContinuousChapters({
       if (averageHeight.current <= 0)
         averageHeight.current = viewport.clientHeight;
       const visible = initialized.current
-        ? getMostVisibleChapter(content)
+        ? getMostVisibleChapter(content, viewport)
         : undefined;
       const top = visible?.getBoundingClientRect().top;
       before.style.height = `${chaptersBefore * averageHeight.current}px`;
@@ -185,7 +184,7 @@ export function useContinuousChapters({
     return () => {
       observer.disconnect();
       if (anchor.current) return;
-      const visible = getMostVisibleChapter(content);
+      const visible = getMostVisibleChapter(content, viewport);
       if (visible) {
         anchor.current = {
           key: visible.dataset.readerChapter ?? '',
@@ -217,7 +216,10 @@ export function useContinuousChapters({
           );
         return;
       }
-      const visible = getMostVisibleChapter(contentRef.current);
+      const visible = getMostVisibleChapter(
+        contentRef.current,
+        viewportRef.current,
+      );
       const chapter = chapters.find(
         (entry) =>
           visible?.dataset.readerChapter === `${entry.bookId}/${entry.chapter}`,
@@ -234,10 +236,7 @@ export function useContinuousChapters({
             : chapter,
         );
       } else {
-        const content = contentRef.current;
-        const viewport = content?.closest<HTMLElement>(
-          '[data-scroll-direction="vertical"]',
-        );
+        const viewport = viewportRef.current;
         if (!viewport || averageHeight.current <= 0) return;
         const viewportTop = viewport.getBoundingClientRect().top;
         const before = beforeRef.current?.getBoundingClientRect();
@@ -273,9 +272,7 @@ export function useContinuousChapters({
 
   function getEstimatedLocation(): BibleLocation | undefined {
     const content = contentRef.current;
-    const viewport = content?.closest<HTMLElement>(
-      '[data-scroll-direction="vertical"]',
-    );
+    const viewport = viewportRef.current;
     if (!content || !viewport || averageHeight.current <= 0) return undefined;
     const maxScroll = viewport.scrollHeight - viewport.clientHeight;
     if (viewport.scrollTop <= 0) {
@@ -302,7 +299,7 @@ export function useContinuousChapters({
       offset = (viewportTop - after.top) / averageHeight.current;
       start = chaptersBefore + chapters.length;
     } else {
-      const visible = getMostVisibleChapter(content);
+      const visible = getMostVisibleChapter(content, viewport);
       const visibleLocation = chapters.find(
         (chapter) =>
           visible?.dataset.readerChapter ===
@@ -320,9 +317,7 @@ export function useContinuousChapters({
     anchor.current = null;
     jump.current = null;
     const content = contentRef.current;
-    const viewport = content?.closest<HTMLElement>(
-      '[data-scroll-direction="vertical"]',
-    );
+    const viewport = viewportRef.current;
     const element = [
       ...(content?.querySelectorAll<HTMLElement>('[data-reader-chapter]') ??
         []),
@@ -351,6 +346,7 @@ export function useContinuousChapters({
   return {
     active,
     chapters,
+    viewportRef,
     contentRef,
     beforeRef,
     afterRef,
@@ -375,7 +371,10 @@ export function useContinuousChapters({
       if (estimate) goTo(estimate);
     },
     getVisibleLocation() {
-      const visible = getMostVisibleChapter(contentRef.current);
+      const visible = getMostVisibleChapter(
+        contentRef.current,
+        viewportRef.current,
+      );
       return (
         chapters.find(
           (chapter) =>
@@ -387,9 +386,7 @@ export function useContinuousChapters({
     ensureActiveVisible() {
       if (scrub.current) return;
       const content = contentRef.current;
-      const viewport = content?.closest<HTMLElement>(
-        '[data-scroll-direction="vertical"]',
-      );
+      const viewport = viewportRef.current;
       const element = [
         ...(content?.querySelectorAll<HTMLElement>('[data-reader-chapter]') ??
           []),
@@ -421,8 +418,10 @@ function getChapterAtIndex(manifest: TranslationManifest, index: number) {
   return undefined;
 }
 
-function getMostVisibleChapter(content: HTMLDivElement | null) {
-  const viewport = content?.closest('[data-scroll-direction="vertical"]');
+function getMostVisibleChapter(
+  content: HTMLDivElement | null,
+  viewport: HTMLDivElement | null,
+) {
   if (!content || !viewport) return undefined;
   const bounds = viewport.getBoundingClientRect();
   let mostVisible = 0;

@@ -88,6 +88,7 @@ describe('continuous scroll space', () => {
       const {
         active,
         chapters,
+        viewportRef,
         contentRef,
         beforeRef,
         afterRef,
@@ -118,7 +119,8 @@ describe('continuous scroll space', () => {
         createElement(
           'div',
           {
-            'data-scroll-direction': 'vertical',
+            'data-test-reader-viewport': '',
+            ref: viewportRef,
             'data-active': `${active.bookId}/${active.chapter}`,
             onScroll,
             style: { height: 150, overflowY: 'auto' },
@@ -147,7 +149,7 @@ describe('continuous scroll space', () => {
       ),
     );
     const viewport = container.querySelector<HTMLElement>(
-      '[data-scroll-direction]',
+      '[data-test-reader-viewport]',
     )!;
     return {
       viewport,
