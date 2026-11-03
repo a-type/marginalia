@@ -118,6 +118,28 @@ function BibleReaderContent() {
   const selectedLocation = selectedVerse
     ? parseVerseId(selectedVerse)
     : undefined;
+  const primaryChapterOutsideWindow =
+    selectedLocation !== undefined &&
+    !chapters.some(
+      (chapter) =>
+        chapter.bookId === selectedLocation.bookId &&
+        chapter.chapter === selectedLocation.chapter,
+    );
+  const primaryChapterAnnotationsQuery = useQuery({
+    ...chapterAnnotationsQueryOptions(selectedLocation ?? location),
+    enabled:
+      typeof window !== 'undefined' &&
+      userDidQuery.isSuccess &&
+      primaryChapterOutsideWindow,
+  });
+  useReconcileChapterAnnotations({
+    accountDid,
+    dbClient: useDbClient(),
+    location: selectedLocation ?? location,
+    queryData: primaryChapterAnnotationsQuery.data,
+    queryIsSuccess: primaryChapterAnnotationsQuery.isSuccess,
+    userQueryIsSuccess: userDidQuery.isSuccess && primaryChapterOutsideWindow,
+  });
   const scrollToSelection =
     selectedLocation?.bookId === location.bookId &&
     selectedLocation.chapter === location.chapter &&
