@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { BibleLocation } from '../../lib/bible/location';
 import type { TranslationManifest } from '../../lib/bible/source';
-import { useContinuousChapters } from './useContinuousChapters';
+import { CHAPTER_BUFFER, useContinuousChapters } from './useContinuousChapters';
 
 const manifest: TranslationManifest = {
   id: 'test',
@@ -16,6 +16,28 @@ const manifest: TranslationManifest = {
     { id: 'EXO', title: 'Exodus', chapters: 3, source: 'exo.usfm' },
   ],
 };
+
+function getExpectedChapterWindow(
+  translationManifest: TranslationManifest,
+  location: BibleLocation,
+) {
+  const chapterIds = translationManifest.books.flatMap((book) =>
+    Array.from(
+      { length: book.chapters },
+      (_, index) => `${book.id}/${index + 1}`,
+    ),
+  );
+  const activeIndex = chapterIds.indexOf(
+    `${location.bookId}/${location.chapter}`,
+  );
+  const start = Math.max(0, activeIndex - CHAPTER_BUFFER);
+  const end = Math.min(chapterIds.length, activeIndex + CHAPTER_BUFFER + 1);
+  return {
+    chapterIds: chapterIds.slice(start, end),
+    chaptersBefore: start,
+    chaptersAfter: chapterIds.length - end,
+  };
+}
 
 function renderChapters(location: BibleLocation) {
   const client = new QueryClient();
@@ -52,19 +74,22 @@ function renderChapters(location: BibleLocation) {
 }
 
 describe('continuous chapter buffer', () => {
-  it('includes two chapters on each side across book boundaries', () => {
-    expect(renderChapters({ bookId: 'EXO', chapter: 1 })).toBe(
-      'GEN/2,GEN/3,EXO/1,EXO/2,EXO/3',
+  it('includes the configured chapter buffer on each side across book boundaries', () => {
+    const location = { bookId: 'EXO', chapter: 1 };
+    expect(renderChapters(location)).toBe(
+      getExpectedChapterWindow(manifest, location).chapterIds.join(','),
     );
   });
 
   it('stops at the beginning and end of the translation', () => {
-    expect(renderChapters({ bookId: 'GEN', chapter: 1 })).toBe(
-      'GEN/1,GEN/2,GEN/3',
-    );
-    expect(renderChapters({ bookId: 'EXO', chapter: 3 })).toBe(
-      'EXO/1,EXO/2,EXO/3',
-    );
+    for (const location of [
+      { bookId: 'GEN', chapter: 1 },
+      { bookId: 'EXO', chapter: 3 },
+    ]) {
+      expect(renderChapters(location)).toBe(
+        getExpectedChapterWindow(manifest, location).chapterIds.join(','),
+      );
+    }
   });
 });
 
@@ -198,15 +223,23 @@ describe('continuous scroll space', () => {
   }
 
   it('estimates space on both sides and stops at translation boundaries', () => {
-    for (const [location, before, after] of [
-      [{ bookId: 'GEN', chapter: 1 }, 0, 13],
-      [{ bookId: 'EXO', chapter: 1 }, 6, 5],
-      [{ bookId: 'EXO', chapter: 8 }, 13, 0],
+    for (const location of [
+      { bookId: 'GEN', chapter: 1 },
+      { bookId: 'EXO', chapter: 1 },
+      { bookId: 'EXO', chapter: 8 },
     ] as const) {
+      const { chaptersBefore, chaptersAfter } = getExpectedChapterWindow(
+        longManifest,
+        location,
+      );
       const reader = renderScrollArea(location);
       try {
-        expect(reader.before.getBoundingClientRect().height).toBe(before * 240);
-        expect(reader.after.getBoundingClientRect().height).toBe(after * 240);
+        expect(reader.before.getBoundingClientRect().height).toBe(
+          chaptersBefore * 240,
+        );
+        expect(reader.after.getBoundingClientRect().height).toBe(
+          chaptersAfter * 240,
+        );
       } finally {
         reader.cleanup();
       }
@@ -216,6 +249,16 @@ describe('continuous scroll space', () => {
   it('loads the chapter reached by jumping into either estimated buffer', async () => {
     const reader = renderScrollArea({ bookId: 'EXO', chapter: 1 });
     try {
+      const chapterIds = longManifest.books.flatMap((book) =>
+        Array.from(
+          { length: book.chapters },
+          (_, index) => `${book.id}/${index + 1}`,
+        ),
+      );
+      const window = getExpectedChapterWindow(longManifest, {
+        bookId: 'EXO',
+        chapter: 1,
+      });
       const jumpTo = (buffer: HTMLElement, offset: number) => {
         reader.viewport.scrollTop +=
           buffer.getBoundingClientRect().top -
@@ -225,7 +268,11 @@ describe('continuous scroll space', () => {
       };
       jumpTo(reader.after, 3.5 * 240);
       await vi.waitFor(() =>
-        expect(reader.viewport.dataset.active).toBe('EXO/7'),
+        expect(reader.viewport.dataset.active).toBe(
+          chapterIds[
+            window.chaptersBefore + window.chapterIds.length + Math.floor(3.5)
+          ],
+        ),
       );
       expect(reader.viewport.scrollTop).toBeGreaterThan(0);
 
@@ -248,6 +295,14 @@ describe('continuous scroll space', () => {
   it('updates estimates after chapter resizing without moving the visible chapter', async () => {
     const reader = renderScrollArea({ bookId: 'EXO', chapter: 1 });
     try {
+      const expectedWindow = getExpectedChapterWindow(longManifest, {
+        bookId: 'EXO',
+        chapter: 1,
+      });
+      const { chaptersBefore, chaptersAfter } = expectedWindow;
+      const averageHeight =
+        ((expectedWindow.chapterIds.length - 1) * 240 + 480) /
+        expectedWindow.chapterIds.length;
       const active = reader.viewport.querySelector<HTMLElement>(
         '[data-reader-chapter="EXO/1"]',
       )!;
@@ -257,9 +312,15 @@ describe('continuous scroll space', () => {
       const top = active.getBoundingClientRect().top;
       later.style.height = '480px';
       await vi.waitFor(() =>
-        expect(reader.before.getBoundingClientRect().height).toBe(6 * 288),
+        expect(reader.before.getBoundingClientRect().height).toBeCloseTo(
+          chaptersBefore * averageHeight,
+          1,
+        ),
       );
-      expect(reader.after.getBoundingClientRect().height).toBe(5 * 288);
+      expect(reader.after.getBoundingClientRect().height).toBeCloseTo(
+        chaptersAfter * averageHeight,
+        1,
+      );
       expect(active.getBoundingClientRect().top).toBeCloseTo(top, 0);
     } finally {
       reader.cleanup();
@@ -340,7 +401,7 @@ describe('continuous scroll space', () => {
         reader.viewport.getBoundingClientRect().top +
         2.5 * 240;
       reader.finishScrubbing();
-      await expectAtTop('EXO/7');
+      await expectAtTop(`EXO/${CHAPTER_BUFFER + 5}`);
 
       const last = reader.viewport.querySelector<HTMLElement>(
         '[data-reader-chapter="EXO/8"]',

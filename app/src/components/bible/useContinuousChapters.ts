@@ -10,7 +10,7 @@ import { readerBookSourceQueryOptions } from '../../queries/translations';
 
 type BookSource = { bookId: string; source: string };
 
-const CHAPTER_BUFFER = 3;
+export const CHAPTER_BUFFER = 3;
 
 export function useContinuousChapters({
   location,

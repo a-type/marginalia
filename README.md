@@ -104,8 +104,8 @@ verse IDs and ranges, such as `?verses=JHN/3:8-JHN/4:2,JHN/4:5` or
 Whole-chapter citations are resolved to the translation's actual first and last
 verses before navigation. Ranges resolve against the selected translation. All chapters
 can be read in order, including across book boundaries, with dividers between
-them. The reader keeps the most visible chapter and one neighboring chapter on
-each side rendered; scrolling loads further chapters as needed and stops at the
+them. The reader keeps the most visible chapter and up to three neighboring chapters
+on each side rendered; scrolling loads further chapters as needed and stops at the
 ends of the translation. Scrolling replaces the current URL with the visible
 chapter without adding history entries; explicit location changes and tab
 switches add entries. The router masks the visible URL while keeping the

@@ -28,7 +28,7 @@
   width: 100%;
 }
 
-.annotationToolbar {
+.toolbar {
   position: sticky;
   bottom: 0;
   pointer-events: none;

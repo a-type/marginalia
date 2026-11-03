@@ -214,7 +214,7 @@ function BibleReaderContent() {
                       chapter.chapter === 1 ? '' : undefined
                     }
                     data-reader-chapter-loaded={
-                      chapterSource.data !== undefined && !chapterSource.isError
+                      chapterSource.data !== undefined
                     }
                     ref={
                       chapterSource.data !== undefined &&
@@ -225,7 +225,8 @@ function BibleReaderContent() {
                     }
                   >
                     {index > 0 && <Box className={cls.chapterDivider} />}
-                    {chapterSource.isError ? (
+                    {chapterSource.isError &&
+                    chapterSource.data === undefined ? (
                       <div className={cls.chapterStatus} role="alert">
                         <p>{m.bible_load_error()}</p>
                         <Button onClick={() => void chapterSource.refetch()}>
@@ -247,7 +248,7 @@ function BibleReaderContent() {
                   </section>
                 );
               })}
-              <div className={cls.annotationToolbar}>
+              <div className={cls.toolbar}>
                 <AnnotationToolbar />
               </div>
               <div className={cls.chapterBuffer} ref={afterRef} aria-hidden />
