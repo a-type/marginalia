@@ -1,9 +1,8 @@
 import { AppError } from '../error';
-import { defaultTranslationId, type TranslationManifest } from './manifests';
+import type { TranslationManifest } from './manifests';
 import type { SearchVerse } from './search';
 import {
   cancelTranslation,
-  defaultDownloadSuppressed,
   deleteTranslation,
   listTranslations,
 } from './translations';
@@ -180,16 +179,6 @@ export function startTranslationService() {
             () => {},
           );
         }
-      }
-      if (
-        !(await defaultDownloadSuppressed()) &&
-        !records.some((record) => record.id === defaultTranslationId)
-      ) {
-        void downloadTranslation(
-          defaultTranslationId,
-          false,
-          priorityBook,
-        ).catch(() => {});
       }
     } catch (error) {
       console.warn('Offline translation storage unavailable', error);
