@@ -855,6 +855,51 @@ describe('multi-chapter reader', () => {
     }
   });
 
+  it('snaps book starts to the top when approached closely', async () => {
+    const view = await renderReader('');
+    try {
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      viewport.style.height = '300px';
+      const bookStart = view.container.querySelector<HTMLElement>(
+        '[data-reader-chapter="EXO/1"]',
+      )!;
+      expect(
+        view.container
+          .querySelector('[data-reader-chapter="GEN/1"]')
+          ?.hasAttribute('data-reader-book-start'),
+      ).toBe(true);
+      expect(
+        view.container
+          .querySelector('[data-reader-chapter="GEN/2"]')
+          ?.hasAttribute('data-reader-book-start'),
+      ).toBe(false);
+      expect(
+        view.container
+          .querySelector('[data-reader-chapter="EXO/1"]')
+          ?.hasAttribute('data-reader-book-start'),
+      ).toBe(true);
+      expect(getComputedStyle(viewport).scrollSnapType).toBe('y');
+      expect(getComputedStyle(bookStart).scrollSnapAlign).toBe('start');
+
+      viewport.style.scrollPaddingBlockStart = '0px';
+      const viewportTop = viewport.getBoundingClientRect().top;
+      viewport.scrollTop +=
+        bookStart.getBoundingClientRect().top - viewportTop - 20;
+      await expect
+        .poll(() => {
+          const currentViewportTop = viewport.getBoundingClientRect().top;
+          return Math.abs(
+            bookStart.getBoundingClientRect().top - currentViewportTop,
+          );
+        })
+        .toBeLessThan(2);
+    } finally {
+      await view.cleanup();
+    }
+  });
+
   it.each([
     ['Previous chapter', '/eng_test/GEN/1'],
     ['Next chapter', '/eng_test/EXO/1'],

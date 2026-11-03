@@ -188,6 +188,9 @@ function BibleReaderContent() {
                   <section
                     key={`${chapter.bookId}/${chapter.chapter}`}
                     data-reader-chapter={`${chapter.bookId}/${chapter.chapter}`}
+                    data-reader-book-start={
+                      chapter.chapter === 1 ? '' : undefined
+                    }
                     data-reader-chapter-loaded={
                       chapterSource.data !== undefined && !chapterSource.isError
                     }

@@ -49,7 +49,12 @@
 
 .scrollArea :global([data-scroll-direction='vertical']) {
   overflow-anchor: none;
+  scroll-snap-type: y proximity;
   scroll-padding-block-start: calc(var(--m-sp-xl) + var(--m-sp-lg));
+}
+
+.scrollArea :global([data-reader-book-start]) {
+  scroll-snap-align: start;
 }
 
 .scrollArea :global([data-reader-scrubbing]) {
