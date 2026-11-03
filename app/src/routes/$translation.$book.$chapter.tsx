@@ -4,14 +4,20 @@ import { AppShell } from '../components/app/AppShell';
 import { BibleReader } from '../components/bible/BibleReader';
 import { BibleRecovery } from '../components/bible/BibleRecovery';
 import { parseBibleLocation } from '../lib/bible/location';
-import { normalizeVerseSelection } from '../lib/bible/selection';
 import {
-  fetchTranslationManifest,
-  fetchTranslationSource,
+  normalizeVerseSelection,
+  selectionBookIds,
+  selectionBookRanges,
+} from '../lib/bible/selection';
+import {
   getTranslationBook,
   hasTranslationChapter,
   isTranslationId,
 } from '../lib/bible/source';
+import {
+  readerBookSourceQueryOptions,
+  readerManifestQueryOptions,
+} from '../queries/translations';
 
 export const Route = createFileRoute('/$translation/$book/$chapter')({
   ssr: ({ params }) =>
@@ -30,20 +36,36 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
       ...(verses && annotation ? { annotation } : {}),
     };
   },
-  loader: async ({ params }) => {
+  loaderDeps: ({ search }) => ({
+    bookRanges: selectionBookRanges(search.verses),
+  }),
+  loader: async ({ params, deps, context }) => {
     const location = parseBibleLocation(params.book, params.chapter);
     if (!location || !isTranslationId(params.translation)) throw notFound();
 
-    const manifest = await fetchTranslationManifest(params.translation);
+    const manifest = await context.queryClient.fetchQuery(
+      readerManifestQueryOptions(params.translation),
+    );
     const book = getTranslationBook(manifest, location.bookId);
     if (!hasTranslationChapter(book, location.chapter)) throw notFound();
 
-    const source = await fetchTranslationSource(params.translation, book);
-
+    const books = selectionBookIds(deps.bookRanges, location.bookId, manifest);
+    const sources = await Promise.all(
+      books.map(async (bookId) => {
+        const selectedBook = getTranslationBook(manifest, bookId);
+        if (!selectedBook) throw notFound();
+        return {
+          bookId,
+          source: await context.queryClient.fetchQuery(
+            readerBookSourceQueryOptions(params.translation, selectedBook),
+          ),
+        };
+      }),
+    );
     return {
       location,
       manifest,
-      source,
+      sources,
       translationId: params.translation,
     };
   },

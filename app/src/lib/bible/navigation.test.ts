@@ -35,13 +35,13 @@ describe('chapter navigation', () => {
     ).toEqual({ bookId: 'GEN', chapter: 50 });
   });
 
-  it('wraps between the first and last chapters of the translation', () => {
+  it('stops at the first and last chapters of the translation', () => {
     expect(
       getAdjacentChapter(manifest, { bookId: 'GEN', chapter: 1 }, -1),
-    ).toEqual({ bookId: 'REV', chapter: 22 });
+    ).toBeUndefined();
     expect(
       getAdjacentChapter(manifest, { bookId: 'REV', chapter: 22 }, 1),
-    ).toEqual({ bookId: 'GEN', chapter: 1 });
+    ).toBeUndefined();
   });
 
   it('has no target for a chapter absent from the translation', () => {

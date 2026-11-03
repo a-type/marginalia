@@ -159,8 +159,8 @@ describe('Fetch Bible commercial-use policy', () => {
   });
 
   it('routes bundled resources locally and validates remote filenames', () => {
-    expect(translationResourceUrl('eng_webc', 'tob.usfm')).toBe(
-      '/usfm/eng_webc/tob.usfm',
+    expect(translationResourceUrl('eng_webu', 'tob.usfm')).toBe(
+      '/usfm/eng_webu/tob.usfm',
     );
     expect(translationResourceUrl('fra_test', 'gen.usfm')).toBe(
       'https://v1.fetch.bible/bibles/fra_test/usfm/gen.usfm',

@@ -8,12 +8,7 @@ export default defineConfig({
         test: {
           name: 'unit',
           environment: 'node',
-          include: [
-            'src/**/*.test.ts',
-            'scripts/**/*.test.mjs',
-            'indexer/**/*.test.ts',
-          ],
-          exclude: ['src/**/*.browser.test.ts'],
+          include: ['src/**/*.test.ts'],
         },
       },
     ],

@@ -21,7 +21,7 @@ import {
   usePrimarySelectedVerseAnnotations,
   usePrimarySelectedVerseId,
   useSetOpenAnnotation,
-  useSetSelectedVerseNumber,
+  useSetSelectedVerseId,
 } from './annotationPaneStore';
 import { AnnotationView } from './AnnotationView';
 import { useSelectedVerseIds } from './VerseSelection';
@@ -47,10 +47,10 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
     setOpenAnnotation(annotationId);
   };
 
-  const setSelectedNumber = useSetSelectedVerseNumber();
+  const setSelectedVerse = useSetSelectedVerseId();
   const handleClose = () => {
     annotationPaneActions.reset();
-    setSelectedNumber();
+    setSelectedVerse();
   };
   const deleteMutation = useMutation({
     networkMode: 'always',

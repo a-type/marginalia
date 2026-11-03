@@ -5,7 +5,7 @@ import { AppNavigation } from './AppNavigation';
 import cls from './AppShell.module.css';
 
 export function AppShell({ children }: { children?: React.ReactNode }) {
-  useThemedTitleBar('--m-gray-wash');
+  useThemedTitleBar('--m-tint-paper');
   return (
     <div className={cls.root}>
       <header className={cls.header}>

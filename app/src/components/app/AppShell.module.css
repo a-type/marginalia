@@ -7,7 +7,7 @@
   min-width: 0;
   gap: var(--m-sp-sm);
   padding: var(--m-sp-sm);
-  @apply --mx-bg(var(--m-gray-wash));
+  @apply --mx-bg(var(--m-tint-paper));
 
   @media (min-width: 900px) {
     padding: var(--m-sp-lg);

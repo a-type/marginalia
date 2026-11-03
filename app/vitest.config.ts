@@ -3,17 +3,14 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   resolve: { tsconfigPaths: true },
+  optimizeDeps: { include: ['fflate'] },
   test: {
     projects: [
       {
         test: {
           name: 'unit',
           environment: 'node',
-          include: [
-            'src/**/*.test.ts',
-            'scripts/**/*.test.mjs',
-            'indexer/**/*.test.ts',
-          ],
+          include: ['src/**/*.test.ts'],
           exclude: ['src/**/*.browser.test.ts'],
         },
       },

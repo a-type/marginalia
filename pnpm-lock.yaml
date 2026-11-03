@@ -200,6 +200,9 @@ catalogs:
     '@tanstack/eslint-config':
       specifier: latest
       version: 0.4.0
+    '@tanstack/intent':
+      specifier: ^0.5.6
+      version: 0.5.6
     '@tanstack/react-db':
       specifier: ^0.3.7
       version: 0.3.7
@@ -317,6 +320,9 @@ importers:
       '@tanstack/eslint-config':
         specifier: 'catalog:'
         version: 0.4.0(@typescript-eslint/utils@8.67.0(eslint@9.39.5(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3))(eslint@9.39.5(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3)
+      '@tanstack/intent':
+        specifier: 'catalog:'
+        version: 0.5.6
       dotenv-cli:
         specifier: 'catalog:'
         version: 11.0.0
@@ -329,6 +335,9 @@ importers:
       lint-staged:
         specifier: ^17.6.0
         version: 17.6.0
+      playwright:
+        specifier: 'catalog:'
+        version: 1.62.1
       prettier:
         specifier: ^3.9.6
         version: 3.9.6
@@ -2414,6 +2423,11 @@ packages:
   '@tanstack/history@1.162.5':
     resolution: {integrity: sha512-w1+YvwmTkwt5n8yUqEH3IWZ9DsmorCZW/EQ3KYHnqEgIkOZpH54NvW6/Epq3Dzb8H0ifIeYX8PExvrNLIH5FIA==}
     engines: {node: '>=20.19'}
+
+  '@tanstack/intent@0.5.6':
+    resolution: {integrity: sha512-9Ta/GMGPcqBIqlbrqeYyqBVKEP7XyAXy6nn90bPiE2oHB6KPgjEweUbHNXLQ6Pim01VtMMNf0dmUFMGKKHXmlw==}
+    engines: {node: '>=20.12.0'}
+    hasBin: true
 
   '@tanstack/match-sorter-utils@9.1.2':
     resolution: {integrity: sha512-aPkUQctDzpXLSWhlx7jUDi3mInsI18xcnrK1hvIyIa88ab1ax88cACr7xU+BKMCGB4NZYNwh4SoNSEbv3RY2NA==}
@@ -6892,6 +6906,8 @@ snapshots:
   '@tanstack/history@1.162.4': {}
 
   '@tanstack/history@1.162.5': {}
+
+  '@tanstack/intent@0.5.6': {}
 
   '@tanstack/match-sorter-utils@9.1.2':
     dependencies:

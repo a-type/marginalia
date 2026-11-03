@@ -6,7 +6,7 @@ import { formatVerseAnchorName, parseVerseId } from '../../lib/bible/verse';
 import type { SocialProfile } from '../../lib/social/functions';
 import { profilesForDidsQueryOptions } from '../../queries/social';
 import { currentUserDidQueryOptions } from '../../queries/user';
-import { useSetSelectedVerseNumber } from './annotationPaneStore';
+import { useSetSelectedVerseId } from './annotationPaneStore';
 import type { AnnotationWithVerses } from './useChapterAnnotations';
 import cls from './VerseGutter.module.css';
 
@@ -15,7 +15,7 @@ export interface VerseGutterProps {
 }
 
 export function VerseGutter({ annotations }: VerseGutterProps) {
-  const setSelectedVerseNumber = useSetSelectedVerseNumber();
+  const setSelectedVerseId = useSetSelectedVerseId();
   const userDidQuery = useQuery({
     ...currentUserDidQueryOptions,
     enabled: typeof window !== 'undefined',
@@ -57,12 +57,7 @@ export function VerseGutter({ annotations }: VerseGutterProps) {
           className={cls.indicators}
           style={{ positionAnchor: formatVerseAnchorName(verseId) }}
           aria-label={`Open ${verseAnnotations.length} annotations`}
-          onClick={() =>
-            setSelectedVerseNumber(
-              parseVerseId(verseId).verse,
-              verseAnnotations[0]?.id,
-            )
-          }
+          onClick={() => setSelectedVerseId(verseId, verseAnnotations[0]?.id)}
         >
           <span className={cls.dots} aria-hidden="true">
             {verseAnnotations.map((annotation) => (

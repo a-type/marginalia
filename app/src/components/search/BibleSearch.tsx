@@ -247,7 +247,9 @@ function useBibleSearch(
           book: verse.bookId,
           chapter: String(verse.chapter),
         },
-        search: { verses: String(verse.verse) },
+        search: { verses: id },
+        hash: `verse-${id}`,
+        hashScrollIntoView: { block: 'start', behavior: 'instant' },
       });
       onSelect?.();
     },

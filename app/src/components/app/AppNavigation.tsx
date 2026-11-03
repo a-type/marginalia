@@ -106,16 +106,18 @@ export function AppNavigation() {
               key={tab.id}
               data-tab-id={tab.id}
               location={`/${tab.translationId}/${tab.bookId}/${tab.chapter}`}
-              locationState={{ activeReadingTabId: tab.id }}
+              locationState={destination.state}
               locationSearch={destination.search}
               locationHash={destination.hash}
+              locationHashScrollIntoView={destination.hashScrollIntoView}
               active={activeReadingTabId === tab.id}
-              tooltip={`${tab.bookId} ${tab.chapter}`}
+              tooltip={`${tab.position?.bookId ?? tab.bookId} ${tab.position?.chapter ?? tab.chapter}`}
               onClick={() => visitReadingTab(tab.id)}
               onClose={() => closeReadingTabHandler(tab.id)}
               className={cls.tab}
             >
-              {tab.bookId} {tab.chapter}
+              {tab.position?.bookId ?? tab.bookId}{' '}
+              {tab.position?.chapter ?? tab.chapter}
             </NavTab>
           );
         })}

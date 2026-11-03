@@ -509,6 +509,24 @@ function joinInlineLines(usfm: string): string[] {
  * Parses a USFM book or chapter into a renderable tree. Unknown markers are
  * retained so consumers can supply a component without changing the parser.
  */
+const parsedDocuments = new Map<string, USFMDocument>();
+
+export function parseUSFMCached(usfm: string): USFMDocument {
+  const cached = parsedDocuments.get(usfm);
+  if (cached) {
+    parsedDocuments.delete(usfm);
+    parsedDocuments.set(usfm, cached);
+    return cached;
+  }
+  const document = parseUSFM(usfm);
+  parsedDocuments.set(usfm, document);
+  if (parsedDocuments.size > 4) {
+    const oldest = parsedDocuments.keys().next().value;
+    if (oldest !== undefined) parsedDocuments.delete(oldest);
+  }
+  return document;
+}
+
 export function parseUSFM(usfm: string): USFMDocument {
   const document: USFMDocument = { type: 'document', children: [] };
   let chapter: USFMMarkerNode | undefined;

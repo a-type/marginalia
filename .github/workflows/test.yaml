@@ -1,0 +1,24 @@
+name: Test
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: pnpm/setup@v1
+        with:
+          runtime: node@24
+      - name: Build
+        run: pnpm run -r build
+      - name: Install playwright
+        run: pnpm exec playwright install --with-deps
+      - name: Run tests
+        run: pnpm run -r test
+      - name: Run browser tests
+        run: pnpm run -r test:browser

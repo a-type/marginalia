@@ -1,7 +1,7 @@
 import { Fragment, useMemo } from 'react';
 
 import { defaultUSFMComponents } from './default-components';
-import { parseUSFM } from './parser';
+import { parseUSFMCached } from './parser';
 import { selectChapter } from './select-chapter';
 import './usfm.css';
 
@@ -98,7 +98,7 @@ export function USFMRenderer({
   className,
 }: USFMRendererProps) {
   const document = useMemo(
-    () => selectChapter(parseUSFM(usfm), chapter),
+    () => selectChapter(parseUSFMCached(usfm), chapter),
     [chapter, usfm],
   );
   const components = {

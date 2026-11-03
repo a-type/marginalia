@@ -20,6 +20,7 @@ export interface BibleReaderLocationProps {
   translationId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCurrentRouteChapterChange: (bookId: BookId, chapter: number) => void;
   className?: string;
 }
 
@@ -30,9 +31,11 @@ export function BibleReaderLocation({
   translationId,
   open,
   onOpenChange,
+  onCurrentRouteChapterChange,
   className,
 }: BibleReaderLocationProps) {
   const navigate = readerRoute.useNavigate();
+  const { location } = readerRoute.useLoaderData();
   const activeReadingTabId = useLocation({
     select: (routeLocation) => routeLocation.state.activeReadingTabId,
   });
@@ -57,9 +60,15 @@ export function BibleReaderLocation({
         book: nextBookId,
         chapter: String(nextChapter),
       },
-      state: (previous) => ({ ...previous, activeReadingTabId }),
+      state: (previous) => ({
+        ...previous,
+        activeReadingTabId,
+        readingPosition: undefined,
+      }),
       search: {},
     });
+    if (location.bookId === nextBookId && location.chapter === nextChapter)
+      onCurrentRouteChapterChange(nextBookId, nextChapter);
     onOpenChange(false);
   };
 
