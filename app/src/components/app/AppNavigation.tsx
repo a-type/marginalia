@@ -5,18 +5,16 @@ import {
   Tooltip,
   useLocalStorage,
 } from '@a-type/ui';
-import { useLocation, useNavigate } from '@tanstack/react-router';
+import { useLocation } from '@tanstack/react-router';
 import {
   useAddReadingTab,
-  useNavigateToReadingTab,
+  useCloseReadingTab,
   useReadingTabsState,
 } from './readingTabs';
 
 import { m } from '#/paraglide/messages';
 import { getInitialTranslationBook } from '../../lib/bible/manifests';
 import {
-  closeReadingTab,
-  getMostRecentlyVisitedReadingTab,
   getReadingTabDestination,
   visitReadingTab,
 } from '../../lib/bible/reading-tabs';
@@ -31,7 +29,6 @@ export function AppNavigation() {
     'margins:nav-expanded',
     false,
   );
-  const navigate = useNavigate();
   const pathname = useLocation({ select: (location) => location.pathname });
   const activeReadingTabId = useReadingTabRouteState();
   const { data: selectedTranslation } = useTranslationManifest(
@@ -42,28 +39,9 @@ export function AppNavigation() {
     : undefined;
 
   const readingTabs = useReadingTabsState();
-  const navigateToReadingTab = useNavigateToReadingTab();
+  const closeReadingTab = useCloseReadingTab();
 
   const addReadingTab = useAddReadingTab();
-
-  const closeReadingTabHandler = (tabId: string) => {
-    const tab = readingTabs.tabs.find((item) => item.id === tabId);
-    if (!tab) return;
-    closeReadingTab(tabId);
-    if (activeReadingTabId !== tabId) return;
-
-    const nextTab = getMostRecentlyVisitedReadingTab();
-    if (nextTab) {
-      navigateToReadingTab(nextTab, true);
-    } else {
-      void navigate({
-        to: '/',
-        state: { skipHomeRestore: true },
-        replace: true,
-        viewTransition: true,
-      });
-    }
-  };
 
   return (
     <nav className={cls.navigation} aria-label={m.app_navigation_label()}>
@@ -113,7 +91,7 @@ export function AppNavigation() {
               active={activeReadingTabId === tab.id}
               tooltip={`${tab.position?.bookId ?? tab.bookId} ${tab.position?.chapter ?? tab.chapter}`}
               onClick={() => visitReadingTab(tab.id)}
-              onClose={() => closeReadingTabHandler(tab.id)}
+              onClose={() => closeReadingTab(tab.id)}
               className={cls.tab}
             >
               {tab.position?.bookId ?? tab.bookId}{' '}

@@ -105,6 +105,8 @@
   "bible_search_previous": "Previous results",
   "bible_search_next": "Next results",
   "bible_recovery_home": "Go to home tab",
+  "bible_recovery_close": "Close tab",
+  "bible_recovery_translations": "Read this passage in another translation:",
   "bible_chapter_label": "Chapter",
   "bible_chapter_navigation": "Chapter navigation",
   "bible_previous_chapter": "Previous chapter",

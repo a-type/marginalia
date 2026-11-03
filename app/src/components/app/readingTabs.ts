@@ -1,7 +1,9 @@
-import { useNavigate } from '@tanstack/react-router';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import {
   createReadingTab,
+  closeReadingTab,
+  getMostRecentlyVisitedReadingTab,
   getReadingTabDestination,
   readReadingTabsState,
   subscribeToReadingTabs,
@@ -56,4 +58,28 @@ export function useAddReadingTab() {
     return tab;
   };
   return addReadingTab;
+}
+
+export function useCloseReadingTab() {
+  const navigate = useNavigate();
+  const navigateToReadingTab = useNavigateToReadingTab();
+  const activeTabId = useLocation({
+    select: (location) => location.state.activeReadingTabId,
+  });
+  return (tabId: string) => {
+    if (!readReadingTabsState().tabs.some((tab) => tab.id === tabId)) return;
+    closeReadingTab(tabId);
+    if (activeTabId !== tabId) return;
+    const nextTab = getMostRecentlyVisitedReadingTab();
+    if (nextTab) {
+      navigateToReadingTab(nextTab, true);
+    } else {
+      void navigate({
+        to: '/',
+        state: { skipHomeRestore: true },
+        replace: true,
+        viewTransition: true,
+      });
+    }
+  };
 }
