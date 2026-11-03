@@ -16,6 +16,8 @@ jobs:
           run_install: true
       - name: Build
         run: pnpm run -r build
+      - name: Install playwright
+        run: pnpm run -r playwright install
       - name: Run tests
         run: pnpm run -r test
       - name: Run browser tests
