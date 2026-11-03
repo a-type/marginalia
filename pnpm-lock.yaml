@@ -335,6 +335,9 @@ importers:
       lint-staged:
         specifier: ^17.6.0
         version: 17.6.0
+      playwright:
+        specifier: 'catalog:'
+        version: 1.62.1
       prettier:
         specifier: ^3.9.6
         version: 3.9.6
