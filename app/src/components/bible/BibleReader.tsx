@@ -97,6 +97,7 @@ function BibleReaderContent() {
     startScrubbing,
     finishScrubbing,
     getSource,
+    ensureActiveVisible,
     goTo,
   } = useContinuousChapters({
     location,
@@ -152,6 +153,7 @@ function BibleReaderContent() {
     manifest,
     goTo,
   );
+  useEnsureReaderPositionOnNavigation(ensureActiveVisible);
 
   return (
     <div className={cls.root}>
@@ -262,6 +264,17 @@ function BibleReaderContent() {
       </section>
       <AnnotationPane accountDid={accountDid} className={cls.annotationPane} />
     </div>
+  );
+}
+
+function useEnsureReaderPositionOnNavigation(ensureActiveVisible: () => void) {
+  const router = useRouter();
+  useLayoutEffect(
+    () =>
+      router.subscribe('onRendered', (event) => {
+        if (event.pathChanged) ensureActiveVisible();
+      }),
+    [router, ensureActiveVisible],
   );
 }
 

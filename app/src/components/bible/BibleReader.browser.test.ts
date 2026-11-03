@@ -69,6 +69,7 @@ async function renderReader(
   initialPath = '/eng_test/GEN/1',
   browserHistory = false,
   fixtureStyles = '',
+  readerManifest = manifest,
 ) {
   const dbClient = new DbClient();
   const queryClient = new QueryClient({
@@ -83,7 +84,7 @@ async function renderReader(
       params: { book: string; chapter: string; translation: string };
     }) => ({
       location: { bookId: params.book, chapter: Number(params.chapter) },
-      manifest,
+      manifest: readerManifest,
       source: sources.find((entry) => entry.bookId === params.book)!.source,
       sources: sources.filter((entry) => loadedBookIds.includes(entry.bookId)),
       translationId: params.translation,
@@ -591,6 +592,54 @@ describe('multi-chapter reader', () => {
         .poll(() => view.router.state.location.pathname)
         .toBe('/eng_test/EXO/2');
       expect(view.router.history.length).toBe(historyLength + 1);
+    } finally {
+      await view.cleanup();
+    }
+  });
+
+  it('shows a directly selected chapter after a large preceding scroll buffer', async () => {
+    const view = await renderReader(
+      '',
+      undefined,
+      undefined,
+      undefined,
+      false,
+      '',
+      {
+        ...manifest,
+        books: [
+          { id: 'GEN', title: 'Genesis', chapters: 50 },
+          { id: 'EXO', title: 'Exodus', chapters: 2 },
+        ],
+      },
+    );
+    try {
+      const chapterIsVisible = (id: string) => {
+        const viewport = view.container.querySelector<HTMLElement>(
+          '[data-scroll-direction="vertical"]',
+        );
+        const chapter = view.container.querySelector<HTMLElement>(
+          `[data-reader-chapter="${id}"]`,
+        );
+        if (!viewport || !chapter?.querySelector('[data-verse-id]'))
+          return false;
+        const bounds = viewport.getBoundingClientRect();
+        const chapterBounds = chapter.getBoundingClientRect();
+        return (
+          chapterBounds.top < bounds.bottom && chapterBounds.bottom > bounds.top
+        );
+      };
+      await page.getByRole('button', { name: 'Genesis, Chapter 1' }).click();
+      await page.getByRole('button', { name: 'Exodus', exact: true }).click();
+      await page.getByRole('button', { name: '2', exact: true }).click();
+      await expect
+        .poll(() => view.router.history.location.pathname)
+        .toBe('/eng_test/EXO/2');
+      await expect.poll(() => chapterIsVisible('EXO/2')).toBe(true);
+      view.router.history.back();
+      await expect.poll(() => chapterIsVisible('GEN/1')).toBe(true);
+      view.router.history.forward();
+      await expect.poll(() => chapterIsVisible('EXO/2')).toBe(true);
     } finally {
       await view.cleanup();
     }

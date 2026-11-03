@@ -384,6 +384,28 @@ export function useContinuousChapters({
         ) ?? active
       );
     },
+    ensureActiveVisible() {
+      if (scrub.current) return;
+      const content = contentRef.current;
+      const viewport = content?.closest<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      );
+      const element = [
+        ...(content?.querySelectorAll<HTMLElement>('[data-reader-chapter]') ??
+          []),
+      ].find(
+        (entry) =>
+          entry.dataset.readerChapter === `${active.bookId}/${active.chapter}`,
+      );
+      if (!viewport || !element) return;
+      const bounds = viewport.getBoundingClientRect();
+      const chapterBounds = element.getBoundingClientRect();
+      if (
+        chapterBounds.bottom <= bounds.top ||
+        chapterBounds.top >= bounds.bottom
+      )
+        goTo(active);
+    },
     goTo,
     getSource(bookId: string): UseQueryResult<string, Error> {
       return displayedQueries[bookIds.indexOf(bookId)];
