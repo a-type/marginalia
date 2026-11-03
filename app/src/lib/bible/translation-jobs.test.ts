@@ -3,7 +3,6 @@ import { defaultTranslationId } from './manifests';
 
 const storage = vi.hoisted(() => ({
   listTranslations: vi.fn(),
-  defaultDownloadSuppressed: vi.fn().mockResolvedValue(false),
 }));
 
 vi.mock('./translations', () => ({
@@ -17,6 +16,28 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.resetModules();
   vi.clearAllMocks();
+});
+
+it('does not automatically download WEB when no translation is installed', async () => {
+  vi.useFakeTimers();
+  const postMessage = vi.fn();
+  vi.stubGlobal(
+    'Worker',
+    class {
+      postMessage = postMessage;
+    },
+  );
+  vi.stubGlobal('window', {
+    location: { pathname: '/' },
+    addEventListener: vi.fn(),
+  });
+  storage.listTranslations.mockResolvedValue([]);
+
+  const { startTranslationService } = await import('./translation-jobs');
+  startTranslationService();
+  await vi.advanceTimersByTimeAsync(0);
+
+  expect(postMessage).not.toHaveBeenCalled();
 });
 
 it.each([
