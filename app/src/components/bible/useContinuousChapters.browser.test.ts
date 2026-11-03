@@ -78,7 +78,13 @@ describe('continuous scroll space', () => {
     ],
   };
 
-  function renderScrollArea(location: BibleLocation) {
+  function renderScrollArea(
+    location: BibleLocation,
+    options: {
+      readingPosition?: BibleLocation;
+      sources?: { bookId: string; source: string }[];
+    } = {},
+  ) {
     const client = new QueryClient();
     const container = document.createElement('div');
     document.body.append(container);
@@ -88,6 +94,7 @@ describe('continuous scroll space', () => {
       const {
         active,
         chapters,
+        getSource,
         viewportRef,
         contentRef,
         beforeRef,
@@ -98,12 +105,14 @@ describe('continuous scroll space', () => {
       } = useContinuousChapters({
         location,
         manifest: longManifest,
-        sources: longManifest.books.map((book) => ({
-          bookId: book.id,
-          source: 'source',
-        })),
+        sources:
+          options.sources ??
+          longManifest.books.map((book) => ({
+            bookId: book.id,
+            source: 'source',
+          })),
         translationId: longManifest.id,
-        readingPosition: undefined,
+        readingPosition: options.readingPosition,
       });
       return createElement(
         'div',
@@ -129,14 +138,15 @@ describe('continuous scroll space', () => {
             'div',
             { ref: contentRef },
             createElement('div', { ref: beforeRef, 'data-buffer': 'before' }),
-            ...chapters.map((chapter) =>
-              createElement('section', {
+            ...chapters.map((chapter) => {
+              const loaded = getSource(chapter.bookId).data !== undefined;
+              return createElement('section', {
                 key: `${chapter.bookId}/${chapter.chapter}`,
                 'data-reader-chapter': `${chapter.bookId}/${chapter.chapter}`,
-                'data-reader-chapter-loaded': true,
-                style: { height: 240 },
-              }),
-            ),
+                'data-reader-chapter-loaded': loaded,
+                style: { height: loaded ? 240 : 20 },
+              });
+            }),
             createElement('div', { ref: afterRef, 'data-buffer': 'after' }),
           ),
         ),
@@ -171,6 +181,12 @@ describe('continuous scroll space', () => {
           container
             .querySelector<HTMLButtonElement>('[data-action="finish"]')!
             .click(),
+        );
+      },
+      loadBook(bookId: string) {
+        client.setQueryData(
+          ['reader-book-source', longManifest.id, bookId],
+          'source',
         );
       },
       cleanup() {
@@ -247,6 +263,42 @@ describe('continuous scroll space', () => {
       expect(active.getBoundingClientRect().top).toBeCloseTo(top, 0);
     } finally {
       reader.cleanup();
+    }
+  });
+
+  it('waits for a restored chapter and preserves it while earlier content loads', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
+    const reader = renderScrollArea(
+      { bookId: 'GEN', chapter: 1 },
+      { readingPosition: { bookId: 'EXO', chapter: 2 }, sources: [] },
+    );
+    const target = reader.viewport.querySelector<HTMLElement>(
+      '[data-reader-chapter="EXO/2"]',
+    )!;
+
+    try {
+      expect(target.dataset.readerChapterLoaded).toBe('false');
+
+      reader.loadBook('EXO');
+      await vi.waitFor(() => {
+        expect(target.dataset.readerChapterLoaded).toBe('true');
+        expect(
+          target.getBoundingClientRect().top -
+            reader.viewport.getBoundingClientRect().top,
+        ).toBeCloseTo(0, 0);
+      });
+
+      const targetTop = target.getBoundingClientRect().top;
+      reader.loadBook('GEN');
+      await vi.waitFor(() =>
+        expect(target.getBoundingClientRect().top).toBeCloseTo(targetTop, 0),
+      );
+    } finally {
+      reader.cleanup();
+      vi.unstubAllGlobals();
     }
   });
 

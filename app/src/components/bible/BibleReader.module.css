@@ -53,7 +53,8 @@
   scroll-padding-block-start: calc(var(--m-sp-xl) + var(--m-sp-lg));
 }
 
-.scrollArea :global([data-reader-book-start]) {
+.scrollArea
+  :global([data-reader-book-start][data-reader-chapter-loaded='true']) {
   scroll-snap-align: start;
 }
 

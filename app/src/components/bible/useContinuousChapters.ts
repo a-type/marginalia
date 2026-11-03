@@ -131,7 +131,7 @@ export function useContinuousChapters({
         if (height > 0) averageHeight.current = height / heights.length;
       }
       if (averageHeight.current <= 0)
-        averageHeight.current = viewport.clientHeight;
+        averageHeight.current = viewport.clientHeight * 2;
       const visible = initialized.current
         ? getMostVisibleChapter(content, viewport)
         : undefined;
@@ -155,12 +155,20 @@ export function useContinuousChapters({
       }
     };
     updateBuffers();
+    if (anchor.current) {
+      const element = elements.find(
+        (entry) => entry.dataset.readerChapter === anchor.current?.key,
+      );
+      if (element)
+        viewport.scrollTop +=
+          element.getBoundingClientRect().top - anchor.current.top;
+    }
     if (!initialized.current) {
       const element = elements.find(
         (entry) =>
           entry.dataset.readerChapter === `${active.bookId}/${active.chapter}`,
       );
-      if (element) {
+      if (element?.dataset.readerChapterLoaded === 'true') {
         const bounds = element.getBoundingClientRect();
         viewport.scrollTop +=
           bounds.top +
@@ -169,13 +177,6 @@ export function useContinuousChapters({
         initialized.current = true;
         jump.current = null;
       }
-    } else if (anchor.current) {
-      const element = elements.find(
-        (entry) => entry.dataset.readerChapter === anchor.current?.key,
-      );
-      if (element)
-        viewport.scrollTop +=
-          element.getBoundingClientRect().top - anchor.current.top;
     }
     anchor.current = null;
     const observer = new ResizeObserver(updateBuffers);
@@ -184,6 +185,20 @@ export function useContinuousChapters({
     return () => {
       observer.disconnect();
       if (anchor.current) return;
+      if (!initialized.current) {
+        const target = elements.find(
+          (entry) =>
+            entry.dataset.readerChapter ===
+            `${active.bookId}/${active.chapter}`,
+        );
+        if (target) {
+          anchor.current = {
+            key: `${active.bookId}/${active.chapter}`,
+            top: target.getBoundingClientRect().top,
+          };
+        }
+        return;
+      }
       const visible = getMostVisibleChapter(content, viewport);
       if (visible) {
         anchor.current = {
@@ -216,6 +231,7 @@ export function useContinuousChapters({
           );
         return;
       }
+      if (!initialized.current) return;
       const visible = getMostVisibleChapter(
         contentRef.current,
         viewportRef.current,

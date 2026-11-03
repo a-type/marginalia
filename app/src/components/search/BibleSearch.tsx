@@ -248,6 +248,8 @@ function useBibleSearch(
           chapter: String(verse.chapter),
         },
         search: { verses: id },
+        hash: `verse-${id}`,
+        hashScrollIntoView: { block: 'start', behavior: 'instant' },
       });
       onSelect?.();
     },
