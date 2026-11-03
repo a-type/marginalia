@@ -2,7 +2,8 @@ import { Box, Button, ScrollArea } from '@a-type/ui';
 import { useDbClient } from '@tanstack/react-db';
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, useLocation, useRouter } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import type { RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { m } from '#/paraglide/messages';
 import type { ChapterAnnotationSnapshot } from '../../lib/annotations/collections';
@@ -36,7 +37,6 @@ import {
   useSelectedVerseIds,
 } from '../annotations/VerseSelection';
 import { AnnotatedBibleChapter } from './AnnotatedBibleChapter';
-import { BibleChapterNavigation } from './BibleChapterNavigation';
 import cls from './BibleReader.module.css';
 import { BibleReaderLocation } from './BibleReaderLocation';
 import { useContinuousChapters } from './useContinuousChapters';
@@ -74,6 +74,7 @@ function BibleReaderContent() {
     }),
   });
   const [locationOpen, setLocationOpen] = useState(false);
+  const scrollThumbRef = useRef<HTMLDivElement>(null);
   const tabPosition =
     typeof window === 'undefined'
       ? undefined
@@ -92,8 +93,10 @@ function BibleReaderContent() {
     beforeRef,
     afterRef,
     onScroll,
+    scrubLocation,
+    startScrubbing,
+    finishScrubbing,
     getSource,
-    getVisibleLocation,
     goTo,
   } = useContinuousChapters({
     location,
@@ -223,25 +226,111 @@ function BibleReaderContent() {
                   </section>
                 );
               })}
-              <BibleChapterNavigation
-                location={active}
-                manifest={manifest}
-                translationId={translationId}
-                getLocation={getVisibleLocation}
-              >
+              <div className={cls.annotationToolbar}>
                 <AnnotationToolbar />
-              </BibleChapterNavigation>
+              </div>
               <div className={cls.chapterBuffer} ref={afterRef} aria-hidden />
             </div>
             <ScrollArea.ViewportFades />
           </ScrollArea.Viewport>
-          <ScrollArea.Scrollbar orientation="vertical">
-            <ScrollArea.Thumb />
+          <ScrollArea.Scrollbar
+            orientation="vertical"
+            className={cls.scrollbar}
+            data-reader-scrubbing={scrubLocation ? '' : undefined}
+            onPointerDownCapture={(event) => {
+              if (event.button === 0 && event.isPrimary)
+                startScrubbing(event.pointerId);
+            }}
+            onPointerUpCapture={(event) => finishScrubbing(event.pointerId)}
+            onPointerCancelCapture={(event) => finishScrubbing(event.pointerId)}
+            onLostPointerCapture={(event) => finishScrubbing(event.pointerId)}
+          >
+            <ScrollArea.Thumb
+              className={cls.scrollThumb}
+              ref={scrollThumbRef}
+            />
           </ScrollArea.Scrollbar>
+          {scrubLocation && (
+            <ScrubLocationCallout
+              location={scrubLocation}
+              manifest={manifest}
+              thumbRef={scrollThumbRef}
+            />
+          )}
           <ScrollArea.Corner />
         </ScrollArea.Root>
       </section>
       <AnnotationPane accountDid={accountDid} className={cls.annotationPane} />
+    </div>
+  );
+}
+
+function ScrubLocationCallout({
+  location,
+  manifest,
+  thumbRef,
+}: {
+  location: BibleLocation;
+  manifest: TranslationManifest;
+  thumbRef: RefObject<HTMLDivElement | null>;
+}) {
+  const calloutRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (
+      CSS.supports('position-anchor: --reader-scroll-thumb') &&
+      CSS.supports('top: anchor(center)')
+    )
+      return;
+    const thumb = thumbRef.current;
+    const callout = calloutRef.current;
+    const root = thumb?.closest<HTMLElement>('[data-reader-scroll-area]');
+    const viewport = root?.querySelector<HTMLElement>(
+      '[data-scroll-direction="vertical"]',
+    );
+    if (!thumb || !callout || !root || !viewport) return;
+    let frame: number | null = null;
+    const update = () => {
+      frame = null;
+      const bounds = root.getBoundingClientRect();
+      const anchor = thumb.getBoundingClientRect();
+      const halfHeight = callout.getBoundingClientRect().height / 2;
+      callout.style.top = `${Math.max(
+        halfHeight,
+        Math.min(
+          bounds.height - halfHeight,
+          anchor.top + anchor.height / 2 - bounds.top,
+        ),
+      )}px`;
+      callout.style.insetInlineEnd = `${
+        getComputedStyle(root).direction === 'rtl'
+          ? anchor.right - bounds.left
+          : bounds.right - anchor.left
+      }px`;
+      callout.style.visibility = 'visible';
+    };
+    const schedule = () => {
+      if (frame === null) frame = requestAnimationFrame(update);
+    };
+    update();
+    viewport.addEventListener('scroll', schedule, { passive: true });
+    const observer = new ResizeObserver(schedule);
+    observer.observe(root);
+    observer.observe(thumb);
+    return () => {
+      viewport.removeEventListener('scroll', schedule);
+      observer.disconnect();
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, [thumbRef]);
+  return (
+    <div
+      className={cls.scrubLocation}
+      ref={calloutRef}
+      data-reader-scrub-location
+      aria-hidden
+    >
+      {manifest.books.find((book) => book.id === location.bookId)?.title}{' '}
+      {location.chapter}
     </div>
   );
 }

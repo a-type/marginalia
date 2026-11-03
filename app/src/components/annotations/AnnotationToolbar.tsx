@@ -1,4 +1,4 @@
-import { Button, Icon, Text } from '@a-type/ui';
+import { Button, clsx, Icon, Text } from '@a-type/ui';
 import { useDbClient } from '@tanstack/react-db';
 
 import { m } from '#/paraglide/messages';
@@ -14,7 +14,7 @@ import {
 import cls from './AnnotationToolbar.module.css';
 import { useSelectedVerseIds } from './VerseSelection';
 
-export function AnnotationToolbar() {
+export function AnnotationToolbar({ className }: { className?: string }) {
   const dbClient = useDbClient();
   const selectedVerse = usePrimarySelectedVerseId();
   const selectedVerses = useSelectedVerseIds();
@@ -24,7 +24,7 @@ export function AnnotationToolbar() {
   if (!selectedVerse || paneOpen) return null;
 
   return (
-    <div className={cls.toolbar}>
+    <div className={clsx(cls.toolbar, className)}>
       <Button
         size="small"
         emphasis="ghost"

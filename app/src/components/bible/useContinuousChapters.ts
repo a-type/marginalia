@@ -82,6 +82,16 @@ export function useContinuousChapters({
   const contentRef = useRef<HTMLDivElement>(null);
   const beforeRef = useRef<HTMLDivElement>(null);
   const afterRef = useRef<HTMLDivElement>(null);
+  const scrub = useRef<{
+    pointerId: number;
+    queries: typeof queries;
+  } | null>(null);
+  const [scrubLocation, setScrubLocation] = useState<BibleLocation | null>(
+    null,
+  );
+  const [bufferRevision, setBufferRevision] = useState(0);
+  const buffersNeedUpdate = useRef(false);
+  const displayedQueries = scrub.current?.queries ?? queries;
   const averageHeight = useRef(0);
   const anchor = useRef<{ key: string; top: number } | null>(null);
   const jump = useRef<number | null>(null);
@@ -90,7 +100,7 @@ export function useContinuousChapters({
   const renderKey = chapters
     .map((chapter) => `${chapter.bookId}/${chapter.chapter}`)
     .join(',');
-  const sourceKey = queries
+  const sourceKey = displayedQueries
     .map((query) => `${query.status}/${query.dataUpdatedAt}`)
     .join(',');
 
@@ -106,6 +116,11 @@ export function useContinuousChapters({
       ...content.querySelectorAll<HTMLElement>('[data-reader-chapter]'),
     ];
     const updateBuffers = () => {
+      if (scrub.current) {
+        buffersNeedUpdate.current = true;
+        return;
+      }
+      buffersNeedUpdate.current = false;
       const loaded = elements.filter(
         (element) => element.dataset.readerChapterLoaded === 'true',
       );
@@ -116,12 +131,25 @@ export function useContinuousChapters({
         const height = heights.reduce((total, value) => total + value, 0);
         if (height > 0) averageHeight.current = height / heights.length;
       }
+      if (averageHeight.current <= 0)
+        averageHeight.current = viewport.clientHeight;
       const visible = initialized.current
         ? getMostVisibleChapter(content)
         : undefined;
       const top = visible?.getBoundingClientRect().top;
       before.style.height = `${chaptersBefore * averageHeight.current}px`;
       after.style.height = `${chaptersAfter * averageHeight.current}px`;
+      if (chaptersAfter === 0) {
+        const last = elements.at(-1);
+        const remaining = last
+          ? content.getBoundingClientRect().bottom -
+            last.getBoundingClientRect().top -
+            after.getBoundingClientRect().height
+          : viewport.clientHeight;
+        after.style.minHeight = `${Math.max(0, viewport.clientHeight - remaining)}px`;
+      } else {
+        after.style.minHeight = '';
+      }
       if (visible && top !== undefined) {
         const adjustment = visible.getBoundingClientRect().top - top;
         if (adjustment !== 0) viewport.scrollTop += adjustment;
@@ -153,6 +181,7 @@ export function useContinuousChapters({
     anchor.current = null;
     const observer = new ResizeObserver(updateBuffers);
     elements.forEach((element) => observer.observe(element));
+    observer.observe(viewport);
     return () => {
       observer.disconnect();
       if (anchor.current) return;
@@ -164,7 +193,7 @@ export function useContinuousChapters({
         };
       }
     };
-  }, [renderKey, sourceKey, chaptersBefore, chaptersAfter]);
+  }, [renderKey, sourceKey, chaptersBefore, chaptersAfter, bufferRevision]);
 
   useLayoutEffect(
     () => () => {
@@ -177,6 +206,17 @@ export function useContinuousChapters({
     if (frame.current !== null) return;
     frame.current = requestAnimationFrame(() => {
       frame.current = null;
+      if (scrub.current) {
+        const estimate = getEstimatedLocation();
+        if (estimate)
+          setScrubLocation((current) =>
+            current?.bookId === estimate.bookId &&
+            current.chapter === estimate.chapter
+              ? current
+              : estimate,
+          );
+        return;
+      }
       const visible = getMostVisibleChapter(contentRef.current);
       const chapter = chapters.find(
         (entry) =>
@@ -231,6 +271,83 @@ export function useContinuousChapters({
     });
   };
 
+  function getEstimatedLocation(): BibleLocation | undefined {
+    const content = contentRef.current;
+    const viewport = content?.closest<HTMLElement>(
+      '[data-scroll-direction="vertical"]',
+    );
+    if (!content || !viewport || averageHeight.current <= 0) return undefined;
+    const maxScroll = viewport.scrollHeight - viewport.clientHeight;
+    if (viewport.scrollTop <= 0) {
+      const first = getChapterAtIndex(manifest, 0);
+      return first;
+    }
+    if (maxScroll > 0 && viewport.scrollTop >= maxScroll - 1) {
+      const last = getChapterAtIndex(manifest, totalChapters - 1);
+      return last;
+    }
+    const viewportTop = viewport.getBoundingClientRect().top;
+    const before = beforeRef.current?.getBoundingClientRect();
+    const after = afterRef.current?.getBoundingClientRect();
+    let offset: number;
+    let start: number;
+    if (before && viewportTop >= before.top && viewportTop < before.bottom) {
+      offset = (viewportTop - before.top) / averageHeight.current;
+      start = 0;
+    } else if (
+      after &&
+      viewportTop >= after.top &&
+      viewportTop < after.bottom
+    ) {
+      offset = (viewportTop - after.top) / averageHeight.current;
+      start = chaptersBefore + chapters.length;
+    } else {
+      const visible = getMostVisibleChapter(content);
+      const visibleLocation = chapters.find(
+        (chapter) =>
+          visible?.dataset.readerChapter ===
+          `${chapter.bookId}/${chapter.chapter}`,
+      );
+      return visibleLocation;
+    }
+    const index = Math.floor(offset);
+    return getChapterAtIndex(manifest, start + index);
+  }
+
+  function goTo(chapter: BibleLocation) {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    frame.current = null;
+    anchor.current = null;
+    jump.current = null;
+    const content = contentRef.current;
+    const viewport = content?.closest<HTMLElement>(
+      '[data-scroll-direction="vertical"]',
+    );
+    const element = [
+      ...(content?.querySelectorAll<HTMLElement>('[data-reader-chapter]') ??
+        []),
+    ].find(
+      (entry) =>
+        entry.dataset.readerChapter === `${chapter.bookId}/${chapter.chapter}`,
+    );
+    if (viewport && element) {
+      viewport.scrollTop +=
+        element.getBoundingClientRect().top -
+        viewport.getBoundingClientRect().top;
+      anchor.current = {
+        key: `${chapter.bookId}/${chapter.chapter}`,
+        top: element.getBoundingClientRect().top,
+      };
+    } else {
+      initialized.current = false;
+    }
+    setActive((current) =>
+      current.bookId === chapter.bookId && current.chapter === chapter.chapter
+        ? current
+        : chapter,
+    );
+  }
+
   return {
     active,
     chapters,
@@ -238,6 +355,25 @@ export function useContinuousChapters({
     beforeRef,
     afterRef,
     onScroll,
+    scrubLocation,
+    startScrubbing(pointerId: number) {
+      if (scrub.current) return;
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+      frame.current = null;
+      scrub.current = { pointerId, queries };
+      setScrubLocation(getEstimatedLocation() ?? active);
+    },
+    finishScrubbing(pointerId: number) {
+      if (scrub.current?.pointerId !== pointerId) return;
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+      frame.current = null;
+      const estimate = getEstimatedLocation();
+      scrub.current = null;
+      setScrubLocation(null);
+      if (buffersNeedUpdate.current)
+        setBufferRevision((revision) => revision + 1);
+      if (estimate) goTo(estimate);
+    },
     getVisibleLocation() {
       const visible = getMostVisibleChapter(contentRef.current);
       return (
@@ -248,38 +384,9 @@ export function useContinuousChapters({
         ) ?? active
       );
     },
-    goTo(chapter: BibleLocation) {
-      if (frame.current !== null) cancelAnimationFrame(frame.current);
-      frame.current = null;
-      anchor.current = null;
-      jump.current = null;
-      if (
-        chapter.bookId === active.bookId &&
-        chapter.chapter === active.chapter
-      ) {
-        const content = contentRef.current;
-        const viewport = content?.closest<HTMLElement>(
-          '[data-scroll-direction="vertical"]',
-        );
-        const element = [
-          ...(content?.querySelectorAll<HTMLElement>('[data-reader-chapter]') ??
-            []),
-        ].find(
-          (entry) =>
-            entry.dataset.readerChapter ===
-            `${chapter.bookId}/${chapter.chapter}`,
-        );
-        if (viewport && element)
-          viewport.scrollTop +=
-            element.getBoundingClientRect().top -
-            viewport.getBoundingClientRect().top;
-        return;
-      }
-      initialized.current = false;
-      setActive(chapter);
-    },
+    goTo,
     getSource(bookId: string): UseQueryResult<string, Error> {
-      return queries[bookIds.indexOf(bookId)];
+      return displayedQueries[bookIds.indexOf(bookId)];
     },
   };
 }

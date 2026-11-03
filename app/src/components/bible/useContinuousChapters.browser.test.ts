@@ -85,38 +85,58 @@ describe('continuous scroll space', () => {
     const root = createRoot(container);
 
     function Reader() {
-      const { active, chapters, contentRef, beforeRef, afterRef, onScroll } =
-        useContinuousChapters({
-          location,
-          manifest: longManifest,
-          sources: longManifest.books.map((book) => ({
-            bookId: book.id,
-            source: 'source',
-          })),
-          translationId: longManifest.id,
-          readingPosition: undefined,
-        });
+      const {
+        active,
+        chapters,
+        contentRef,
+        beforeRef,
+        afterRef,
+        onScroll,
+        startScrubbing,
+        finishScrubbing,
+      } = useContinuousChapters({
+        location,
+        manifest: longManifest,
+        sources: longManifest.books.map((book) => ({
+          bookId: book.id,
+          source: 'source',
+        })),
+        translationId: longManifest.id,
+        readingPosition: undefined,
+      });
       return createElement(
         'div',
-        {
-          'data-scroll-direction': 'vertical',
-          'data-active': `${active.bookId}/${active.chapter}`,
-          onScroll,
-          style: { height: 150, overflowY: 'auto' },
-        },
+        null,
+        createElement('button', {
+          'data-action': 'start',
+          onClick: () => startScrubbing(1),
+        }),
+        createElement('button', {
+          'data-action': 'finish',
+          onClick: () => finishScrubbing(1),
+        }),
         createElement(
           'div',
-          { ref: contentRef },
-          createElement('div', { ref: beforeRef, 'data-buffer': 'before' }),
-          ...chapters.map((chapter) =>
-            createElement('section', {
-              key: `${chapter.bookId}/${chapter.chapter}`,
-              'data-reader-chapter': `${chapter.bookId}/${chapter.chapter}`,
-              'data-reader-chapter-loaded': true,
-              style: { height: 240 },
-            }),
+          {
+            'data-scroll-direction': 'vertical',
+            'data-active': `${active.bookId}/${active.chapter}`,
+            onScroll,
+            style: { height: 150, overflowY: 'auto' },
+          },
+          createElement(
+            'div',
+            { ref: contentRef },
+            createElement('div', { ref: beforeRef, 'data-buffer': 'before' }),
+            ...chapters.map((chapter) =>
+              createElement('section', {
+                key: `${chapter.bookId}/${chapter.chapter}`,
+                'data-reader-chapter': `${chapter.bookId}/${chapter.chapter}`,
+                'data-reader-chapter-loaded': true,
+                style: { height: 240 },
+              }),
+            ),
+            createElement('div', { ref: afterRef, 'data-buffer': 'after' }),
           ),
-          createElement('div', { ref: afterRef, 'data-buffer': 'after' }),
         ),
       );
     }
@@ -129,16 +149,28 @@ describe('continuous scroll space', () => {
     const viewport = container.querySelector<HTMLElement>(
       '[data-scroll-direction]',
     )!;
-    const before = container.querySelector<HTMLElement>(
-      '[data-buffer="before"]',
-    )!;
-    const after = container.querySelector<HTMLElement>(
-      '[data-buffer="after"]',
-    )!;
     return {
       viewport,
-      before,
-      after,
+      get before() {
+        return container.querySelector<HTMLElement>('[data-buffer="before"]')!;
+      },
+      get after() {
+        return container.querySelector<HTMLElement>('[data-buffer="after"]')!;
+      },
+      startScrubbing() {
+        flushSync(() =>
+          container
+            .querySelector<HTMLButtonElement>('[data-action="start"]')!
+            .click(),
+        );
+      },
+      finishScrubbing() {
+        flushSync(() =>
+          container
+            .querySelector<HTMLButtonElement>('[data-action="finish"]')!
+            .click(),
+        );
+      },
       cleanup() {
         flushSync(() => root.unmount());
         container.remove();
@@ -211,6 +243,60 @@ describe('continuous scroll space', () => {
       );
       expect(reader.after.getBoundingClientRect().height).toBe(5 * 288);
       expect(active.getBoundingClientRect().top).toBeCloseTo(top, 0);
+    } finally {
+      reader.cleanup();
+    }
+  });
+
+  it('aligns the selected chapter after scrubbing within and outside the window', async () => {
+    const reader = renderScrollArea({ bookId: 'EXO', chapter: 1 });
+    try {
+      const expectAtTop = async (id: string) => {
+        await vi.waitFor(() => {
+          expect(reader.viewport.dataset.active).toBe(id);
+          const chapter = reader.viewport.querySelector<HTMLElement>(
+            `[data-reader-chapter="${id}"]`,
+          )!;
+          expect(
+            chapter.getBoundingClientRect().top -
+              reader.viewport.getBoundingClientRect().top,
+          ).toBeCloseTo(0, 0);
+        });
+      };
+      const scrubToLoaded = (id: string) => {
+        reader.startScrubbing();
+        const chapter = reader.viewport.querySelector<HTMLElement>(
+          `[data-reader-chapter="${id}"]`,
+        )!;
+        reader.viewport.scrollTop +=
+          chapter.getBoundingClientRect().top -
+          reader.viewport.getBoundingClientRect().top +
+          80;
+        reader.finishScrubbing();
+      };
+
+      scrubToLoaded('EXO/1');
+      await expectAtTop('EXO/1');
+      scrubToLoaded('EXO/2');
+      await expectAtTop('EXO/2');
+
+      reader.startScrubbing();
+      reader.viewport.scrollTop +=
+        reader.after.getBoundingClientRect().top -
+        reader.viewport.getBoundingClientRect().top +
+        2.5 * 240;
+      reader.finishScrubbing();
+      await expectAtTop('EXO/7');
+
+      const last = reader.viewport.querySelector<HTMLElement>(
+        '[data-reader-chapter="EXO/8"]',
+      )!;
+      last.style.height = '40px';
+      await vi.waitFor(() =>
+        expect(reader.after.getBoundingClientRect().height).toBe(110),
+      );
+      scrubToLoaded('EXO/8');
+      await expectAtTop('EXO/8');
     } finally {
       reader.cleanup();
     }

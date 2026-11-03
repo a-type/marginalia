@@ -12,7 +12,7 @@ import { createElement } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { describe, expect, it, vi } from 'vitest';
-import { page, userEvent } from 'vitest/browser';
+import { cdp, page, userEvent } from 'vitest/browser';
 
 import type * as AnnotationReconcile from '../../lib/annotations/reconcile';
 import {
@@ -172,6 +172,287 @@ async function renderReader(
 }
 
 describe('multi-chapter reader', () => {
+  it.each(['anchor', 'fallback'])(
+    'keeps the chapter window fixed during scrollbar dragging (%s positioning)',
+    async (positioning) => {
+      const supports =
+        positioning === 'fallback'
+          ? vi.spyOn(CSS, 'supports').mockReturnValue(false)
+          : undefined;
+      const source = Promise.withResolvers<string>();
+      fetchSource.mockReturnValue(source.promise);
+      const view = await renderReader('', undefined, ['GEN']);
+      const session = cdp();
+      try {
+        view.container.style.width = '280px';
+        const viewport = view.container.querySelector<HTMLElement>(
+          '[data-scroll-direction="vertical"]',
+        )!;
+        viewport.style.height = '300px';
+        await userEvent.hover(viewport);
+        const track = view.container.querySelector<HTMLElement>(
+          '[aria-hidden="true"][data-orientation="vertical"]',
+        )!;
+        await expect
+          .poll(() => getComputedStyle(track).pointerEvents)
+          .toBe('auto');
+        const thumb = track.querySelector<HTMLElement>(
+          '[data-orientation="vertical"]',
+        )!;
+        await expect
+          .poll(() => thumb.getBoundingClientRect().height)
+          .toBeGreaterThan(0);
+        const trackRect = track.getBoundingClientRect();
+        const thumbRect = thumb.getBoundingClientRect();
+        const frameRect = window.frameElement!.getBoundingClientRect();
+        const x =
+          frameRect.left +
+          ((thumbRect.left + thumbRect.width / 2) * frameRect.width) /
+            window.innerWidth;
+        const y =
+          frameRect.top +
+          ((thumbRect.top + thumbRect.height / 2) * frameRect.height) /
+            window.innerHeight;
+        const endY =
+          frameRect.top +
+          ((trackRect.bottom - 1) * frameRect.height) / window.innerHeight;
+        await session.send('Input.dispatchMouseEvent', {
+          type: 'mouseMoved',
+          x,
+          y,
+        });
+        await session.send('Input.dispatchMouseEvent', {
+          type: 'mousePressed',
+          x,
+          y,
+          button: 'left',
+          buttons: 1,
+          clickCount: 1,
+        });
+        await expect
+          .poll(() =>
+            view.container.querySelector('[data-reader-scrub-location]'),
+          )
+          .not.toBeNull();
+        await session.send('Input.dispatchMouseEvent', {
+          type: 'mouseMoved',
+          x,
+          y: endY,
+          button: 'left',
+          buttons: 1,
+        });
+        await expect
+          .poll(
+            () =>
+              view.container.querySelector('[data-reader-scrub-location]')
+                ?.textContent,
+          )
+          .toBe('Exodus 2');
+        const callout = view.container.querySelector<HTMLElement>(
+          '[data-reader-scrub-location]',
+        )!;
+        const calloutRect = callout.getBoundingClientRect();
+        const currentThumbRect = thumb.getBoundingClientRect();
+        expect(calloutRect.right).toBeLessThanOrEqual(currentThumbRect.left);
+        expect(calloutRect.top).toBeGreaterThanOrEqual(trackRect.top - 1);
+        expect(calloutRect.bottom).toBeLessThanOrEqual(trackRect.bottom + 1);
+        expect(
+          [
+            ...view.container.querySelectorAll<HTMLElement>(
+              '[data-reader-chapter]',
+            ),
+          ].map((chapter) => chapter.dataset.readerChapter),
+        ).toEqual(['GEN/1', 'GEN/2', 'EXO/1']);
+        expect(view.router.history.location.pathname).toBe('/eng_test/GEN/1');
+        const scrollHeight = viewport.scrollHeight;
+        source.resolve(sources[1].source);
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        );
+        expect(viewport.scrollHeight).toBe(scrollHeight);
+        expect(
+          view.container.querySelector(
+            '[data-reader-chapter="EXO/1"] [role="status"]',
+          ),
+        ).not.toBeNull();
+        await session.send('Input.dispatchMouseEvent', {
+          type: 'mouseReleased',
+          x,
+          y: endY,
+          button: 'left',
+          buttons: 0,
+          clickCount: 1,
+        });
+        await expect
+          .poll(() => view.router.history.location.pathname)
+          .toBe('/eng_test/EXO/2');
+        await expect
+          .poll(() => view.container.querySelector('[data-verse-id="EXO/2:1"]'))
+          .not.toBeNull();
+        await expect
+          .poll(() => {
+            const chapter = view.container.querySelector<HTMLElement>(
+              '[data-reader-chapter="EXO/2"]',
+            )!;
+            return Math.abs(
+              chapter.getBoundingClientRect().top -
+                viewport.getBoundingClientRect().top,
+            );
+          })
+          .toBeLessThan(2);
+        expect(
+          view.container.querySelector('[data-reader-scrub-location]'),
+        ).toBeNull();
+
+        const startY =
+          frameRect.top +
+          ((track.getBoundingClientRect().top + 1) * frameRect.height) /
+            window.innerHeight;
+        await session.send('Input.dispatchMouseEvent', {
+          type: 'mouseMoved',
+          x,
+          y: startY,
+        });
+        await session.send('Input.dispatchMouseEvent', {
+          type: 'mousePressed',
+          x,
+          y: startY,
+          button: 'left',
+          buttons: 1,
+          clickCount: 1,
+        });
+        await expect
+          .poll(
+            () =>
+              view.container.querySelector('[data-reader-scrub-location]')
+                ?.textContent,
+          )
+          .toBe('Genesis 1');
+        expect(view.router.history.location.pathname).toBe('/eng_test/EXO/2');
+        await session.send('Input.dispatchMouseEvent', {
+          type: 'mouseReleased',
+          x,
+          y: startY,
+          button: 'left',
+          buttons: 0,
+          clickCount: 1,
+        });
+        await expect
+          .poll(() => view.router.history.location.pathname)
+          .toBe('/eng_test/GEN/1');
+        await expect
+          .poll(() => {
+            const chapter = view.container.querySelector<HTMLElement>(
+              '[data-reader-chapter="GEN/1"]',
+            )!;
+            return Math.abs(
+              chapter.getBoundingClientRect().top -
+                viewport.getBoundingClientRect().top,
+            );
+          })
+          .toBeLessThan(2);
+      } finally {
+        supports?.mockRestore();
+        fetchSource.mockReset();
+        await view.cleanup();
+      }
+    },
+  );
+
+  it('keeps the selected chapter at the top as its source loads after scrubbing', async () => {
+    const source = Promise.withResolvers<string>();
+    fetchSource.mockReturnValue(source.promise);
+    const view = await renderReader('', undefined, ['GEN']);
+    try {
+      view.container.style.width = '280px';
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      viewport.style.height = '300px';
+      await userEvent.hover(viewport);
+      const track = view.container.querySelector<HTMLElement>(
+        '[aria-hidden="true"][data-orientation="vertical"]',
+      )!;
+      await expect
+        .poll(() => getComputedStyle(track).pointerEvents)
+        .toBe('auto');
+      const thumb = track.querySelector<HTMLElement>(
+        '[data-orientation="vertical"]',
+      )!;
+      await expect
+        .poll(() => thumb.getBoundingClientRect().height)
+        .toBeGreaterThan(0);
+      const thumbRect = thumb.getBoundingClientRect();
+      const trackRect = track.getBoundingClientRect();
+      const frameRect = window.frameElement!.getBoundingClientRect();
+      const x =
+        frameRect.left +
+        ((thumbRect.left + thumbRect.width / 2) * frameRect.width) /
+          window.innerWidth;
+      const startY =
+        frameRect.top +
+        ((thumbRect.top + thumbRect.height / 2) * frameRect.height) /
+          window.innerHeight;
+      const endY =
+        frameRect.top +
+        ((trackRect.bottom - 1) * frameRect.height) / window.innerHeight;
+      const session = cdp();
+      await session.send('Input.dispatchMouseEvent', {
+        type: 'mouseMoved',
+        x,
+        y: startY,
+      });
+      await session.send('Input.dispatchMouseEvent', {
+        type: 'mousePressed',
+        x,
+        y: startY,
+        button: 'left',
+        buttons: 1,
+        clickCount: 1,
+      });
+      await session.send('Input.dispatchMouseEvent', {
+        type: 'mouseMoved',
+        x,
+        y: endY,
+        button: 'left',
+        buttons: 1,
+      });
+      await session.send('Input.dispatchMouseEvent', {
+        type: 'mouseReleased',
+        x,
+        y: endY,
+        button: 'left',
+        buttons: 0,
+        clickCount: 1,
+      });
+      const chapterTopOffset = () => {
+        const chapter = view.container.querySelector<HTMLElement>(
+          '[data-reader-chapter="EXO/2"]',
+        );
+        return chapter
+          ? Math.abs(
+              chapter.getBoundingClientRect().top -
+                viewport.getBoundingClientRect().top,
+            )
+          : Infinity;
+      };
+      await expect.poll(chapterTopOffset).toBeLessThan(2);
+      expect(
+        view.container.querySelector(
+          '[data-reader-chapter="EXO/2"] [role="status"]',
+        ),
+      ).not.toBeNull();
+      source.resolve(sources[1].source);
+      await expect
+        .poll(() => view.container.querySelector('[data-verse-id="EXO/2:1"]'))
+        .not.toBeNull();
+      await expect.poll(chapterTopOffset).toBeLessThan(2);
+    } finally {
+      fetchSource.mockReset();
+      await view.cleanup();
+    }
+  });
+
   it('moves a bounded window in both directions without adding history', async () => {
     const view = await renderReader('GEN/1:1-EXO/2:1');
     try {
