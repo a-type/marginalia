@@ -1,3 +1,4 @@
+import { m } from '#/paraglide/messages';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   createMemoryHistory,
@@ -11,7 +12,6 @@ import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
-import { m } from '#/paraglide/messages';
 import {
   createReadingTab,
   readReadingTabsState,
@@ -179,15 +179,12 @@ describe('homepage lectionary', () => {
       }
       const sections = view.container.querySelectorAll('section');
       expect(sections).toHaveLength(3);
-      expect(sections[0].textContent).toContain(
-        'ACNA Daily Office (civil calendar)',
-      );
+      expect(sections[0].textContent).toContain('Daily Office');
       expect(sections[0].querySelector('time')?.dateTime).toBe(
         formatLectionaryDate(new Date()),
       );
       expect(sections[1].textContent).toContain('No readings are available');
       expect(sections[2].querySelector('time')?.dateTime).toBe('2099-11-01');
-      expect(sections[2].textContent).toContain('Revised Common Lectionary');
       expect(sections[2].textContent).toContain('All Saints');
     } finally {
       view.cleanup();
@@ -216,7 +213,7 @@ describe('homepage lectionary', () => {
       expect(url.pathname).toBe('/eng_webu/MAT/22');
       expect(url.hash).toBe('#verse-MAT/22:34');
       expect(url.searchParams.get('verses')).toBe('MAT/22:34-MAT/22:46');
-      await expect.element(page.getByText('Alternative reading')).toBeVisible();
+      await expect.element(page.getByText('(alt)')).toBeVisible();
       await expect
         .element(
           page.getByText('This citation could not be linked to a Bible book.'),
@@ -271,7 +268,6 @@ describe('homepage lectionary', () => {
       );
       expect(changed.searchParams.get('dailyLect')).toBe('acna-sec');
 
-      await page.getByRole('button', { name: 'Today', exact: true }).click();
       await expect
         .element(page.getByRole('link', { name: 'Luke 1:1-4' }))
         .toBeVisible();

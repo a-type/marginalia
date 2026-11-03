@@ -45,7 +45,7 @@ describe('Fetch Bible translation metadata', () => {
   it('infers names, chapter counts, filenames, and Bible order from extra.json', () => {
     expect(parseTranslationExtra(extra, 'eng_kjv')).toEqual({
       id: 'eng_kjv',
-      title: 'World English Bible (Catholic)',
+      title: 'King James Version',
       metadata: builtinTranslations.find(
         (translation) => translation.id === 'eng_kjv',
       )?.metadata,
