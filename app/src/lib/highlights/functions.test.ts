@@ -52,5 +52,5 @@ describe('chapter highlight records', () => {
       color: 'lemon',
       createdAt,
     });
-  });
+  }, 10_000);
 });

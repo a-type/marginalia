@@ -39,6 +39,7 @@ import {
 import { AnnotatedBibleChapter } from './AnnotatedBibleChapter';
 import cls from './BibleReader.module.css';
 import { BibleReaderLocation } from './BibleReaderLocation';
+import { ChapterNavigationButtons } from './ChapterNavigationButtons';
 import { useContinuousChapters } from './useContinuousChapters';
 
 const readerRoute = getRouteApi('/$translation/$book/$chapter');
@@ -181,6 +182,24 @@ function BibleReaderContent() {
   return (
     <div className={cls.root}>
       <section className={cls.content}>
+        <div className={cls.readerHeader} data-reader-controls>
+          <BibleReaderLocation
+            bookId={active.bookId}
+            chapter={active.chapter}
+            manifest={manifest}
+            translationId={translationId}
+            open={locationOpen}
+            onOpenChange={setLocationOpen}
+            onCurrentRouteChapterChange={(bookId, chapter) =>
+              goTo({ bookId, chapter })
+            }
+          />
+          <ChapterNavigationButtons
+            goTo={goTo}
+            active={active}
+            manifest={manifest}
+          />
+        </div>
         <ScrollArea.Root
           className={cls.scrollArea}
           data-reader-scroll-area
@@ -190,19 +209,6 @@ function BibleReaderContent() {
         >
           <ScrollArea.Viewport direction="vertical" ref={viewportRef}>
             <div className={cls.chapterContent} ref={contentRef}>
-              <div className={cls.readerHeader}>
-                <BibleReaderLocation
-                  bookId={active.bookId}
-                  chapter={active.chapter}
-                  manifest={manifest}
-                  translationId={translationId}
-                  open={locationOpen}
-                  onOpenChange={setLocationOpen}
-                  onCurrentRouteChapterChange={(bookId, chapter) =>
-                    goTo({ bookId, chapter })
-                  }
-                />
-              </div>
               <div className={cls.chapterBuffer} ref={beforeRef} aria-hidden />
               {chapters.map((chapter, index) => {
                 const chapterSource = getSource(chapter.bookId);

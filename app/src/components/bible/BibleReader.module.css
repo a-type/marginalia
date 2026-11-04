@@ -6,6 +6,7 @@
 }
 
 .content {
+  contain: layout;
   flex: 1 1 0;
   width: 100%;
   max-width: calc(65ch + var(--annotation-gutter-width));
@@ -15,13 +16,17 @@
 }
 
 .readerHeader {
-  position: sticky;
-  top: 0;
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
   z-index: 2;
   display: flex;
   align-items: center;
+  box-sizing: border-box;
+  width: 100%;
   min-width: 0;
   padding: var(--m-sp-sm);
+  gap: var(--m-sp-sm);
 }
 
 .annotationPane {
@@ -76,6 +81,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  padding-block-start: 60px;
 }
 
 .chapterBuffer {
@@ -85,16 +91,17 @@
 .scrollThumb {
   anchor-name: --reader-scroll-thumb;
   @apply --mx-bg(var(--m-tint-light));
-  @apply --mx-bg-faded(60%);
+  @apply --mx-bg-faded(70%);
   &:hover {
-    @apply --mx-bg-faded(90%);
+    @apply --mx-bg-faded(100%);
   }
 }
 
 .scrollbar {
   z-index: 3;
   @apply --mx-bg(var(--m-tint-wash));
-  @apply --mx-bg-faded(30%);
+  @apply --mx-bg-faded(40%);
+  width: --fn-literal(8px);
   &:hover {
     width: --fn-literal(12px);
     @apply --mx-bg-faded(60%);

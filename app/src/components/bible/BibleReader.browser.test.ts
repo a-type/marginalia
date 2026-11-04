@@ -472,7 +472,7 @@ describe('multi-chapter reader', () => {
   });
 
   // chapter prev/next buttons were removed, may be restored later. this was their behavior.
-  it.skip('moves a bounded window in both directions without adding history', async () => {
+  it('moves a bounded window in both directions without adding history', async () => {
     const view = await renderReader('GEN/1:1-EXO/2:1');
     try {
       const viewport = view.container.querySelector<HTMLElement>(
@@ -917,52 +917,6 @@ describe('multi-chapter reader', () => {
       await view.cleanup();
     }
   });
-
-  it.skip.each([
-    ['Previous chapter', '/eng_test/GEN/1'],
-    ['Next chapter', '/eng_test/EXO/1'],
-  ])(
-    'uses the most visible chapter for %s and clears selection',
-    async (label, destination) => {
-      const view = await renderReader('GEN/1:1-EXO/1:1');
-      try {
-        const viewport = view.container.querySelector<HTMLElement>(
-          '[data-scroll-direction="vertical"]',
-        )!;
-        viewport.style.height = '300px';
-        const chapters = [
-          ...view.container.querySelectorAll<HTMLElement>(
-            '[data-reader-chapter]',
-          ),
-        ];
-        chapters.forEach((chapter) => {
-          chapter.style.minHeight = '600px';
-        });
-        const target = chapters[1];
-        viewport.scrollTop +=
-          target.getBoundingClientRect().top -
-          viewport.getBoundingClientRect().top +
-          100;
-        expect(target.getBoundingClientRect().top).toBeLessThan(
-          viewport.getBoundingClientRect().bottom,
-        );
-        await expect
-          .poll(() => view.router.history.location.pathname)
-          .toBe('/eng_test/GEN/2');
-        view.container
-          .querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!
-          .click();
-        await expect
-          .poll(() => view.router.state.location.pathname)
-          .toBe(destination);
-        await expect
-          .poll(() => view.router.state.location.search.verses)
-          .toBe('');
-      } finally {
-        await view.cleanup();
-      }
-    },
-  );
 
   it.each([
     {

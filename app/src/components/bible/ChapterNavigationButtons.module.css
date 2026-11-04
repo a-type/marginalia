@@ -1,0 +1,14 @@
+.button + .button {
+  border-top-left-radius: 0px;
+  border-bottom-left-radius: 0px;
+  margin-left: --fn-literal(-1px);
+}
+.button:first-child {
+  border-top-right-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+.button:hover,
+.button:focus {
+  position: relative;
+  z-index: 1;
+}
