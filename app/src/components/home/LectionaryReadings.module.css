@@ -1,3 +1,7 @@
 .linkIcon {
   margin-inline-start: var(--m-sp-sm);
 }
+
+.alt {
+  line-height: 1;
+}

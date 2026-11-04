@@ -64,6 +64,26 @@ describe('Fetch Bible translation metadata', () => {
     );
   });
 
+  it('uses validated source filenames supplied by a bundled manifest', () => {
+    const manifest = parseTranslationExtra(
+      {
+        ...extra,
+        book_files: { gen: '02-GENeng-web-c.usfm' },
+      },
+      'eng_webc',
+    );
+    expect(manifest.books[0]).toMatchObject({
+      id: 'GEN',
+      source: '02-GENeng-web-c.usfm',
+    });
+    expect(() =>
+      parseTranslationExtra(
+        { ...extra, book_files: { gen: '../gen.usfm' } },
+        'eng_webc',
+      ),
+    ).toThrow('Invalid translation metadata');
+  });
+
   it.each([
     null,
     {},
@@ -73,6 +93,7 @@ describe('Fetch Bible translation metadata', () => {
     { ...extra, book_names: { gen: { normal: ' ' } } },
     { ...extra, chapter_headings: { ...extra.chapter_headings, gen: [''] } },
     { ...extra, chapter_headings: { ...extra.chapter_headings, gen: ['', 1] } },
+    { ...extra, book_files: [] },
     { ...extra, book_names: { '../gen': { normal: 'Genesis' } } },
   ])('rejects invalid metadata: %j', (value) => {
     expect(() => parseTranslationExtra(value, 'eng_webu')).toThrow(

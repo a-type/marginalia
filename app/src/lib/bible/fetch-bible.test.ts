@@ -162,10 +162,17 @@ describe('Fetch Bible commercial-use policy', () => {
     expect(translationResourceUrl('eng_webu', 'tob.usfm')).toBe(
       '/usfm/eng_webu/tob.usfm',
     );
+    expect(translationResourceUrl('eng_webc', 'extra.json')).toBe(
+      '/usfm/eng-webc/extra.json',
+    );
+    expect(translationResourceUrl('eng_webc', '02-GENeng-web-c.usfm')).toBe(
+      '/usfm/eng-webc/02-GENeng-web-c.usfm',
+    );
     expect(translationResourceUrl('fra_test', 'gen.usfm')).toBe(
       'https://v1.fetch.bible/bibles/fra_test/usfm/gen.usfm',
     );
     expect(() => translationResourceUrl('../bad', 'gen.usfm')).toThrow();
     expect(() => translationResourceUrl('fra_test', '../extra.json')).toThrow();
+    expect(() => translationResourceUrl('eng_webc', '../extra.json')).toThrow();
   });
 });

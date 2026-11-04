@@ -209,16 +209,23 @@ export async function fetchBibleTranslation(id: string, signal?: AbortSignal) {
 }
 
 export function translationResourceUrl(id: string, filename: string) {
+  const builtin = builtinTranslations.find(
+    (translation) => translation.id === id,
+  );
   if (
     !isTranslationId(id) ||
-    !/^(?:extra\.json|[a-z0-9]{3}\.usfm)$/.test(filename)
+    !(
+      filename === 'extra.json' ||
+      (builtin
+        ? /^[a-zA-Z0-9][a-zA-Z0-9_-]*\.usfm$/.test(filename)
+        : /^[a-z0-9]{3}\.usfm$/.test(filename))
+    )
   )
     throw new AppError(
       AppError.Code.BadRequest,
       'Invalid translation resource',
     );
-  if (builtinTranslations.some((translation) => translation.id === id))
-    return `/usfm/${id}/${filename}`;
+  if (builtin) return `/usfm/${builtin.staticDirectory ?? id}/${filename}`;
   return `${fetchBibleOrigin}/bibles/${id}/${filename === 'extra.json' ? filename : `usfm/${filename}`}`;
 }
 

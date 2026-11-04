@@ -64,14 +64,21 @@ describe('USFM imports', () => {
     ).rejects.toThrow('Unsafe');
   });
   it('validates and prepares the shipped translation corpora', async () => {
-    for (const { id } of builtinTranslations) {
+    for (const translation of builtinTranslations) {
+      const { id } = translation;
+      const directory = translation.staticDirectory ?? id;
       const manifest = parseTranslationExtra(
-        JSON.parse(await readFile(`public/usfm/${id}/extra.json`, 'utf8')),
+        JSON.parse(
+          await readFile(`public/usfm/${directory}/extra.json`, 'utf8'),
+        ),
         id,
       );
       let total = 0;
       for (const book of manifest.books) {
-        const text = await readFile(`public/usfm/${id}/${book.source}`, 'utf8');
+        const text = await readFile(
+          `public/usfm/${directory}/${book.source}`,
+          'utf8',
+        );
         const inspected = inspectUSFM(
           text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n'),
         );

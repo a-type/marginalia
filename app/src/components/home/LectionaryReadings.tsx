@@ -22,26 +22,28 @@ import cls from './LectionaryReadings.module.css';
 export function LectionaryReadings({ day }: { day: LectionaryDay }) {
   return (
     <Box col gap="lg" aria-live="polite">
-      {day.sections.map((section) => (
-        <Box render={<section />} col gap key={section.kind}>
-          <Heading emphasis="ambient" render={<h2 />}>
-            {section.kind === 'daily'
-              ? m.lectionary_daily_section()
-              : section.kind === 'red_letter'
-                ? m.lectionary_feast_section()
-                : m.lectionary_sunday_section()}
-          </Heading>
-          <Text emphasis="ambient">
-            <time dateTime={section.date}>
-              {new Date(`${section.date}T12:00:00`).toLocaleDateString(
-                getLocale(),
-                { dateStyle: 'long' },
-              )}
-            </time>
-          </Text>
-          <SectionReadings section={section} />
-        </Box>
-      ))}
+      {day.sections
+        .filter((section) => section.readings.length)
+        .map((section) => (
+          <Box render={<section />} col gap key={section.kind}>
+            <Heading emphasis="ambient" render={<h2 />}>
+              {section.kind === 'daily'
+                ? m.lectionary_daily_section()
+                : section.kind === 'red_letter'
+                  ? m.lectionary_feast_section()
+                  : m.lectionary_sunday_section()}
+            </Heading>
+            <Text emphasis="ambient">
+              <time dateTime={section.date}>
+                {new Date(`${section.date}T12:00:00`).toLocaleDateString(
+                  getLocale(),
+                  { dateStyle: 'long' },
+                )}
+              </time>
+            </Text>
+            <SectionReadings section={section} />
+          </Box>
+        ))}
     </Box>
   );
 }
@@ -234,7 +236,9 @@ function ReadingLink({
     >
       {reading.citation}
       {reading.isAlternative && (
-        <Text emphasis="secondary">{m.lectionary_alternative()}</Text>
+        <Text emphasis="ambient" dim className={cls.alt}>
+          {m.lectionary_alternative()}
+        </Text>
       )}
       <Icon name="arrowRight" className={cls.linkIcon} />
     </Chip>

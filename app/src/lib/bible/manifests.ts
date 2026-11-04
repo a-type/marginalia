@@ -8,6 +8,7 @@ export interface BuiltInTranslation {
   id: string;
   title: string;
   description?: string;
+  staticDirectory?: string;
   metadata: TranslationMetadata;
 }
 
@@ -16,6 +17,29 @@ export const builtinTranslations: BuiltInTranslation[] = [
     id: 'eng_webu',
     title: 'World English Bible (Updated)',
     description: `A contemporary English revision of the American Standard Version, completed in 2020. A good all-around Bible made freely available for the modern era.`,
+    metadata: {
+      language: 'eng',
+      languageName: 'English',
+      direction: 'ltr',
+      attribution: 'Public domain',
+      attributionUrl: 'https://worldenglish.bible/',
+      licenses: [
+        {
+          name: 'Public domain',
+          url: 'https://worldenglish.bible/',
+          attributionRequired: false,
+          shareAlike: false,
+          noDerivatives: false,
+        },
+      ],
+    },
+  },
+  {
+    id: 'eng_webc',
+    title: 'World English Bible (Catholic Edition)',
+    description:
+      'A Catholic edition of the public-domain World English Bible, including the deuterocanonical books.',
+    staticDirectory: 'eng-webc',
     metadata: {
       language: 'eng',
       languageName: 'English',
@@ -120,9 +144,11 @@ export function parseTranslationExtra(
   const extra = value as {
     book_names?: Record<string, { normal?: unknown } | null>;
     chapter_headings?: Record<string, unknown>;
+    book_files?: Record<string, unknown> | null;
   } | null;
   const names = extra?.book_names;
   const headings = extra?.chapter_headings;
+  const files = extra?.book_files;
   const invalid = () => {
     throw new AppError(
       AppError.Code.BadRequest,
@@ -136,7 +162,20 @@ export function parseTranslationExtra(
     Array.isArray(names) ||
     !headings ||
     typeof headings !== 'object' ||
-    Array.isArray(headings)
+    Array.isArray(headings) ||
+    (files !== undefined &&
+      (!files || typeof files !== 'object' || Array.isArray(files)))
+  )
+    return invalid();
+
+  if (
+    files &&
+    Object.entries(files).some(
+      ([key, file]) =>
+        !Object.hasOwn(names, key) ||
+        typeof file !== 'string' ||
+        !/^[a-zA-Z0-9][a-zA-Z0-9_-]*\.usfm$/.test(file),
+    )
   )
     return invalid();
 
@@ -144,6 +183,7 @@ export function parseTranslationExtra(
   if (!entries.length || entries.length > 200) return invalid();
   const books: TranslationBook[] = entries.map(([key, name]) => {
     const chapters = headings[key];
+    const source = files?.[key];
     if (
       !/^[a-z0-9]{3}$/.test(key) ||
       typeof name?.normal !== 'string' ||
@@ -157,7 +197,7 @@ export function parseTranslationExtra(
       id: key.toUpperCase(),
       title: name.normal,
       chapters: chapters.length - 1,
-      source: `${key}.usfm`,
+      source: typeof source === 'string' ? source : `${key}.usfm`,
     };
   });
   const rank = (id: string) => {
