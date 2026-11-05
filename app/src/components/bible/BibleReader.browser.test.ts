@@ -863,6 +863,54 @@ describe('multi-chapter reader', () => {
     }
   });
 
+  it('does not sync a tab reading position until its restored chapter is loaded', async () => {
+    const savedTabs = localStorage.getItem('margins:reading-tabs');
+    localStorage.removeItem('margins:reading-tabs');
+    const source = Promise.withResolvers<string>();
+    fetchSource.mockReturnValue(source.promise);
+    const tab = createReadingTab('eng_test', {
+      bookId: 'GEN',
+      chapter: 1,
+    });
+    storeReadingTabPosition(tab.id, tab, tab.translationId, {
+      bookId: 'EXO',
+      chapter: 1,
+    });
+    const view = await renderReader(
+      '',
+      tab.id,
+      ['GEN'],
+      '/eng_test/GEN/1',
+      false,
+      '',
+      manifest,
+      false,
+      sources,
+      { bookId: 'GEN', chapter: 2 },
+    );
+    try {
+      expect(view.router.state.location.maskedLocation).toBeUndefined();
+      expect(readReadingTabsState().tabs[0].position).toEqual({
+        bookId: 'EXO',
+        chapter: 1,
+      });
+
+      source.resolve(sources[1].source);
+      await expect
+        .poll(() => view.router.state.location.maskedLocation?.pathname)
+        .toBe('/eng_test/EXO/1');
+      expect(view.router.state.location.state.readingPosition).toEqual({
+        bookId: 'EXO',
+        chapter: 1,
+      });
+    } finally {
+      fetchSource.mockReset();
+      await view.cleanup();
+      if (savedTabs === null) localStorage.removeItem('margins:reading-tabs');
+      else localStorage.setItem('margins:reading-tabs', savedTabs);
+    }
+  });
+
   it('reserves a screen of space for an unloaded chapter', async () => {
     const source = Promise.withResolvers<string>();
     fetchSource.mockReturnValue(source.promise);

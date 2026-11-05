@@ -93,6 +93,7 @@ export function useContinuousChapters({
     null,
   );
   const [bufferRevision, setBufferRevision] = useState(0);
+  const [initialPositionSettled, setInitialPositionSettled] = useState(false);
   const buffersNeedUpdate = useRef(false);
   const displayedQueries = scrub.current?.queries ?? queries;
   const averageHeight = useRef(0);
@@ -198,6 +199,7 @@ export function useContinuousChapters({
         viewport.scrollTop = newScrollTop;
         restoredScrollOffset.current = true;
         initialized.current = true;
+        setInitialPositionSettled(true);
         jump.current = null;
       }
     }
@@ -379,6 +381,7 @@ export function useContinuousChapters({
       };
     } else {
       initialized.current = false;
+      setInitialPositionSettled(false);
     }
     setActive((current) =>
       current.bookId === chapter.bookId && current.chapter === chapter.chapter
@@ -389,6 +392,7 @@ export function useContinuousChapters({
 
   return {
     active,
+    initialPositionSettled,
     chapters,
     viewportRef,
     contentRef,

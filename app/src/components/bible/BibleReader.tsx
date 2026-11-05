@@ -127,6 +127,7 @@ function BibleReaderContent({
     tabPosition ?? (activeReadingTabId ? undefined : readingPosition);
   const {
     active,
+    initialPositionSettled,
     chapters,
     viewportRef,
     contentRef,
@@ -203,6 +204,7 @@ function BibleReaderContent({
     location,
     translationId,
     active,
+    initialPositionSettled,
   );
   useStoreReadingTabScrollPosition(
     activeReadingTabId,
@@ -210,6 +212,7 @@ function BibleReaderContent({
     translationId,
     viewportRef,
     readingScrollPositionRef,
+    initialPositionSettled,
   );
   useSyncReadingMask(
     pathname,
@@ -218,6 +221,7 @@ function BibleReaderContent({
     location,
     active,
     readerSearch,
+    initialPositionSettled,
   );
   useRestoreReadingPositionOnHistoryNavigation(
     pathname,
@@ -491,15 +495,23 @@ function useStoreReadingTabPosition(
   location: BibleLocation,
   translationId: string,
   active: BibleLocation,
+  initialPositionSettled: boolean,
 ) {
   useEffect(() => {
+    if (!initialPositionSettled) return;
     storeReadingTabPosition(
       activeReadingTabId,
       location,
       translationId,
       active,
     );
-  }, [activeReadingTabId, location, translationId, active]);
+  }, [
+    activeReadingTabId,
+    location,
+    translationId,
+    active,
+    initialPositionSettled,
+  ]);
 }
 
 function useStoreReadingTabScrollPosition(
@@ -508,10 +520,11 @@ function useStoreReadingTabScrollPosition(
   translationId: string,
   viewportRef: RefObject<HTMLDivElement | null>,
   scrollPositionRef: { current: () => ReadingTabScrollPosition },
+  initialPositionSettled: boolean,
 ) {
   useEffect(() => {
     const viewport = viewportRef.current;
-    if (!activeReadingTabId || !viewport) return;
+    if (!initialPositionSettled || !activeReadingTabId || !viewport) return;
 
     let timeout: ReturnType<typeof setTimeout> | undefined;
     let pending = false;
@@ -545,6 +558,7 @@ function useStoreReadingTabScrollPosition(
     translationId,
     viewportRef,
     scrollPositionRef,
+    initialPositionSettled,
   ]);
 }
 
@@ -555,9 +569,11 @@ function useSyncReadingMask(
   location: BibleLocation,
   active: BibleLocation,
   search: ReturnType<typeof readerRoute.useSearch>,
+  initialPositionSettled: boolean,
 ) {
   const router = useRouter();
   useEffect(() => {
+    if (!initialPositionSettled) return;
     const currentLocation = router.parseLocation(router.history.location);
     if (
       pathname !== `/${translationId}/${location.bookId}/${location.chapter}` ||
@@ -605,6 +621,7 @@ function useSyncReadingMask(
     location,
     active,
     search,
+    initialPositionSettled,
   ]);
 }
 
