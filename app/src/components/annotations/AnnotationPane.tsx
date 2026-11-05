@@ -86,11 +86,11 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
   // TODO: find a better place for this?
   useEffect(() => {
     if (!firstOpenAnnotationVerse) return;
-    document
-      .getElementById(`verse-${firstOpenAnnotationVerse}`)
-      ?.scrollIntoView({
-        block: 'center',
-      });
+    // document
+    //   .getElementById(`verse-${firstOpenAnnotationVerse}`)
+    //   ?.scrollIntoView({
+    //     block: 'center',
+    //   });
   }, [firstOpenAnnotationVerse]);
 
   return (

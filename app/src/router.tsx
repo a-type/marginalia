@@ -14,9 +14,10 @@ export function getRouter() {
   const router = createTanStackRouter({
     routeTree,
     context,
-    scrollRestoration: true,
+    scrollRestoration: ({ location }) =>
+      !/^\/[^/]+\/[^/]+\/[1-9]\d*$/.test(location.pathname),
     scrollToTopSelectors: [
-      '[data-reader-scroll-area] [data-scroll-direction="vertical"]',
+      // '[data-reader-scroll-area] [data-scroll-direction="vertical"]',
       '#page--main-content',
     ],
     defaultPreload: 'intent',
@@ -25,6 +26,7 @@ export function getRouter() {
   });
 
   router.subscribe('onBeforeNavigate', (event) => {
+    console.log('[router]', event.fromLocation, event.toLocation, event);
     // only update on path changes
     if (
       updateState.updateAvailable &&

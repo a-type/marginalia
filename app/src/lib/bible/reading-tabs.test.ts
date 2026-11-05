@@ -8,6 +8,7 @@ import {
   readReadingTabsState,
   storeReadingTabLocation,
   storeReadingTabPosition,
+  storeReadingTabScrollPosition,
   visitReadingTab,
 } from './reading-tabs';
 
@@ -150,6 +151,38 @@ describe('reading tabs', () => {
     });
   });
 
+  it('restores an exact scroll offset before a selected verse', () => {
+    const tab = createReadingTab('eng_webu', {
+      bookId: 'JHN',
+      chapter: 3,
+      verses: 'JHN/3:8-JHN/3:9',
+    });
+    storeReadingTabScrollPosition(
+      tab.id,
+      tab,
+      tab.translationId,
+      { bookId: 'JHN', chapter: 3 },
+      240,
+    );
+    const restored = readReadingTabsState().tabs[0];
+    expect(restored.scrollOffset).toBe(240);
+    expect(getReadingTabDestination(restored)).toMatchObject({
+      resetScroll: false,
+      search: { verses: 'JHN/3:8-JHN/3:9' },
+      hash: '',
+    });
+  });
+
+  it('does not reset reader scrolling when opening a tab without a saved position', () => {
+    const tab = createReadingTab('eng_webu', {
+      bookId: 'JHN',
+      chapter: 3,
+      verses: 'JHN/3:8',
+    });
+
+    expect(getReadingTabDestination(tab).resetScroll).toBe(false);
+  });
+
   it('restores a reading range and clears it when navigating without a selection', () => {
     storage.setItem(
       'margins:reading-tabs',
@@ -190,14 +223,13 @@ describe('reading tabs', () => {
         params: { translation: 'eng_webu', book: 'JHN', chapter: '3' },
         state: { activeReadingTabId: tab.id },
         search: { verses },
-        hash: `verse-${verses.split('-')[0]}`,
-        hashScrollIntoView: { block: 'start', behavior: 'instant' },
+        hash: '',
       });
     },
   );
 
   it.each([undefined, 'JHN/3:2', 'JHN/3:4-JHN/3:5'])(
-    'discards the saved range when selection changes to %s and never saves later selections',
+    'stores the current selection %s for the active tab',
     (verses) => {
       const tab = createReadingTab('eng_webu', {
         bookId: 'JHN',
@@ -210,24 +242,25 @@ describe('reading tabs', () => {
         verses: 'JHN/3:5-JHN/3:6',
       });
       storeReadingTabLocation(tab.id, tab, tab.translationId, verses);
+      expect(readReadingTabsState().tabs[0].verses).toBe(verses);
       expect(
         getReadingTabDestination(readReadingTabsState().tabs[0]).search,
-      ).toEqual({});
+      ).toEqual(verses ? { verses } : {});
       storeReadingTabLocation(
         tab.id,
         tab,
         tab.translationId,
         'JHN/3:2-JHN/3:3',
       );
-      expect(readReadingTabsState().tabs[0].verses).toBeUndefined();
+      expect(readReadingTabsState().tabs[0].verses).toBe('JHN/3:2-JHN/3:3');
       expect(readReadingTabsState().tabs[1].verses).toBe(other.verses);
     },
   );
 
-  it('does not save a selection made in a tab opened without one', () => {
+  it('saves a selection made in a tab opened without one', () => {
     const tab = createReadingTab('eng_webu', { bookId: 'JHN', chapter: 3 });
     storeReadingTabLocation(tab.id, tab, tab.translationId, 'JHN/3:2-JHN/3:3');
-    expect(readReadingTabsState().tabs[0].verses).toBeUndefined();
+    expect(readReadingTabsState().tabs[0].verses).toBe('JHN/3:2-JHN/3:3');
   });
 
   it('normalizes supplied selections before storing them', () => {

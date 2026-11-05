@@ -134,7 +134,7 @@ it('restores the supplied verses when revisiting a tab through app navigation', 
     const url = new URL(link.href);
     expect(url.pathname).toBe('/eng_webu/JHN/3');
     expect(url.searchParams.get('verses')).toBe('JHN/3:2-JHN/3:3,JHN/4:1');
-    expect(url.hash).toBe('#verse-JHN/3:2');
+    expect(url.hash).toBe('');
     link.click();
     await expect
       .element(page.getByRole('status'))

@@ -14,6 +14,7 @@ import {
   readReadingTabsState,
   storeReadingTabLocation,
   storeReadingTabPosition,
+  storeReadingTabScrollPosition,
 } from '../../lib/bible/reading-tabs';
 import type { TranslationManifest } from '../../lib/bible/source';
 import {
@@ -45,38 +46,72 @@ import { useContinuousChapters } from './useContinuousChapters';
 const readerRoute = getRouteApi('/$translation/$book/$chapter');
 const emptyChapterAnnotations: ChapterAnnotationSnapshot = { annotations: [] };
 const emptyChapterHighlights: ChapterHighlightSnapshot = { highlights: [] };
+type ReadingTabScrollPosition = {
+  position: BibleLocation;
+  scrollOffset: number;
+};
 
 export function BibleReader() {
   const { location, translationId } = readerRoute.useLoaderData();
-  const activeReadingTabId = useLocation({
+  const pathname = useLocation({
+    select: (routeLocation) => routeLocation.pathname,
+  });
+  const requestedTabId = useLocation({
     select: (routeLocation) => routeLocation.state.activeReadingTabId,
   });
+  const search = readerRoute.useSearch();
+  const tabs = typeof window === 'undefined' ? [] : readReadingTabsState().tabs;
+  const requestedTab = tabs.find((tab) => tab.id === requestedTabId);
+  const tabMatchesRoute =
+    requestedTab?.translationId === translationId &&
+    requestedTab.bookId === location.bookId &&
+    requestedTab.chapter === location.chapter;
+  const routeReady =
+    pathname === `/${translationId}/${location.bookId}/${location.chapter}` &&
+    (!requestedTabId || tabMatchesRoute);
+  const [lastReadyTabId, setLastReadyTabId] = useState(requestedTabId);
+  const activeReadingTabId = routeReady ? requestedTabId : lastReadyTabId;
+
+  useLayoutEffect(() => {
+    if (routeReady) setLastReadyTabId(requestedTabId);
+  }, [routeReady, requestedTabId]);
+
+  const activeTab = tabs.find((tab) => tab.id === activeReadingTabId);
+  const selection = routeReady ? search.verses : activeTab?.verses;
+
   return (
-    <VerseSelectionProvider>
+    <VerseSelectionProvider selectionOverride={selection ?? null}>
       <BibleReaderContent
         key={`${translationId}/${location.bookId}/${location.chapter}/${activeReadingTabId ?? ''}`}
+        activeReadingTabId={activeReadingTabId}
+        selection={selection}
       />
     </VerseSelectionProvider>
   );
 }
 
-function BibleReaderContent() {
+function BibleReaderContent({
+  activeReadingTabId,
+  selection,
+}: {
+  activeReadingTabId: string | undefined;
+  selection: string | undefined;
+}) {
   const { location, manifest, sources, translationId } =
     readerRoute.useLoaderData();
   const selectedVerses = useSelectedVerseIds();
   const selectedVerse = selectedVerses.at(0);
   const search = readerRoute.useSearch();
-  const selection = search.verses;
-  const { pathname, activeReadingTabId, readingPosition } = useLocation({
+  const { pathname, readingPosition } = useLocation({
     select: (routeLocation) => ({
       pathname: routeLocation.pathname,
-      activeReadingTabId: routeLocation.state.activeReadingTabId,
       readingPosition: routeLocation.state.readingPosition,
     }),
   });
+  const readerSearch = { ...search, verses: selection };
   const [locationOpen, setLocationOpen] = useState(false);
   const scrollThumbRef = useRef<HTMLDivElement>(null);
-  const tabPosition =
+  const savedTab =
     typeof window === 'undefined'
       ? undefined
       : readReadingTabsState().tabs.find(
@@ -85,8 +120,11 @@ function BibleReaderContent() {
             tab.translationId === translationId &&
             tab.bookId === location.bookId &&
             tab.chapter === location.chapter,
-        )?.position;
-  const restoredPosition = readingPosition ?? tabPosition;
+        );
+  const tabPosition = savedTab?.position;
+  const tabScrollOffset = savedTab?.scrollOffset;
+  const restoredPosition =
+    tabPosition ?? (activeReadingTabId ? undefined : readingPosition);
   const {
     active,
     chapters,
@@ -99,7 +137,7 @@ function BibleReaderContent() {
     startScrubbing,
     finishScrubbing,
     getSource,
-    ensureActiveVisible,
+    getScrollPosition,
     goTo,
   } = useContinuousChapters({
     location,
@@ -107,7 +145,10 @@ function BibleReaderContent() {
     sources,
     translationId,
     readingPosition: restoredPosition,
+    scrollOffset: tabScrollOffset,
   });
+  const readingScrollPositionRef = useRef(getScrollPosition);
+  readingScrollPositionRef.current = getScrollPosition;
   const userDidQuery = useQuery({
     ...currentUserDidQueryOptions,
     enabled: typeof window !== 'undefined',
@@ -144,7 +185,8 @@ function BibleReaderContent() {
   const scrollToSelection =
     selectedLocation?.bookId === location.bookId &&
     selectedLocation.chapter === location.chapter &&
-    !restoredPosition;
+    !restoredPosition &&
+    tabScrollOffset === undefined;
   const initialVerseTarget = useScrollToSelectedVerse(
     scrollToSelection ? selectedVerse : undefined,
   );
@@ -162,13 +204,20 @@ function BibleReaderContent() {
     translationId,
     active,
   );
+  useStoreReadingTabScrollPosition(
+    activeReadingTabId,
+    location,
+    translationId,
+    viewportRef,
+    readingScrollPositionRef,
+  );
   useSyncReadingMask(
     pathname,
     activeReadingTabId,
     translationId,
     location,
     active,
-    search,
+    readerSearch,
   );
   useRestoreReadingPositionOnHistoryNavigation(
     pathname,
@@ -177,8 +226,6 @@ function BibleReaderContent() {
     manifest,
     goTo,
   );
-  useEnsureReaderPositionOnNavigation(ensureActiveVisible);
-
   return (
     <div className={cls.root}>
       <section className={cls.content}>
@@ -291,17 +338,6 @@ function BibleReaderContent() {
       </section>
       <AnnotationPane accountDid={accountDid} className={cls.annotationPane} />
     </div>
-  );
-}
-
-function useEnsureReaderPositionOnNavigation(ensureActiveVisible: () => void) {
-  const router = useRouter();
-  useLayoutEffect(
-    () =>
-      router.subscribe('onRendered', (event) => {
-        if (event.pathChanged) ensureActiveVisible();
-      }),
-    [router, ensureActiveVisible],
   );
 }
 
@@ -434,6 +470,7 @@ function useScrollToSelectedVerse(verseId: VerseId | undefined) {
           const verse = document.getElementById(`verse-${verseId}`);
           if (!verse || !element.contains(verse)) return;
           scrolled = true;
+          console.log('scrolling selected verse into view', verse);
           verse.scrollIntoView({
             block: 'start',
             behavior: window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -463,6 +500,52 @@ function useStoreReadingTabPosition(
       active,
     );
   }, [activeReadingTabId, location, translationId, active]);
+}
+
+function useStoreReadingTabScrollPosition(
+  activeReadingTabId: string | undefined,
+  location: BibleLocation,
+  translationId: string,
+  viewportRef: RefObject<HTMLDivElement | null>,
+  scrollPositionRef: { current: () => ReadingTabScrollPosition },
+) {
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!activeReadingTabId || !viewport) return;
+
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    let pending = false;
+    const save = () => {
+      if (!pending) return;
+      pending = false;
+      const { position, scrollOffset } = scrollPositionRef.current();
+      storeReadingTabScrollPosition(
+        activeReadingTabId,
+        location,
+        translationId,
+        position,
+        scrollOffset,
+      );
+    };
+    const onScroll = () => {
+      pending = true;
+      if (timeout !== undefined) clearTimeout(timeout);
+      timeout = setTimeout(save, 120);
+    };
+
+    viewport.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      viewport.removeEventListener('scroll', onScroll);
+      if (timeout !== undefined) clearTimeout(timeout);
+      save();
+    };
+  }, [
+    activeReadingTabId,
+    location,
+    translationId,
+    viewportRef,
+    scrollPositionRef,
+  ]);
 }
 
 function useSyncReadingMask(

@@ -9,11 +9,21 @@ import type { VerseId } from '../../lib/bible/verse';
 const readerRoute = getRouteApi('/$translation/$book/$chapter');
 const VerseSelectionContext = createContext<readonly VerseId[]>([]);
 
-export function VerseSelectionProvider({ children }: { children: ReactNode }) {
+export function VerseSelectionProvider({
+  children,
+  selectionOverride,
+}: {
+  children: ReactNode;
+  selectionOverride?: string | null;
+}) {
   const { sources } = readerRoute.useLoaderData();
-  const selection = readerRoute.useSearch({
+  const routeSelection = readerRoute.useSearch({
     select: (search) => search.verses,
   });
+  const selection =
+    selectionOverride === undefined
+      ? routeSelection
+      : (selectionOverride ?? undefined);
   const availableVerses = selection
     ? sources.flatMap((entry) =>
         extractVerses(entry.source, entry.bookId).map((verse) => verse.id),

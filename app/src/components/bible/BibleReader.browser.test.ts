@@ -6,6 +6,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  Outlet,
   RouterProvider,
 } from '@tanstack/react-router';
 import { createElement } from 'react';
@@ -20,6 +21,7 @@ import {
   getReadingTabDestination,
   readReadingTabsState,
   storeReadingTabPosition,
+  storeReadingTabScrollPosition,
 } from '../../lib/bible/reading-tabs';
 import {
   normalizeVerseSelection,
@@ -27,13 +29,27 @@ import {
 } from '../../lib/bible/selection';
 import type * as BibleSource from '../../lib/bible/source';
 import type * as HighlightReconcile from '../../lib/highlights/reconcile';
+import { AppNavigation } from '../app/AppNavigation';
 import { BibleReader } from './BibleReader';
 import { CHAPTER_BUFFER } from './useContinuousChapters';
 
-const { fetchSource } = vi.hoisted(() => ({ fetchSource: vi.fn() }));
+const { fetchSource, testManifest } = vi.hoisted(() => ({
+  fetchSource: vi.fn(),
+  testManifest: {
+    id: 'eng_test',
+    title: 'Test',
+    books: [
+      { id: 'GEN', title: 'Genesis', chapters: 2 },
+      { id: 'EXO', title: 'Exodus', chapters: 2 },
+    ],
+  },
+}));
 vi.mock('../../lib/bible/source', async (importOriginal) => ({
   ...(await importOriginal<typeof BibleSource>()),
   fetchTranslationSource: fetchSource,
+}));
+vi.mock('../bible/useTranslationManifest', () => ({
+  useTranslationManifest: () => ({ data: testManifest }),
 }));
 vi.mock('../../lib/annotations/reconcile', async (importOriginal) => ({
   ...(await importOriginal<typeof AnnotationReconcile>()),
@@ -44,14 +60,7 @@ vi.mock('../../lib/highlights/reconcile', async (importOriginal) => ({
   reconcileChapterHighlights: vi.fn(),
 }));
 
-const manifest = {
-  id: 'eng_test',
-  title: 'Test',
-  books: [
-    { id: 'GEN', title: 'Genesis', chapters: 2 },
-    { id: 'EXO', title: 'Exodus', chapters: 2 },
-  ],
-};
+const manifest = testManifest;
 const sources = [
   {
     bookId: 'GEN',
@@ -87,25 +96,59 @@ async function renderReader(
   browserHistory = false,
   fixtureStyles = '',
   readerManifest = manifest,
+  withNavigation = false,
+  readerSources = sources,
+  initialReadingPosition?: { bookId: string; chapter: number },
 ) {
   const dbClient = new DbClient();
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
   queryClient.setQueryData(['user', 'did'], null);
-  const rootRoute = createRootRoute();
+  const rootRoute = createRootRoute({
+    ...(withNavigation
+      ? {
+          component: () =>
+            createElement(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                },
+              },
+              createElement(AppNavigation),
+              createElement(
+                'div',
+                { style: { flex: 1, minHeight: 0 } },
+                createElement(Outlet),
+              ),
+            ),
+        }
+      : {}),
+  });
+  let nextLoadGate: Promise<void> | undefined;
   const load = vi.fn(
-    ({
+    async ({
       params,
     }: {
       params: { book: string; chapter: string; translation: string };
-    }) => ({
-      location: { bookId: params.book, chapter: Number(params.chapter) },
-      manifest: readerManifest,
-      source: sources.find((entry) => entry.bookId === params.book)!.source,
-      sources: sources.filter((entry) => loadedBookIds.includes(entry.bookId)),
-      translationId: params.translation,
-    }),
+    }) => {
+      const gate = nextLoadGate;
+      nextLoadGate = undefined;
+      if (gate) await gate;
+      return {
+        location: { bookId: params.book, chapter: Number(params.chapter) },
+        manifest: readerManifest,
+        source: readerSources.find((entry) => entry.bookId === params.book)!
+          .source,
+        sources: readerSources.filter((entry) =>
+          loadedBookIds.includes(entry.bookId),
+        ),
+        translationId: params.translation,
+      };
+    },
   );
   const readerRoute = createRoute({
     getParentRoute: () => rootRoute,
@@ -129,11 +172,18 @@ async function renderReader(
   const history = browserHistory
     ? createBrowserHistory()
     : createMemoryHistory({ initialEntries: [initialUrl] });
-  if (activeReadingTabId) history.replace(initialUrl, { activeReadingTabId });
+  if (activeReadingTabId)
+    history.replace(initialUrl, {
+      activeReadingTabId,
+      ...(initialReadingPosition
+        ? { readingPosition: initialReadingPosition }
+        : {}),
+    });
   const router = createRouter({
     routeTree: rootRoute.addChildren([readerRoute]),
     history,
-    scrollRestoration: true,
+    scrollRestoration: ({ location }) =>
+      !/^\/[^/]+\/[^/]+\/[1-9]\d*$/.test(location.pathname),
     scrollToTopSelectors: [
       '[data-reader-scroll-area] [data-scroll-direction="vertical"]',
       '#page--main-content',
@@ -171,6 +221,9 @@ async function renderReader(
     container,
     router,
     load,
+    deferNextLoad(gate: Promise<void>) {
+      nextLoadGate = gate;
+    },
     async cleanup() {
       root.unmount();
       container.remove();
@@ -749,7 +802,7 @@ describe('multi-chapter reader', () => {
     }
   });
 
-  it('restores a saved position on reload without requiring navigation state', async () => {
+  it('restores the saved position on reload instead of stale route state', async () => {
     const savedTabs = localStorage.getItem('margins:reading-tabs');
     localStorage.removeItem('margins:reading-tabs');
     const selection = 'GEN/1:1-EXO/2:1';
@@ -762,7 +815,25 @@ describe('multi-chapter reader', () => {
       bookId: 'EXO',
       chapter: 1,
     });
-    const view = await renderReader(selection, tab.id);
+    storeReadingTabScrollPosition(
+      tab.id,
+      tab,
+      tab.translationId,
+      { bookId: 'EXO', chapter: 1 },
+      80,
+    );
+    const view = await renderReader(
+      selection,
+      tab.id,
+      ['GEN', 'EXO'],
+      '/eng_test/GEN/1',
+      false,
+      '',
+      manifest,
+      false,
+      sources,
+      { bookId: 'GEN', chapter: 2 },
+    );
     try {
       expect(
         [
@@ -772,6 +843,19 @@ describe('multi-chapter reader', () => {
         ].map((element) => element.dataset.readerChapter),
       ).toEqual(getExpectedChapterWindow('EXO/1'));
       expect(view.router.state.location.search.verses).toBe(selection);
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      const chapter = view.container.querySelector<HTMLElement>(
+        '[data-reader-chapter="EXO/1"]',
+      )!;
+      await expect
+        .poll(
+          () =>
+            viewport.getBoundingClientRect().top -
+            chapter.getBoundingClientRect().top,
+        )
+        .toBeCloseTo(80, 0);
     } finally {
       await view.cleanup();
       if (savedTabs === null) localStorage.removeItem('margins:reading-tabs');
@@ -1088,6 +1172,279 @@ describe('multi-chapter reader', () => {
       await view.cleanup();
       if (savedTabs === null) localStorage.removeItem('margins:reading-tabs');
       else localStorage.setItem('margins:reading-tabs', savedTabs);
+    }
+  });
+
+  it('restores selections and scroll position when switching between reader tabs', async () => {
+    const storageKeys = [
+      'margins:reading-tabs',
+      'margins:translation',
+      'margins:recent-translations',
+      'margins:visited-before',
+      'margins:nav-expanded',
+    ];
+    const savedStorage = storageKeys.map((key) => localStorage.getItem(key));
+    storageKeys.forEach((key) => localStorage.removeItem(key));
+    const firstSelection = 'GEN/1:1-GEN/1:2';
+    const firstTab = createReadingTab('eng_test', {
+      bookId: 'GEN',
+      chapter: 1,
+      verses: firstSelection,
+    });
+    const secondTab = createReadingTab('eng_test', {
+      bookId: 'EXO',
+      chapter: 1,
+      verses: 'EXO/1:1',
+    });
+    const readerSources = [
+      {
+        bookId: 'GEN',
+        source:
+          '\\id GEN\n\\c 1\n\\p\n\\v 1 Beginning\n\\v 2 Second verse\n\\v 3 Third verse\n\\c 2\n\\p\n\\v 1 End',
+      },
+      sources[1],
+    ];
+    const view = await renderReader(
+      firstSelection,
+      firstTab.id,
+      undefined,
+      undefined,
+      false,
+      '',
+      manifest,
+      true,
+      readerSources,
+    );
+    try {
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      viewport.style.height = '300px';
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+      const firstChapter = view.container.querySelector<HTMLElement>(
+        '[data-reader-chapter="GEN/1"]',
+      )!;
+      viewport.scrollTop +=
+        firstChapter.getBoundingClientRect().top -
+        viewport.getBoundingClientRect().top +
+        200;
+      viewport.dispatchEvent(new Event('scroll', { bubbles: true }));
+      const expectedScrollOffset =
+        viewport.getBoundingClientRect().top -
+        firstChapter.getBoundingClientRect().top;
+      await expect
+        .poll(
+          () =>
+            viewport.getBoundingClientRect().top -
+            firstChapter.getBoundingClientRect().top,
+        )
+        .toBeGreaterThan(0);
+      await expect
+        .poll(
+          () =>
+            readReadingTabsState().tabs.find((tab) => tab.id === firstTab.id)
+              ?.scrollOffset,
+        )
+        .toBeCloseTo(expectedScrollOffset, 0);
+      const firstScrollOffset = readReadingTabsState().tabs.find(
+        (tab) => tab.id === firstTab.id,
+      )!.scrollOffset!;
+
+      await expect.poll(() => readReadingTabsState().tabs).toHaveLength(2);
+      const secondTabLink = view.container.querySelector<HTMLAnchorElement>(
+        `[data-tab-id="${secondTab.id}"] a`,
+      )!;
+      expect(new URL(secondTabLink.href).hash).toBe('');
+      let outgoingViewportScrolled = false;
+      const onOutgoingViewportScroll = () => {
+        outgoingViewportScrolled = true;
+      };
+      viewport.addEventListener('scroll', onOutgoingViewportScroll);
+      await userEvent.click(secondTabLink);
+      await expect
+        .poll(() => view.router.state.location.state.activeReadingTabId)
+        .toBe(secondTab.id);
+      viewport.removeEventListener('scroll', onOutgoingViewportScroll);
+      expect(outgoingViewportScrolled).toBe(false);
+      await expect
+        .poll(() => view.router.state.location.search.verses)
+        .toBe('EXO/1:1');
+      const secondVerse = view.container.querySelector<HTMLElement>(
+        '[data-verse-id="EXO/1:1"]',
+      )!;
+      await expect
+        .poll(() => secondVerse.getAttribute('data-selected'))
+        .toBe('true');
+      const secondViewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      const visibleVerse = secondVerse.getBoundingClientRect();
+      const visibleViewport = secondViewport.getBoundingClientRect();
+      expect(visibleVerse.bottom).toBeGreaterThan(visibleViewport.top);
+      expect(visibleVerse.top).toBeLessThan(visibleViewport.bottom);
+
+      await userEvent.click(
+        view.container.querySelector<HTMLAnchorElement>(
+          `[data-tab-id="${firstTab.id}"] a`,
+        )!,
+      );
+      await expect
+        .poll(() => view.router.state.location.state.activeReadingTabId)
+        .toBe(firstTab.id);
+      await expect
+        .poll(() =>
+          view.container
+            .querySelector('[data-verse-id="GEN/1:1"]')
+            ?.getAttribute('data-selected'),
+        )
+        .toBe('true');
+      await expect
+        .poll(() =>
+          view.container
+            .querySelector('[data-verse-id="GEN/1:2"]')
+            ?.getAttribute('data-selected'),
+        )
+        .toBe('true');
+      await expect
+        .poll(() =>
+          Math.abs(
+            view.container
+              .querySelector<HTMLElement>('[data-scroll-direction="vertical"]')!
+              .getBoundingClientRect().top -
+              view.container
+                .querySelector<HTMLElement>('[data-reader-chapter="GEN/1"]')!
+                .getBoundingClientRect().top -
+              firstScrollOffset,
+          ),
+        )
+        .toBeLessThan(3);
+    } finally {
+      await view.cleanup();
+      storageKeys.forEach((key, index) => {
+        const value = savedStorage[index];
+        if (value === null) localStorage.removeItem(key);
+        else localStorage.setItem(key, value);
+      });
+    }
+  });
+
+  it('waits for the destination route before restoring a different tab', async () => {
+    const storageKeys = [
+      'margins:reading-tabs',
+      'margins:translation',
+      'margins:recent-translations',
+      'margins:visited-before',
+      'margins:nav-expanded',
+    ];
+    const savedStorage = storageKeys.map((key) => localStorage.getItem(key));
+    storageKeys.forEach((key) => localStorage.removeItem(key));
+    const firstTab = createReadingTab('eng_test', {
+      bookId: 'GEN',
+      chapter: 1,
+      verses: 'GEN/1:1',
+    });
+    const secondTab = createReadingTab('eng_test', {
+      bookId: 'EXO',
+      chapter: 1,
+      verses: 'EXO/1:1',
+    });
+    storeReadingTabScrollPosition(
+      secondTab.id,
+      secondTab,
+      'eng_test',
+      secondTab,
+      120,
+    );
+    const view = await renderReader(
+      'GEN/1:1',
+      firstTab.id,
+      undefined,
+      undefined,
+      false,
+      '',
+      manifest,
+      true,
+    );
+    const loadGate = Promise.withResolvers<void>();
+    const restoreLog = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const startViewTransition = vi
+      .spyOn(view.router, 'startViewTransition')
+      .mockImplementation((update) => update());
+    try {
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      viewport.scrollTop = 30;
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      const outgoingScrollTop = viewport.scrollTop;
+      expect(outgoingScrollTop).toBeGreaterThan(0);
+      const firstChapter = view.container.querySelector(
+        '[data-reader-chapter="GEN/1"]',
+      );
+      const loadCount = view.load.mock.calls.length;
+      view.deferNextLoad(loadGate.promise);
+
+      view.container
+        .querySelector<HTMLAnchorElement>(`[data-tab-id="${secondTab.id}"] a`)!
+        .click();
+      await expect
+        .poll(() => view.load.mock.calls.length)
+        .toBeGreaterThan(loadCount);
+
+      expect(
+        view.container.querySelector('[data-reader-chapter="GEN/1"]'),
+      ).toBe(firstChapter);
+      expect(
+        view.container.querySelector('[data-scroll-direction="vertical"]'),
+      ).toBe(viewport);
+      expect(outgoingScrollTop).toBeGreaterThan(0);
+      expect(
+        view.container
+          .querySelector('[data-verse-id="GEN/1:1"]')
+          ?.getAttribute('data-selected'),
+      ).toBe('true');
+      expect(
+        restoreLog.mock.calls.filter(
+          ([message]) => message === 'Restoring scroll position',
+        ),
+      ).toHaveLength(0);
+
+      loadGate.resolve();
+      await expect
+        .poll(
+          () =>
+            restoreLog.mock.calls.filter(
+              ([message]) => message === 'Restoring scroll position',
+            ).length,
+        )
+        .toBe(1);
+      await expect
+        .poll(() => view.router.state.location.pathname)
+        .toBe('/eng_test/EXO/1');
+      await expect
+        .poll(() =>
+          view.container
+            .querySelector('[data-verse-id="EXO/1:1"]')
+            ?.getAttribute('data-selected'),
+        )
+        .toBe('true');
+      expect(
+        view.container.querySelector('[data-scroll-direction="vertical"]'),
+      ).not.toBe(viewport);
+    } finally {
+      loadGate.resolve();
+      startViewTransition.mockRestore();
+      restoreLog.mockRestore();
+      await view.cleanup();
+      storageKeys.forEach((key, index) => {
+        const value = savedStorage[index];
+        if (value === null) localStorage.removeItem(key);
+        else localStorage.setItem(key, value);
+      });
     }
   });
 

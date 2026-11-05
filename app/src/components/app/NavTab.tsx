@@ -12,7 +12,7 @@ export interface NavTabProps {
   location: string;
   locationSearch?: { verses?: string };
   locationHash?: string;
-  locationHashScrollIntoView?: ScrollIntoViewOptions;
+  locationResetScroll?: boolean;
   locationState?: {
     activeReadingTabId?: string;
     readingPosition?: { bookId: string; chapter: number };
@@ -33,14 +33,13 @@ export function NavTab({
   locationState,
   locationSearch,
   locationHash,
-  locationHashScrollIntoView,
+  locationResetScroll,
   ...rest
 }: NavTabProps) {
   const ref = useRef<any>(null);
   useLayoutEffect(() => {
     if (active && ref.current) {
       ref.current.scrollIntoView({
-        block: 'center',
         inline: 'center',
         behavior: 'smooth',
       });
@@ -61,14 +60,9 @@ export function NavTab({
               to={location}
               viewTransition
               state={locationState}
+              resetScroll={locationResetScroll}
               search={locationSearch}
               hash={locationHash}
-              hashScrollIntoView={
-                locationHashScrollIntoView ?? {
-                  block: 'center',
-                  behavior: 'instant',
-                }
-              }
             >
               {children}
             </Link>
@@ -97,14 +91,9 @@ export function NavTab({
               to={location}
               viewTransition
               state={locationState}
+              resetScroll={locationResetScroll}
               search={locationSearch}
               hash={locationHash}
-              hashScrollIntoView={
-                locationHashScrollIntoView ?? {
-                  block: 'center',
-                  behavior: 'instant',
-                }
-              }
             />
           }
         >

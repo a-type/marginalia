@@ -18,12 +18,14 @@ export function useContinuousChapters({
   sources,
   translationId,
   readingPosition,
+  scrollOffset,
 }: {
   location: BibleLocation;
   manifest: TranslationManifest;
   sources: BookSource[];
   translationId: string;
   readingPosition: BibleLocation | undefined;
+  scrollOffset?: number;
 }) {
   const [active, setActive] = useState<BibleLocation>(() => {
     if (readingPosition) {
@@ -97,6 +99,8 @@ export function useContinuousChapters({
   const anchor = useRef<{ key: string; top: number } | null>(null);
   const jump = useRef<number | null>(null);
   const initialized = useRef(false);
+  const initialScrollOffset = useRef(scrollOffset);
+  const restoredScrollOffset = useRef(false);
   const frame = useRef<number | null>(null);
   const renderKey = chapters
     .map((chapter) => `${chapter.bookId}/${chapter.chapter}`)
@@ -151,6 +155,7 @@ export function useContinuousChapters({
       }
       if (visible && top !== undefined) {
         const adjustment = visible.getBoundingClientRect().top - top;
+        console.log(`adjust`, adjustment);
         if (adjustment !== 0) viewport.scrollTop += adjustment;
       }
     };
@@ -159,9 +164,11 @@ export function useContinuousChapters({
       const element = elements.find(
         (entry) => entry.dataset.readerChapter === anchor.current?.key,
       );
-      if (element)
+      if (element) {
+        console.log('anchor adjust', anchor.current.top);
         viewport.scrollTop +=
           element.getBoundingClientRect().top - anchor.current.top;
+      }
     }
     if (!initialized.current) {
       const element = elements.find(
@@ -170,10 +177,26 @@ export function useContinuousChapters({
       );
       if (element?.dataset.readerChapterLoaded === 'true') {
         const bounds = element.getBoundingClientRect();
-        viewport.scrollTop +=
+        const priorScrollTop = viewport.scrollTop;
+        const newScrollTop =
+          viewport.scrollTop +
           bounds.top +
           bounds.height * (jump.current ?? 0) -
-          viewport.getBoundingClientRect().top;
+          viewport.getBoundingClientRect().top +
+          (restoredScrollOffset.current
+            ? 0
+            : (initialScrollOffset.current ?? 0));
+        console.log(`Restoring scroll position`, {
+          active,
+          bounds,
+          jump: jump.current,
+          restoredScrollOffset: restoredScrollOffset.current,
+          initialScrollOffset: initialScrollOffset.current,
+          priorScrollTop,
+          newScrollTop,
+        });
+        viewport.scrollTop = newScrollTop;
+        restoredScrollOffset.current = true;
         initialized.current = true;
         jump.current = null;
       }
@@ -342,6 +365,11 @@ export function useContinuousChapters({
         entry.dataset.readerChapter === `${chapter.bookId}/${chapter.chapter}`,
     );
     if (viewport && element) {
+      console.log(
+        'goto',
+        element.getBoundingClientRect().top -
+          viewport.getBoundingClientRect().top,
+      );
       viewport.scrollTop +=
         element.getBoundingClientRect().top -
         viewport.getBoundingClientRect().top;
@@ -399,25 +427,26 @@ export function useContinuousChapters({
         ) ?? active
       );
     },
-    ensureActiveVisible() {
-      if (scrub.current) return;
-      const content = contentRef.current;
-      const viewport = viewportRef.current;
-      const element = [
-        ...(content?.querySelectorAll<HTMLElement>('[data-reader-chapter]') ??
-          []),
-      ].find(
-        (entry) =>
-          entry.dataset.readerChapter === `${active.bookId}/${active.chapter}`,
+    getScrollPosition() {
+      const visible = getMostVisibleChapter(
+        contentRef.current,
+        viewportRef.current,
       );
-      if (!viewport || !element) return;
-      const bounds = viewport.getBoundingClientRect();
-      const chapterBounds = element.getBoundingClientRect();
-      if (
-        chapterBounds.bottom <= bounds.top ||
-        chapterBounds.top >= bounds.bottom
-      )
-        goTo(active);
+      const viewport = viewportRef.current;
+      const position =
+        chapters.find(
+          (chapter) =>
+            visible?.dataset.readerChapter ===
+            `${chapter.bookId}/${chapter.chapter}`,
+        ) ?? active;
+      return {
+        position,
+        scrollOffset:
+          visible && viewport
+            ? viewport.getBoundingClientRect().top -
+              visible.getBoundingClientRect().top
+            : 0,
+      };
     },
     goTo,
     getSource(bookId: string): UseQueryResult<string, Error> {
