@@ -118,6 +118,7 @@ describe('continuous scroll space', () => {
     function Reader() {
       const {
         active,
+        initialPositionSettled,
         chapters,
         getSource,
         viewportRef,
@@ -154,6 +155,7 @@ describe('continuous scroll space', () => {
           'div',
           {
             'data-test-reader-viewport': '',
+            'data-initial-position-settled': initialPositionSettled,
             ref: viewportRef,
             'data-active': `${active.bookId}/${active.chapter}`,
             onScroll,
@@ -342,10 +344,12 @@ describe('continuous scroll space', () => {
 
     try {
       expect(target.dataset.readerChapterLoaded).toBe('false');
+      expect(reader.viewport.dataset.initialPositionSettled).toBe('false');
 
       reader.loadBook('EXO');
       await vi.waitFor(() => {
         expect(target.dataset.readerChapterLoaded).toBe('true');
+        expect(reader.viewport.dataset.initialPositionSettled).toBe('true');
         expect(
           target.getBoundingClientRect().top -
             reader.viewport.getBoundingClientRect().top,
