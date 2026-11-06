@@ -1,6 +1,8 @@
+import { logger } from '#/logger';
 import type { BibleLocation } from './location';
 import { parseBibleLocation } from './location';
 import { isTranslationId } from './manifests';
+import { getReadingMask } from './reading-mask';
 import { normalizeVerseSelection } from './selection';
 
 export interface ReadingTab extends BibleLocation {
@@ -10,7 +12,7 @@ export interface ReadingTab extends BibleLocation {
   visitedAt: number;
   verses?: string;
   position?: BibleLocation;
-  scrollOffset?: number;
+  scrollProgress?: number;
 }
 
 export interface ReadingTabsState {
@@ -78,9 +80,9 @@ export function parseReadingTabsState(value: unknown): ReadingTabsState {
           ? { verses: normalizeVerseSelection(tab.verses) }
           : {}),
         ...(position ? { position } : {}),
-        ...(typeof tab.scrollOffset === 'number' &&
-        Number.isFinite(tab.scrollOffset)
-          ? { scrollOffset: tab.scrollOffset }
+        ...(typeof tab.scrollProgress === 'number' &&
+        Number.isFinite(tab.scrollProgress)
+          ? { scrollProgress: tab.scrollProgress }
           : {}),
       },
     ];
@@ -97,6 +99,7 @@ export function getMostRecentlyVisitedReadingTab(): ReadingTab | undefined {
 }
 
 export function getReadingTabDestination(tab: ReadingTab) {
+  const search = tab.verses ? { verses: tab.verses } : {};
   return {
     to: '/$translation/$book/$chapter' as const,
     params: {
@@ -106,10 +109,10 @@ export function getReadingTabDestination(tab: ReadingTab) {
     },
     state: {
       activeReadingTabId: tab.id,
-      ...(tab.position ? { readingPosition: tab.position } : {}),
     },
     resetScroll: false,
-    search: tab.verses ? { verses: tab.verses } : {},
+    search,
+    mask: getReadingMask(tab.translationId, tab, tab.position, search),
     // Let the reader scroll after the tab renders; a link fragment can move the outgoing reader.
     hash: '',
   };
@@ -173,9 +176,13 @@ export function storeReadingTabLocation(
         ...tab,
         ...location,
         translationId,
-        verses: normalizeVerseSelection(verses) || undefined,
+        verses:
+          sameLocation &&
+          tab.verses === (normalizeVerseSelection(verses) || undefined)
+            ? tab.verses
+            : undefined,
         position: sameLocation ? tab.position : undefined,
-        scrollOffset: sameLocation ? tab.scrollOffset : undefined,
+        scrollProgress: sameLocation ? tab.scrollProgress : undefined,
         visitedAt: Date.now(),
       };
     }),
@@ -187,9 +194,9 @@ export function storeReadingTabScrollPosition(
   routeLocation: BibleLocation,
   translationId: string,
   position: BibleLocation,
-  scrollOffset: number,
+  scrollProgress: number,
 ): void {
-  if (!activeReadingTabId || !Number.isFinite(scrollOffset)) return;
+  if (!activeReadingTabId || !Number.isFinite(scrollProgress)) return;
   const state = readReadingTabsState();
   const tab = state.tabs.find((entry) => entry.id === activeReadingTabId);
   if (
@@ -207,51 +214,20 @@ export function storeReadingTabScrollPosition(
   if (
     tab.position?.bookId === nextPosition?.bookId &&
     tab.position?.chapter === nextPosition?.chapter &&
-    tab.scrollOffset === scrollOffset
+    tab.scrollProgress === scrollProgress
   )
     return;
-  writeReadingTabsState({
-    tabs: state.tabs.map((entry) =>
-      entry.id === activeReadingTabId
-        ? { ...entry, position: nextPosition, scrollOffset }
-        : entry,
-    ),
-  });
-}
-
-export function storeReadingTabPosition(
-  activeReadingTabId: string | undefined,
-  routeLocation: BibleLocation,
-  translationId: string,
-  position: BibleLocation,
-): void {
-  if (!activeReadingTabId) return;
-  const state = readReadingTabsState();
-  const tab = state.tabs.find((entry) => entry.id === activeReadingTabId);
-  if (
-    !tab ||
-    tab.translationId !== translationId ||
-    tab.bookId !== routeLocation.bookId ||
-    tab.chapter !== routeLocation.chapter
-  )
-    return;
-  const next =
-    position.bookId === routeLocation.bookId &&
-    position.chapter === routeLocation.chapter
-      ? undefined
-      : position;
-  if (
-    tab.position?.bookId === next?.bookId &&
-    tab.position?.chapter === next?.chapter
-  )
-    return;
-  writeReadingTabsState({
-    tabs: state.tabs.map((entry) =>
-      entry.id === activeReadingTabId
-        ? { ...entry, position: next, scrollOffset: undefined }
-        : entry,
-    ),
-  });
+  writeReadingTabsState(
+    {
+      tabs: state.tabs.map((entry) =>
+        entry.id === activeReadingTabId
+          ? { ...entry, position: nextPosition, scrollProgress }
+          : entry,
+      ),
+    },
+    tab.position?.bookId !== nextPosition?.bookId ||
+      tab.position?.chapter !== nextPosition?.chapter,
+  );
 }
 
 export function subscribeToReadingTabs(callback: () => void): () => void {
@@ -259,12 +235,13 @@ export function subscribeToReadingTabs(callback: () => void): () => void {
   return () => window.removeEventListener(CHANGE_EVENT, callback);
 }
 
-function writeReadingTabsState(state: ReadingTabsState): void {
+function writeReadingTabsState(state: ReadingTabsState, notify = true): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
+  } catch (error) {
+    logger.warn('Failed to store reading tab state', error);
     return;
   }
-  if (typeof window !== 'undefined')
+  if (notify && typeof window !== 'undefined')
     window.dispatchEvent(new Event(CHANGE_EVENT));
 }

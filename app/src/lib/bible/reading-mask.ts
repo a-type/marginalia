@@ -1,4 +1,15 @@
 import type { BibleLocation } from './location';
+import { parseBibleLocation } from './location';
+
+export function getMaskedReadingPosition(
+  translationId: string,
+  pathname: string | undefined,
+): BibleLocation | undefined {
+  if (!pathname) return undefined;
+  const parts = pathname.split('/');
+  if (parts.length !== 4 || parts[1] !== translationId) return undefined;
+  return parseBibleLocation(parts[2], parts[3]) ?? undefined;
+}
 
 export function getReadingMask(
   translationId: string,

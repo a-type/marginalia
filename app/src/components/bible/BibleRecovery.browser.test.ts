@@ -19,6 +19,7 @@ import {
   createReadingTab,
   getReadingTabDestination,
   readReadingTabsState,
+  storeReadingTabScrollPosition,
 } from '../../lib/bible/reading-tabs';
 import type * as BibleSource from '../../lib/bible/source';
 import { BibleRecovery } from './BibleRecovery';
@@ -90,7 +91,19 @@ async function renderRecovery(error = false, previousTab = false) {
     defaultOptions: { queries: { retry: false } },
   });
   client.setQueryData(['translations'], []);
-  if (previousTab) createReadingTab('eng_webu', { bookId: 'GEN', chapter: 1 });
+  if (previousTab) {
+    const previous = createReadingTab('eng_webu', {
+      bookId: 'GEN',
+      chapter: 1,
+    });
+    storeReadingTabScrollPosition(
+      previous.id,
+      previous,
+      previous.translationId,
+      { bookId: 'GEN', chapter: 2 },
+      0.5,
+    );
+  }
   const tab = createReadingTab('eng_webu', {
     bookId: 'WIS',
     chapter: 3,
@@ -197,6 +210,7 @@ it('closes the failed tab and returns to a remaining reading tab', async () => {
       .element(page.getByRole('heading', { name: 'Reading' }))
       .toBeVisible();
     expect(fixture.router.state.location.pathname).toBe('/eng_webu/GEN/1');
+    expect(fixture.router.history.location.pathname).toBe('/eng_webu/GEN/2');
     expect(readReadingTabsState().tabs.map((tab) => tab.bookId)).toEqual([
       'GEN',
     ]);

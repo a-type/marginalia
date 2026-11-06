@@ -26,7 +26,6 @@ export function getRouter() {
   });
 
   router.subscribe('onBeforeNavigate', (event) => {
-    console.log('[router]', event.fromLocation, event.toLocation, event);
     // only update on path changes
     if (
       updateState.updateAvailable &&

@@ -76,6 +76,18 @@ pnpm happyview:provision
 
 Rebuild the production app image as well after changing lexicon schemas.
 
+## Reading tabs and navigation
+
+The app supports multiple reading tabs, each with different locations or translations.
+
+Each tab shows the entire Bible translation as a scrollable text, loading and unloading chapters as the user scrolls. When a new chapter becomes the most visible in the viewport, the URL is updated to reference that chapter, as well as the UI. This doesn't actually change the underlying route, it uses [route masking](https://tanstack.com/router/latest/docs/guide/route-masking), which updates the browser's URL without changing the active router state.
+
+Additionally, scroll position is tracked. As a user scrolls down through a chapter, if the tab is left and returned to - or the page is refreshed - the viewport should be in the same place within the text. "Same place" means not a physical scroll position, but a position within a given chapter - best represented as a percentage from the beginning of the chapter. Storing scroll position isn't put in the URL and doesn't cause any re-rendering. It isn't restored when sharing a link, but is when refreshing the page.
+
+Besides scroll position, reader position is also determined by selected verses. Barring stored scroll data, if there are selected verses, the reader view will scroll to the first one when opened. This happens on first tab load, but also when refreshing the page or sending the page as a link.
+
+When selecting a verse directly, no change is made to the scroll position. However, when opening an annotation, the page does scroll to the first verse annotated.
+
 ## Daily lectionary
 
 Returning visitors can view daily scripture links on the home tab, choose a
@@ -107,14 +119,16 @@ can be read in order, including across book boundaries, with dividers between
 them. The reader keeps the most visible chapter and up to three neighboring chapters
 on each side rendered; scrolling loads further chapters as needed and stops at the
 ends of the translation. Scrolling replaces the current URL with the visible
-chapter without adding history entries; explicit location changes and tab
-switches add entries. The router masks the visible URL while keeping the
+chapter without adding history entries; explicit location changes, chapter
+buttons, and tab switches add entries. The router masks the visible URL while keeping the
 original reading route active, and full verse IDs retain their meaning in the
 visible URL when shared. A tab remembers its visible
 chapter and original selection. Opening a URL with a selection outside its
 chapter starts at the URL's chapter. Otherwise, opening a selection positions
 its first verse near the top when possible, unless a saved reading position is
-restored.
+restored. A reading tab's link points to its visible chapter. A fresh shared
+URL opens a new reading tab rather than inheriting the scroll position of
+another tab at the same location.
 Browser find-in-page can only search the
 chapters currently rendered.
 Chapter navigation uses the most visible chapter and clears the selection.

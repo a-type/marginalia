@@ -2,6 +2,7 @@ import { m } from '#/paraglide/messages';
 import { Button, clsx, Icon, Tooltip } from '@a-type/ui';
 import { Link } from '@tanstack/react-router';
 import { useLayoutEffect, useRef, type ReactNode } from 'react';
+import type { getReadingTabDestination } from '../../lib/bible/reading-tabs';
 import cls from './NavTab.module.css';
 
 export interface NavTabProps {
@@ -12,10 +13,10 @@ export interface NavTabProps {
   location: string;
   locationSearch?: { verses?: string };
   locationHash?: string;
+  locationMask?: ReturnType<typeof getReadingTabDestination>['mask'];
   locationResetScroll?: boolean;
   locationState?: {
     activeReadingTabId?: string;
-    readingPosition?: { bookId: string; chapter: number };
     skipHomeRestore?: boolean;
   };
   className?: string;
@@ -33,6 +34,7 @@ export function NavTab({
   locationState,
   locationSearch,
   locationHash,
+  locationMask,
   locationResetScroll,
   ...rest
 }: NavTabProps) {
@@ -63,6 +65,7 @@ export function NavTab({
               resetScroll={locationResetScroll}
               search={locationSearch}
               hash={locationHash}
+              mask={locationMask}
             >
               {children}
             </Link>
@@ -94,6 +97,7 @@ export function NavTab({
               resetScroll={locationResetScroll}
               search={locationSearch}
               hash={locationHash}
+              mask={locationMask}
             />
           }
         >

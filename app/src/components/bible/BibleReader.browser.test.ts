@@ -17,10 +17,13 @@ import { cdp, page, userEvent } from 'vitest/browser';
 
 import type * as AnnotationReconcile from '../../lib/annotations/reconcile';
 import {
+  ensureAnnotationCollectionReady,
+  getAnnotationCollections,
+} from '../../lib/annotations/collections';
+import {
   createReadingTab,
   getReadingTabDestination,
   readReadingTabsState,
-  storeReadingTabPosition,
   storeReadingTabScrollPosition,
 } from '../../lib/bible/reading-tabs';
 import {
@@ -155,6 +158,8 @@ async function renderReader(
     path: '/$translation/$book/$chapter',
     validateSearch: (search) => ({
       verses: normalizeVerseSelection(search.verses),
+      annotation:
+        typeof search.annotation === 'string' ? search.annotation : undefined,
     }),
     loaderDeps: ({ search }) => ({
       bookRanges: selectionBookRanges(search.verses),
@@ -219,6 +224,7 @@ async function renderReader(
   await rendered;
   return {
     container,
+    dbClient,
     router,
     load,
     deferNextLoad(gate: Promise<void>) {
@@ -641,10 +647,9 @@ describe('multi-chapter reader', () => {
         )
         .toEqual(getExpectedChapterWindow('EXO/1'));
       expect(view.router.state.location.search.verses).toBe(selection);
-      expect(view.router.state.location.state.readingPosition).toEqual({
-        bookId: 'EXO',
-        chapter: 1,
-      });
+      expect(view.router.state.location.maskedLocation?.pathname).toBe(
+        '/eng_test/EXO/1',
+      );
     } finally {
       await view.cleanup();
       if (savedTabs === null) localStorage.removeItem('margins:reading-tabs');
@@ -811,16 +816,12 @@ describe('multi-chapter reader', () => {
       chapter: 1,
       verses: selection,
     });
-    storeReadingTabPosition(tab.id, tab, tab.translationId, {
-      bookId: 'EXO',
-      chapter: 1,
-    });
     storeReadingTabScrollPosition(
       tab.id,
       tab,
       tab.translationId,
       { bookId: 'EXO', chapter: 1 },
-      80,
+      0.2,
     );
     const view = await renderReader(
       selection,
@@ -855,7 +856,7 @@ describe('multi-chapter reader', () => {
             viewport.getBoundingClientRect().top -
             chapter.getBoundingClientRect().top,
         )
-        .toBeCloseTo(80, 0);
+        .toBeCloseTo(chapter.getBoundingClientRect().height * 0.2, 0);
     } finally {
       await view.cleanup();
       if (savedTabs === null) localStorage.removeItem('margins:reading-tabs');
@@ -872,10 +873,13 @@ describe('multi-chapter reader', () => {
       bookId: 'GEN',
       chapter: 1,
     });
-    storeReadingTabPosition(tab.id, tab, tab.translationId, {
-      bookId: 'EXO',
-      chapter: 1,
-    });
+    storeReadingTabScrollPosition(
+      tab.id,
+      tab,
+      tab.translationId,
+      { bookId: 'EXO', chapter: 1 },
+      0,
+    );
     const view = await renderReader(
       '',
       tab.id,
@@ -899,10 +903,9 @@ describe('multi-chapter reader', () => {
       await expect
         .poll(() => view.router.state.location.maskedLocation?.pathname)
         .toBe('/eng_test/EXO/1');
-      expect(view.router.state.location.state.readingPosition).toEqual({
-        bookId: 'EXO',
-        chapter: 1,
-      });
+      expect(view.router.state.location.maskedLocation?.pathname).toBe(
+        '/eng_test/EXO/1',
+      );
     } finally {
       fetchSource.mockReset();
       await view.cleanup();
@@ -1149,10 +1152,9 @@ describe('multi-chapter reader', () => {
         expect(view.router.state.location.state.activeReadingTabId).toBe(
           tab?.id,
         );
-        expect(view.router.state.location.state.readingPosition).toEqual({
-          bookId: chapterId.split('/')[0],
-          chapter: Number(chapterId.split('/')[1]),
-        });
+        expect(view.router.state.location.maskedLocation?.pathname).toBe(
+          `/eng_test/${chapterId}`,
+        );
         expect(
           view.container.querySelector(`[data-verse-id="${verseId}"]`),
         ).toBe(verse);
@@ -1279,9 +1281,10 @@ describe('multi-chapter reader', () => {
         viewport.getBoundingClientRect().top +
         200;
       viewport.dispatchEvent(new Event('scroll', { bubbles: true }));
-      const expectedScrollOffset =
-        viewport.getBoundingClientRect().top -
-        firstChapter.getBoundingClientRect().top;
+      const expectedScrollProgress =
+        (viewport.getBoundingClientRect().top -
+          firstChapter.getBoundingClientRect().top) /
+        firstChapter.getBoundingClientRect().height;
       await expect
         .poll(
           () =>
@@ -1293,12 +1296,12 @@ describe('multi-chapter reader', () => {
         .poll(
           () =>
             readReadingTabsState().tabs.find((tab) => tab.id === firstTab.id)
-              ?.scrollOffset,
+              ?.scrollProgress,
         )
-        .toBeCloseTo(expectedScrollOffset, 0);
-      const firstScrollOffset = readReadingTabsState().tabs.find(
+        .toBeCloseTo(expectedScrollProgress, 3);
+      const firstScrollProgress = readReadingTabsState().tabs.find(
         (tab) => tab.id === firstTab.id,
-      )!.scrollOffset!;
+      )!.scrollProgress!;
 
       await expect.poll(() => readReadingTabsState().tabs).toHaveLength(2);
       const secondTabLink = view.container.querySelector<HTMLAnchorElement>(
@@ -1364,7 +1367,10 @@ describe('multi-chapter reader', () => {
               view.container
                 .querySelector<HTMLElement>('[data-reader-chapter="GEN/1"]')!
                 .getBoundingClientRect().top -
-              firstScrollOffset,
+              firstScrollProgress *
+                view.container
+                  .querySelector<HTMLElement>('[data-reader-chapter="GEN/1"]')!
+                  .getBoundingClientRect().height,
           ),
         )
         .toBeLessThan(3);
@@ -1375,6 +1381,104 @@ describe('multi-chapter reader', () => {
         if (value === null) localStorage.removeItem(key);
         else localStorage.setItem(key, value);
       });
+    }
+  });
+
+  it('links to a scrolled chapter while restoring the original tab and its progress', async () => {
+    const savedTabs = localStorage.getItem('margins:reading-tabs');
+    localStorage.removeItem('margins:reading-tabs');
+    const firstTab = createReadingTab('eng_test', {
+      bookId: 'GEN',
+      chapter: 1,
+      verses: 'GEN/1:1',
+    });
+    storeReadingTabScrollPosition(
+      firstTab.id,
+      firstTab,
+      firstTab.translationId,
+      { bookId: 'GEN', chapter: 2 },
+      0.25,
+    );
+    const secondTab = createReadingTab('eng_test', {
+      bookId: 'EXO',
+      chapter: 1,
+    });
+    const view = await renderReader(
+      '',
+      secondTab.id,
+      undefined,
+      '/eng_test/EXO/1',
+      false,
+      '',
+      manifest,
+      true,
+    );
+    const visitedPaths: string[] = [];
+    const unsubscribe = view.router.history.subscribe(({ location }) => {
+      visitedPaths.push(location.pathname);
+    });
+    try {
+      const link = view.container.querySelector<HTMLAnchorElement>(
+        `[data-tab-id="${firstTab.id}"] a`,
+      )!;
+      const sharedUrl = new URL(link.href);
+      expect(sharedUrl.pathname).toBe('/eng_test/GEN/2');
+      expect(sharedUrl.searchParams.get('verses')).toBe('GEN/1:1');
+      expect(sharedUrl.searchParams.has('scrollProgress')).toBe(false);
+
+      await userEvent.click(link);
+      await expect
+        .poll(() => view.router.state.location.state.activeReadingTabId)
+        .toBe(firstTab.id);
+      await expect
+        .poll(() => view.router.history.location.pathname)
+        .toBe('/eng_test/GEN/2');
+      expect(view.router.state.location.pathname).toBe('/eng_test/GEN/1');
+      expect(visitedPaths).not.toContain('/eng_test/GEN/1');
+      await expect
+        .poll(() => {
+          const viewport = view.container.querySelector<HTMLElement>(
+            '[data-scroll-direction="vertical"]',
+          );
+          const chapter = view.container.querySelector<HTMLElement>(
+            '[data-reader-chapter="GEN/2"]',
+          );
+          if (!viewport || !chapter) return undefined;
+          return (
+            (viewport.getBoundingClientRect().top -
+              chapter.getBoundingClientRect().top) /
+            chapter.getBoundingClientRect().height
+          );
+        })
+        .toBeCloseTo(0.25, 2);
+
+      const reopened = await renderReader(
+        sharedUrl.searchParams.get('verses')!,
+        undefined,
+        undefined,
+        sharedUrl.pathname,
+      );
+      try {
+        expect(reopened.router.state.location.pathname).toBe('/eng_test/GEN/2');
+        expect(reopened.router.state.location.search.verses).toBe('GEN/1:1');
+        const viewport = reopened.container.querySelector<HTMLElement>(
+          '[data-scroll-direction="vertical"]',
+        )!;
+        const chapter = reopened.container.querySelector<HTMLElement>(
+          '[data-reader-chapter="GEN/2"]',
+        )!;
+        expect(
+          viewport.getBoundingClientRect().top -
+            chapter.getBoundingClientRect().top,
+        ).toBeCloseTo(0, 0);
+      } finally {
+        await reopened.cleanup();
+      }
+    } finally {
+      unsubscribe();
+      await view.cleanup();
+      if (savedTabs === null) localStorage.removeItem('margins:reading-tabs');
+      else localStorage.setItem('margins:reading-tabs', savedTabs);
     }
   });
 
@@ -1403,7 +1507,7 @@ describe('multi-chapter reader', () => {
       secondTab,
       'eng_test',
       secondTab,
-      120,
+      0.2,
     );
     const view = await renderReader(
       'GEN/1:1',
@@ -1416,7 +1520,6 @@ describe('multi-chapter reader', () => {
       true,
     );
     const loadGate = Promise.withResolvers<void>();
-    const restoreLog = vi.spyOn(console, 'log').mockImplementation(() => {});
     const startViewTransition = vi
       .spyOn(view.router, 'startViewTransition')
       .mockImplementation((update) => update());
@@ -1455,21 +1558,7 @@ describe('multi-chapter reader', () => {
           .querySelector('[data-verse-id="GEN/1:1"]')
           ?.getAttribute('data-selected'),
       ).toBe('true');
-      expect(
-        restoreLog.mock.calls.filter(
-          ([message]) => message === 'Restoring scroll position',
-        ),
-      ).toHaveLength(0);
-
       loadGate.resolve();
-      await expect
-        .poll(
-          () =>
-            restoreLog.mock.calls.filter(
-              ([message]) => message === 'Restoring scroll position',
-            ).length,
-        )
-        .toBe(1);
       await expect
         .poll(() => view.router.state.location.pathname)
         .toBe('/eng_test/EXO/1');
@@ -1483,10 +1572,24 @@ describe('multi-chapter reader', () => {
       expect(
         view.container.querySelector('[data-scroll-direction="vertical"]'),
       ).not.toBe(viewport);
+      await expect
+        .poll(() => {
+          const nextViewport = view.container.querySelector<HTMLElement>(
+            '[data-scroll-direction="vertical"]',
+          )!;
+          const chapter = view.container.querySelector<HTMLElement>(
+            '[data-reader-chapter="EXO/1"]',
+          )!;
+          return (
+            (nextViewport.getBoundingClientRect().top -
+              chapter.getBoundingClientRect().top) /
+            chapter.getBoundingClientRect().height
+          );
+        })
+        .toBeCloseTo(0.2, 2);
     } finally {
       loadGate.resolve();
       startViewTransition.mockRestore();
-      restoreLog.mockRestore();
       await view.cleanup();
       storageKeys.forEach((key, index) => {
         const value = savedStorage[index];
@@ -1634,6 +1737,269 @@ describe('multi-chapter reader', () => {
     }
   });
 
+  it('scrolls to an annotation verse outside the current chapter window', async () => {
+    const scrollIntoView = vi
+      .spyOn(Element.prototype, 'scrollIntoView')
+      .mockImplementation(() => {});
+    const view = await renderReader(
+      'GEN/1:1',
+      undefined,
+      undefined,
+      undefined,
+      false,
+      '',
+      {
+        ...manifest,
+        books: [
+          { id: 'GEN', title: 'Genesis', chapters: 8 },
+          { id: 'EXO', title: 'Exodus', chapters: 2 },
+        ],
+      },
+      false,
+      [
+        {
+          bookId: 'GEN',
+          source: `${sources[0].source}\n\\c 7\n\\p\n\\v 1 Far`,
+        },
+        sources[1],
+      ],
+    );
+    const annotations = getAnnotationCollections(view.dbClient).annotations;
+    const id = crypto.randomUUID();
+    try {
+      await ensureAnnotationCollectionReady(annotations);
+      await annotations.insert({
+        id,
+        rkey: id,
+        uri: null,
+        cid: null,
+        authorDid: null,
+        bookId: 'GEN',
+        chapter: 7,
+        chapterKeys: ['GEN/1', 'GEN/7'],
+        verses: ['GEN/7:1', 'GEN/1:1'],
+        comment: 'Annotation',
+        createdAt: new Date().toISOString(),
+        status: 'pending',
+        syncError: null,
+      }).isPersisted.promise;
+      scrollIntoView.mockClear();
+      await view.router.navigate({
+        to: '/$translation/$book/$chapter',
+        params: { translation: 'eng_test', book: 'GEN', chapter: '1' },
+        search: { verses: 'GEN/1:1', annotation: id },
+        state: true,
+        replace: true,
+        resetScroll: false,
+      });
+      await expect
+        .poll(() =>
+          scrollIntoView.mock.contexts.some(
+            (element) =>
+              element instanceof Element && element.id === 'verse-GEN/7:1',
+          ),
+        )
+        .toBe(true);
+    } finally {
+      scrollIntoView.mockRestore();
+      await view.cleanup();
+      const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('margins-annotations', 4);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      await new Promise<void>((resolve, reject) => {
+        const transaction = database.transaction('annotations', 'readwrite');
+        transaction.objectStore('annotations').delete(id);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error);
+      });
+      database.close();
+    }
+  });
+
+  it('restores a masked chapter when history returns to an older tab route', async () => {
+    const scrollIntoView = vi
+      .spyOn(Element.prototype, 'scrollIntoView')
+      .mockImplementation(() => {});
+    const saved = localStorage.getItem('margins:reading-tabs');
+    localStorage.removeItem('margins:reading-tabs');
+    const tab = createReadingTab('eng_test', {
+      bookId: 'GEN',
+      chapter: 1,
+      verses: 'GEN/1:1',
+    });
+    const view = await renderReader('GEN/1:1', tab.id);
+    try {
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      const chapter = view.container.querySelector<HTMLElement>(
+        '[data-reader-chapter="GEN/2"]',
+      )!;
+      viewport.scrollTop +=
+        chapter.getBoundingClientRect().top -
+        viewport.getBoundingClientRect().top +
+        100;
+      await expect
+        .poll(() => view.router.history.location.pathname)
+        .toBe('/eng_test/GEN/2');
+      await page.getByRole('button', { name: 'Genesis, Chapter 2' }).click();
+      await page.getByRole('button', { name: 'Exodus', exact: true }).click();
+      await page.getByRole('button', { name: '1', exact: true }).click();
+      await expect
+        .poll(() => view.router.state.location.pathname)
+        .toBe('/eng_test/EXO/1');
+      expect(view.router.state.location.search.verses).toBe('');
+      view.router.history.back();
+      await expect
+        .poll(() => view.router.history.location.pathname)
+        .toBe('/eng_test/GEN/2');
+      await expect
+        .poll(() =>
+          view.container.querySelector('[aria-label="Genesis, Chapter 2"]'),
+        )
+        .not.toBeNull();
+      expect(view.router.state.location.search.verses).toBe('GEN/1:1');
+    } finally {
+      scrollIntoView.mockRestore();
+      await view.cleanup();
+      if (saved === null) localStorage.removeItem('margins:reading-tabs');
+      else localStorage.setItem('margins:reading-tabs', saved);
+    }
+  });
+
+  it('navigates with chapter buttons and clears the selection', async () => {
+    const view = await renderReader('GEN/1:1');
+    try {
+      const length = view.router.history.length;
+      await page.getByRole('button', { name: 'Next chapter' }).click();
+      await expect
+        .poll(() => view.router.history.location.pathname)
+        .toBe('/eng_test/GEN/2');
+      expect(view.router.state.location.search.verses).toBe('');
+      expect(view.router.history.length).toBe(length + 1);
+      view.router.history.back();
+      await expect
+        .poll(() => view.router.state.location.search.verses)
+        .toBe('GEN/1:1');
+    } finally {
+      await view.cleanup();
+    }
+  });
+
+  it('opens a fresh URL in a new tab without inheriting saved progress', async () => {
+    const saved = localStorage.getItem('margins:reading-tabs');
+    localStorage.removeItem('margins:reading-tabs');
+    const existing = createReadingTab('eng_test', {
+      bookId: 'GEN',
+      chapter: 1,
+    });
+    storeReadingTabScrollPosition(
+      existing.id,
+      existing,
+      existing.translationId,
+      existing,
+      0.5,
+    );
+    const view = await renderReader(
+      '',
+      undefined,
+      undefined,
+      undefined,
+      false,
+      '',
+      manifest,
+      true,
+    );
+    try {
+      await expect
+        .poll(() => view.router.state.location.state.activeReadingTabId)
+        .toBeTruthy();
+      expect(view.router.state.location.state.activeReadingTabId).not.toBe(
+        existing.id,
+      );
+      expect(readReadingTabsState().tabs).toHaveLength(2);
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      const chapter = view.container.querySelector<HTMLElement>(
+        '[data-reader-chapter="GEN/1"]',
+      )!;
+      expect(
+        viewport.getBoundingClientRect().top -
+          chapter.getBoundingClientRect().top,
+      ).toBeCloseTo(0, 0);
+    } finally {
+      await view.cleanup();
+      if (saved === null) localStorage.removeItem('margins:reading-tabs');
+      else localStorage.setItem('margins:reading-tabs', saved);
+    }
+  });
+
+  it('flushes pending reading progress when leaving a tab', async () => {
+    const saved = localStorage.getItem('margins:reading-tabs');
+    localStorage.removeItem('margins:reading-tabs');
+    const tab = createReadingTab('eng_test', { bookId: 'GEN', chapter: 1 });
+    const view = await renderReader('', tab.id);
+    let cleaned = false;
+    try {
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      const chapter = view.container.querySelector<HTMLElement>(
+        '[data-reader-chapter="GEN/1"]',
+      )!;
+      viewport.scrollTop += 100;
+      viewport.dispatchEvent(new Event('scroll'));
+      const expected =
+        (viewport.getBoundingClientRect().top -
+          chapter.getBoundingClientRect().top) /
+        chapter.getBoundingClientRect().height;
+      await view.cleanup();
+      cleaned = true;
+      expect(readReadingTabsState().tabs[0].scrollProgress).toBeCloseTo(
+        expected,
+        3,
+      );
+    } finally {
+      if (!cleaned) await view.cleanup();
+      if (saved === null) localStorage.removeItem('margins:reading-tabs');
+      else localStorage.setItem('margins:reading-tabs', saved);
+    }
+  });
+
+  it('flushes pending reading progress when the page is hidden', async () => {
+    const saved = localStorage.getItem('margins:reading-tabs');
+    localStorage.removeItem('margins:reading-tabs');
+    const tab = createReadingTab('eng_test', { bookId: 'GEN', chapter: 1 });
+    const view = await renderReader('', tab.id);
+    try {
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      const chapter = view.container.querySelector<HTMLElement>(
+        '[data-reader-chapter="GEN/1"]',
+      )!;
+      viewport.scrollTop += 100;
+      viewport.dispatchEvent(new Event('scroll'));
+      window.dispatchEvent(new Event('pagehide'));
+      const expected =
+        (viewport.getBoundingClientRect().top -
+          chapter.getBoundingClientRect().top) /
+        chapter.getBoundingClientRect().height;
+      expect(readReadingTabsState().tabs[0].scrollProgress).toBeCloseTo(
+        expected,
+        3,
+      );
+    } finally {
+      await view.cleanup();
+      if (saved === null) localStorage.removeItem('margins:reading-tabs');
+      else localStorage.setItem('margins:reading-tabs', saved);
+    }
+  });
+
   it('replaces the actual browser URL without adding history entries', async () => {
     const view = await renderReader(
       'GEN/1:1',
@@ -1662,10 +2028,7 @@ describe('multi-chapter reader', () => {
       expect(window.history.length).toBe(length);
       const restored = view.router.parseLocation(view.router.history.location);
       expect(restored.pathname).toBe('/eng_test/GEN/1');
-      expect(restored.state.readingPosition).toEqual({
-        bookId: 'GEN',
-        chapter: 2,
-      });
+      expect(restored.maskedLocation?.pathname).toBe('/eng_test/GEN/2');
     } finally {
       await view.cleanup();
     }

@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
+import type { VerseId } from '../../lib/bible/verse';
 import {
   getAnnotationCollections,
   type AnnotationRecord,
@@ -30,10 +31,15 @@ export const readerRoute = getRouteApi('/$translation/$book/$chapter');
 
 export interface AnnotationPaneProps {
   accountDid: string | null;
+  onOpenVerse: (verseId: VerseId) => void;
   className?: string;
 }
 
-export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
+export function AnnotationPane({
+  accountDid,
+  onOpenVerse,
+  className,
+}: AnnotationPaneProps) {
   const dbClient = useDbClient();
   const { addingVerses, draftVerses, editing } = useAnnotationPaneState();
   const selectedVerse = usePrimarySelectedVerseId();
@@ -83,15 +89,10 @@ export function AnnotationPane({ accountDid, className }: AnnotationPaneProps) {
   );
   const firstOpenAnnotationVerse = openAnnotationVerses.at(0);
 
-  // TODO: find a better place for this?
   useEffect(() => {
     if (!firstOpenAnnotationVerse) return;
-    // document
-    //   .getElementById(`verse-${firstOpenAnnotationVerse}`)
-    //   ?.scrollIntoView({
-    //     block: 'center',
-    //   });
-  }, [firstOpenAnnotationVerse]);
+    onOpenVerse(firstOpenAnnotationVerse);
+  }, [firstOpenAnnotationVerse, openAnnotation?.id, onOpenVerse]);
 
   return (
     <aside

@@ -4,18 +4,18 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import {
   createReadingTab,
   readReadingTabsState,
-  visitReadingTab,
 } from '../../lib/bible/reading-tabs';
 
 export function useReadingTabRouteState(): string | undefined {
   const router = useRouter();
   const canGoBack = useCanGoBack();
   const navigate = useNavigate();
+  const pendingTab = useRef<{ historyKey: string; tabId: string } | null>(null);
   const { pathname, search, hash, state } = useLocation({
     select: (location) => ({
       pathname: location.pathname,
@@ -33,6 +33,7 @@ export function useReadingTabRouteState(): string | undefined {
 
     const currentTabs = readReadingTabsState().tabs;
     if (activeReadingTabId) {
+      pendingTab.current = null;
       if (currentTabs.some((tab) => tab.id === activeReadingTabId)) return;
       if (canGoBack) router.history.back();
       else void navigate({ to: '/', replace: true });
@@ -40,26 +41,17 @@ export function useReadingTabRouteState(): string | undefined {
     }
 
     const [, translationId, bookId, chapterValue] = match;
-    const matchingTab = currentTabs
-      .filter(
-        (tab) =>
-          tab.translationId === translationId &&
-          tab.bookId === bookId &&
-          tab.chapter === Number(chapterValue),
-      )
-      .reduce<(typeof currentTabs)[number] | undefined>(
-        (latest, tab) =>
-          !latest || tab.visitedAt > latest.visitedAt ? tab : latest,
-        undefined,
-      );
+    const historyKey = state.__TSR_key ?? state.key ?? pathname;
     const tab =
-      matchingTab ??
+      (pendingTab.current?.historyKey === historyKey
+        ? currentTabs.find((entry) => entry.id === pendingTab.current?.tabId)
+        : undefined) ??
       createReadingTab(translationId, {
         bookId,
         chapter: Number(chapterValue),
         verses: search.verses,
       });
-    if (matchingTab) visitReadingTab(matchingTab.id);
+    pendingTab.current = { historyKey, tabId: tab.id };
 
     void navigate({
       to: pathname,
@@ -72,7 +64,17 @@ export function useReadingTabRouteState(): string | undefined {
       replace: true,
       resetScroll: false,
     });
-  }, [activeReadingTabId, navigate, pathname, canGoBack, router]);
+  }, [
+    activeReadingTabId,
+    navigate,
+    pathname,
+    canGoBack,
+    router,
+    state.__TSR_key,
+    state.key,
+    search,
+    hash,
+  ]);
 
   return activeReadingTabId;
 }

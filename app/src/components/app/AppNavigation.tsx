@@ -88,6 +88,7 @@ export function AppNavigation() {
               locationResetScroll={destination.resetScroll}
               locationSearch={destination.search}
               locationHash={destination.hash}
+              locationMask={destination.mask}
               active={activeReadingTabId === tab.id}
               tooltip={`${tab.position?.bookId ?? tab.bookId} ${tab.position?.chapter ?? tab.chapter}`}
               onClick={() => visitReadingTab(tab.id)}

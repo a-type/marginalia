@@ -14,7 +14,7 @@ import { page } from 'vitest/browser';
 
 import {
   readReadingTabsState,
-  storeReadingTabPosition,
+  storeReadingTabScrollPosition,
 } from '../../lib/bible/reading-tabs';
 import { normalizeVerseSelection } from '../../lib/bible/selection';
 import {
@@ -144,21 +144,37 @@ it('restores the supplied verses when revisiting a tab through app navigation', 
       'JHN/3:2-JHN/3:3,JHN/4:1',
     );
 
-    storeReadingTabPosition(tab.id, tab, tab.translationId, {
-      bookId: 'JHN',
-      chapter: 4,
-    });
+    storeReadingTabScrollPosition(
+      tab.id,
+      tab,
+      tab.translationId,
+      { bookId: 'JHN', chapter: 4 },
+      0,
+    );
     await expect.element(page.getByText('JHN 4')).toBeVisible();
     container.querySelector<HTMLAnchorElement>('a[href="/"]')!.click();
     await expect
       .element(page.getByRole('button', { name: 'Open reading' }))
       .toBeVisible();
-    container
-      .querySelector<HTMLAnchorElement>(`[data-tab-id="${tab.id}"] a`)!
-      .click();
+    const scrolledLink = container.querySelector<HTMLAnchorElement>(
+      `[data-tab-id="${tab.id}"] a`,
+    )!;
+    const scrolledUrl = new URL(scrolledLink.href);
+    expect(scrolledUrl.pathname).toBe('/eng_webu/JHN/4');
+    expect(scrolledUrl.searchParams.get('verses')).toBe(
+      'JHN/3:2-JHN/3:3,JHN/4:1',
+    );
+    expect(scrolledUrl.hash).toBe('');
+    scrolledLink.click();
     await expect
-      .poll(() => router.state.location.state.readingPosition)
-      .toEqual({ bookId: 'JHN', chapter: 4 });
+      .poll(() => router.state.location.state.activeReadingTabId)
+      .toBe(tab.id);
+    expect(router.state.location.pathname).toBe('/eng_webu/JHN/3');
+    expect(router.history.location.pathname).toBe('/eng_webu/JHN/4');
+    expect(readReadingTabsState().tabs[0].position).toEqual({
+      bookId: 'JHN',
+      chapter: 4,
+    });
   } finally {
     root.unmount();
     container.remove();
