@@ -89,6 +89,7 @@ export function NavTab({
           emphasis="ghost"
           onClick={onClick}
           nativeButton={false}
+          className={clsx(cls.tabButton)}
           render={
             <Link
               to={location}

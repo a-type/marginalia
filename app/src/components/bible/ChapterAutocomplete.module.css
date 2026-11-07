@@ -1,0 +1,13 @@
+.input {
+  box-sizing: border-box;
+  min-width: 5ch;
+  border: none;
+  box-shadow: none;
+}
+.content {
+  width: var(--anchor-width);
+  min-width: 3ch;
+  max-height: min(55dvh, var(--available-height));
+}
+.option {
+}

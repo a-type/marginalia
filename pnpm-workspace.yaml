@@ -4,7 +4,7 @@ packages:
   - 'packages/*'
 
 catalog:
-  '@a-type/ui': '^6.1.61'
+  '@a-type/ui': '^6.1.63'
   '@arbor-css/core': '^0.0.149'
   '@arbor-css/postcss': '^0.0.149'
   '@atproto/common-web': '^0.5.15'
