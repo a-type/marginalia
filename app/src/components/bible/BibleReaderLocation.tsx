@@ -1,6 +1,6 @@
 import { clsx } from '@a-type/ui';
 import { getRouteApi, useLocation } from '@tanstack/react-router';
-import { startTransition, useOptimistic, useRef, useState } from 'react';
+import { startTransition, useRef, useState } from 'react';
 
 import type { TranslationManifest } from '../../lib/bible/source';
 import type { BookId } from '../../lib/bible/verse';
@@ -38,10 +38,10 @@ export function BibleReaderLocation({
   const [pendingBookId, setPendingBookId] = useState<BookId>();
   const [chapterOpen, setChapterOpen] = useState(false);
   const [chapterQuery, setChapterQuery] = useState('');
-  const [optimisticLocation, setOptimisticLocation] = useOptimistic({
-    bookId,
-    chapter,
-  });
+  const [optimisticLocation, setOptimisticLocation] = useState<{
+    bookId: BookId;
+    chapter: number;
+  }>();
   const selectorRef = useRef<HTMLDivElement>(null);
 
   if (
@@ -52,14 +52,17 @@ export function BibleReaderLocation({
     setPendingBookId(undefined);
     setChapterOpen(false);
     setChapterQuery('');
+    setOptimisticLocation(undefined);
   }
 
-  const selectedBookId = pendingBookId ?? optimisticLocation.bookId;
+  const selectedBookId = pendingBookId ?? optimisticLocation?.bookId ?? bookId;
   const book = manifest.books.find((option) => option.id === selectedBookId);
   const selectedChapter =
-    selectedBookId === optimisticLocation.bookId
+    optimisticLocation && selectedBookId === optimisticLocation.bookId
       ? optimisticLocation.chapter
-      : 1;
+      : selectedBookId === bookId
+        ? chapter
+        : 1;
 
   const navigateTo = async (nextBookId: BookId, nextChapter: number) => {
     await navigate({
@@ -114,12 +117,22 @@ export function BibleReaderLocation({
                 onSelect={(nextChapter) => {
                   setChapterOpen(false);
                   setPendingBookId(undefined);
+                  const nextLocation = {
+                    bookId: selectedBookId,
+                    chapter: nextChapter,
+                  };
+                  setOptimisticLocation(nextLocation);
                   startTransition(async () => {
-                    setOptimisticLocation({
-                      bookId: selectedBookId,
-                      chapter: nextChapter,
-                    });
-                    await navigateTo(selectedBookId, nextChapter);
+                    try {
+                      await navigateTo(selectedBookId, nextChapter);
+                    } finally {
+                      setOptimisticLocation((current) =>
+                        current?.bookId === nextLocation.bookId &&
+                        current.chapter === nextLocation.chapter
+                          ? undefined
+                          : current,
+                      );
+                    }
                   });
                 }}
               />

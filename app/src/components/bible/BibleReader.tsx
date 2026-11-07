@@ -260,7 +260,14 @@ function BibleReaderContent({
     readerSearch,
     initialPositionSettled,
   );
-  useRestoreReadingPositionOnHistoryNavigation(translationId, manifest, goTo);
+  useRestoreReadingPositionOnHistoryNavigation(
+    pathname,
+    activeReadingTabId,
+    translationId,
+    location,
+    manifest,
+    goTo,
+  );
   return (
     <div className={cls.root}>
       <section className={cls.content}>
@@ -639,7 +646,10 @@ function useSyncReadingMask(
 }
 
 function useRestoreReadingPositionOnHistoryNavigation(
+  pathname: string,
+  activeReadingTabId: string | undefined,
   translationId: string,
+  location: BibleLocation,
   manifest: TranslationManifest,
   goTo: (location: BibleLocation) => void,
 ) {
@@ -654,6 +664,14 @@ function useRestoreReadingPositionOnHistoryNavigation(
         )
           return;
         const parsedLocation = router.parseLocation(historyLocation);
+        const readerPathname = `/${translationId}/${location.bookId}/${location.chapter}`;
+        if (
+          pathname !== readerPathname ||
+          (historyLocation.pathname !== readerPathname &&
+            parsedLocation.pathname !== readerPathname) ||
+          parsedLocation.state.activeReadingTabId !== activeReadingTabId
+        )
+          return;
         const position =
           getMaskedReadingPosition(translationId, historyLocation.pathname) ??
           getMaskedReadingPosition(translationId, parsedLocation.pathname);
@@ -664,7 +682,15 @@ function useRestoreReadingPositionOnHistoryNavigation(
         if (book && position.chapter >= 1 && position.chapter <= book.chapters)
           goTo(position);
       }),
-    [router, translationId, manifest, goTo],
+    [
+      router,
+      pathname,
+      activeReadingTabId,
+      translationId,
+      location,
+      manifest,
+      goTo,
+    ],
   );
 }
 

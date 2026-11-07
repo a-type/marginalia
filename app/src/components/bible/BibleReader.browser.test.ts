@@ -917,14 +917,50 @@ describe('multi-chapter reader', () => {
         .poll(() => view.router.state.location.pathname)
         .toBe('/eng_test/GEN/1');
       expect(view.router.history.length).toBe(historyLength + 1);
+      const currentChapter = view.container.querySelector<HTMLElement>(
+        '[data-reader-chapter="GEN/1"]',
+      )!;
+      await expect
+        .poll(() => {
+          const currentViewport = view.container.querySelector<HTMLElement>(
+            '[data-scroll-direction="vertical"]',
+          )!;
+          return (
+            (currentViewport.getBoundingClientRect().top -
+              currentChapter.getBoundingClientRect().top) /
+            currentChapter.getBoundingClientRect().height
+          );
+        })
+        .toBeCloseTo(0, 0);
       view.router.history.back();
       await expect
         .poll(() => view.router.history.location.pathname)
         .toBe('/eng_test/GEN/2');
+      const restoredChapter = view.container.querySelector<HTMLElement>(
+        '[data-reader-chapter="GEN/2"]',
+      )!;
+      await expect
+        .poll(() => {
+          const currentViewport = view.container.querySelector<HTMLElement>(
+            '[data-scroll-direction="vertical"]',
+          )!;
+          return (
+            (currentViewport.getBoundingClientRect().top -
+              restoredChapter.getBoundingClientRect().top) /
+            restoredChapter.getBoundingClientRect().height
+          );
+        })
+        .toBeCloseTo(0, 0);
+      await expect(
+        page.getByRole('spinbutton', { name: 'Chapter' }),
+      ).toHaveValue(2);
       view.router.history.forward();
       await expect
         .poll(() => view.router.history.location.pathname)
         .toBe('/eng_test/GEN/1');
+      await expect(
+        page.getByRole('spinbutton', { name: 'Chapter' }),
+      ).toHaveValue(1);
     } finally {
       await view.cleanup();
     }
@@ -1720,6 +1756,24 @@ describe('multi-chapter reader', () => {
           .querySelector('[data-verse-id="GEN/1:1"]')
           ?.getAttribute('data-selected'),
       ).toBe('true');
+
+      view.router.history.back();
+      await expect
+        .poll(() => view.router.history.location.pathname)
+        .toBe('/eng_test/GEN/1');
+      expect(
+        view.container.querySelector('[data-scroll-direction="vertical"]'),
+      ).toBe(viewport);
+      const outgoingScrollTopAfterBack = viewport.scrollTop;
+      view.router.history.forward();
+      await expect
+        .poll(() => view.router.history.location.pathname)
+        .toBe('/eng_test/EXO/1');
+      expect(
+        view.container.querySelector('[data-scroll-direction="vertical"]'),
+      ).toBe(viewport);
+      expect(viewport.scrollTop).toBe(outgoingScrollTopAfterBack);
+
       loadGate.resolve();
       await expect
         .poll(() => view.router.state.location.pathname)
@@ -2027,6 +2081,14 @@ describe('multi-chapter reader', () => {
       await expect
         .poll(() => view.router.history.location.pathname)
         .toBe('/eng_test/GEN/2');
+      await expect
+        .poll(() => {
+          const match = view.router.state.matches.at(-1);
+          return (
+            match?.pathname === '/eng_test/GEN/1' && match.status === 'success'
+          );
+        })
+        .toBe(true);
       await expect(page.getByRole('textbox', { name: 'Book' })).toHaveValue(
         'Genesis',
       );
