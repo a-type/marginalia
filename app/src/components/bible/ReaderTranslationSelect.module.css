@@ -1,5 +1,5 @@
 .input {
-  font-weight: var(--m-fw-normal);
+  font-weight: inherit;
   gap: 0;
 }
 .content {
