@@ -6,6 +6,8 @@
 }
 
 .content {
+  display: flex;
+  flex-direction: column;
   contain: layout;
   flex: 1 1 0;
   width: 100%;
@@ -16,17 +18,21 @@
 }
 
 .readerHeader {
-  position: fixed;
-  inset-block-start: 0;
-  inset-inline: 0;
-  z-index: 2;
+  @apply --mx-surface-ambient;
+  position: relative;
+  z-index: 4;
   display: flex;
   align-items: center;
   box-sizing: border-box;
+  flex: 0 0 auto;
   width: 100%;
   min-width: 0;
-  padding: var(--m-sp-sm);
   gap: var(--m-sp-sm);
+  padding: var(--m-sp-xs);
+  border-block-start: 0;
+  border-inline-start: 0;
+  border-inline-end: 0;
+  border-radius: 0;
 }
 
 .annotationPane {
@@ -47,8 +53,9 @@
 }
 
 .scrollArea {
+  flex: 1 1 0;
   width: 100%;
-  height: 100%;
+  height: auto;
   min-height: 0;
   anchor-scope: --reader-scroll-thumb;
 }
@@ -56,7 +63,7 @@
 .scrollArea :global([data-scroll-direction='vertical']) {
   overflow-anchor: none;
   scroll-snap-type: y proximity;
-  scroll-padding-block-start: calc(var(--m-sp-xl) + var(--m-sp-lg));
+  scroll-padding-block-start: var(--m-sp-sm);
 }
 
 .scrollArea
@@ -82,7 +89,6 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding-block-start: 60px;
 }
 
 .chapterBuffer {

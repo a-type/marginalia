@@ -1,0 +1,19 @@
+.input {
+  box-sizing: border-box;
+  flex: 1 1 16ch;
+  min-width: 8ch;
+  border: none;
+  box-shadow: none;
+  font-weight: var(--m-fw-bold);
+  & > input {
+    font-weight: inherit;
+  }
+}
+.grid {
+  max-height: min(65dvh, var(--available-height));
+}
+.title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

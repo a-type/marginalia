@@ -3,45 +3,33 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--m-sp-sm);
+  width: 100%;
   min-width: 0;
+  flex: 1 1 0;
+  font-weight: var(--m-fw-bold);
 }
-.trigger {
-  max-width: 100%;
-  min-width: 0;
-}
-.trigger > span {
-  overflow-wrap: anywhere;
-  text-align: start;
-}
-.content {
-  box-sizing: border-box;
+.location {
   display: flex;
-  flex-direction: column;
-  gap: var(--m-sp-md);
-  width: min(42rem, calc(100vw - var(--m-sp-md) - var(--m-sp-md)));
-  max-width: calc(100vw - var(--m-sp-md) - var(--m-sp-md));
-  max-height: min(80dvh, var(--available-height, 80dvh));
-  overflow: auto;
-}
-.translation {
-  border-top: 1px solid var(--m-gray-light);
-  padding-top: var(--m-sp-sm);
-}
-.translationButtons {
-  display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  flex: 1 1 0;
   gap: var(--m-sp-xs);
   min-width: 0;
 }
-.translationButtons button {
-  min-width: 0;
-  max-width: 100%;
-  white-space: normal;
-  overflow-wrap: anywhere;
+.bookSelect {
+  flex: 3 1 0;
 }
-.status {
-  flex-basis: 100%;
-  margin: 0;
-  font-size: var(--m-fs-sm);
-  overflow-wrap: anywhere;
+.chapterSelect {
+  flex: 1 1 0;
+}
+.selector {
+  display: flex;
+  align-items: center;
+  gap: var(--m-sp-xs);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.divider {
+  width: var(--m-lw-sm);
+  height: --fn-literal(24px);
+  border-inline-start: var(--m-lw-sm) solid var(--m-gray);
 }
