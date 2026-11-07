@@ -11,6 +11,11 @@
   overflow: clip;
 }
 
+.tabButton {
+  padding: var(--m-sp-sm);
+  padding-inline-start: var(--m-sp);
+}
+
 .root {
   flex: 0 0 auto;
   aspect-ratio: auto;

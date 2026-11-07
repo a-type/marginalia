@@ -1,0 +1,22 @@
+.input {
+  font-weight: var(--m-fw-normal);
+  gap: 0;
+}
+.content {
+  width: min(24rem, calc(100vw - var(--m-sp-md) - var(--m-sp-md)));
+}
+.option {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.manageOption {
+  border-block-start: 1px solid var(--m-gray);
+  margin-block-start: var(--m-sp-xs);
+  padding-block-start: var(--m-sp-sm);
+}
+.status {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--m-fs-sm);
+  overflow-wrap: anywhere;
+}

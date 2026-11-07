@@ -5,8 +5,8 @@ import { getRouteApi, useLocation, useRouter } from '@tanstack/react-router';
 import type { RefObject } from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import { m } from '#/paraglide/messages';
 import { logger } from '#/logger';
+import { m } from '#/paraglide/messages';
 import type { ChapterAnnotationSnapshot } from '../../lib/annotations/collections';
 import { reconcileChapterAnnotations } from '../../lib/annotations/reconcile';
 import type { BibleLocation } from '../../lib/bible/location';
@@ -43,7 +43,6 @@ import {
 import { AnnotatedBibleChapter } from './AnnotatedBibleChapter';
 import cls from './BibleReader.module.css';
 import { BibleReaderLocation } from './BibleReaderLocation';
-import { ChapterNavigationButtons } from './ChapterNavigationButtons';
 import type { ReadingScrollPosition } from './ContinuousChaptersController';
 import { useContinuousChapters } from './useContinuousChapters';
 
@@ -109,7 +108,6 @@ function BibleReaderContent({
     }),
   });
   const readerSearch = { ...search, verses: selection };
-  const [locationOpen, setLocationOpen] = useState(false);
   const [annotationTarget, setAnnotationTarget] = useState<VerseId>();
   const scrollThumbRef = useRef<HTMLDivElement>(null);
   const savedTab =
@@ -262,13 +260,7 @@ function BibleReaderContent({
     readerSearch,
     initialPositionSettled,
   );
-  useRestoreReadingPositionOnHistoryNavigation(
-    pathname,
-    activeReadingTabId,
-    location,
-    manifest,
-    goTo,
-  );
+  useRestoreReadingPositionOnHistoryNavigation(translationId, manifest, goTo);
   return (
     <div className={cls.root}>
       <section className={cls.content}>
@@ -278,16 +270,10 @@ function BibleReaderContent({
             chapter={active.chapter}
             manifest={manifest}
             translationId={translationId}
-            open={locationOpen}
-            onOpenChange={setLocationOpen}
             onCurrentRouteChapterChange={(bookId, chapter) =>
               goTo({ bookId, chapter })
             }
-          />
-          <ChapterNavigationButtons
-            goTo={goTo}
-            active={active}
-            manifest={manifest}
+            className="@mode-dense"
           />
         </div>
         <ScrollArea.Root
@@ -653,9 +639,7 @@ function useSyncReadingMask(
 }
 
 function useRestoreReadingPositionOnHistoryNavigation(
-  pathname: string,
-  activeReadingTabId: string | undefined,
-  location: BibleLocation,
+  translationId: string,
   manifest: TranslationManifest,
   goTo: (location: BibleLocation) => void,
 ) {
@@ -670,23 +654,17 @@ function useRestoreReadingPositionOnHistoryNavigation(
         )
           return;
         const parsedLocation = router.parseLocation(historyLocation);
-        if (
-          parsedLocation.pathname !== pathname ||
-          parsedLocation.state.activeReadingTabId !== activeReadingTabId
-        )
-          return;
         const position =
-          getMaskedReadingPosition(
-            parsedLocation.pathname.split('/')[1],
-            historyLocation.pathname,
-          ) ?? location;
+          getMaskedReadingPosition(translationId, historyLocation.pathname) ??
+          getMaskedReadingPosition(translationId, parsedLocation.pathname);
+        if (!position) return;
         const book = manifest.books.find(
           (entry) => entry.id === position.bookId,
         );
         if (book && position.chapter >= 1 && position.chapter <= book.chapters)
           goTo(position);
       }),
-    [router, pathname, activeReadingTabId, location, manifest, goTo],
+    [router, translationId, manifest, goTo],
   );
 }
 

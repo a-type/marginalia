@@ -2,16 +2,20 @@ import type { BibleLocation } from '#/lib/bible/location';
 import type { TranslationManifest } from '#/lib/bible/manifests';
 import { getAdjacentChapter } from '#/lib/bible/navigation';
 import { m } from '#/paraglide/messages';
-import { Box, Button, Icon, type BoxProps } from '@a-type/ui';
+import { Box, Button, Icon, type BoxProps, type ButtonProps } from '@a-type/ui';
 import { getRouteApi, useLocation } from '@tanstack/react-router';
 import cls from './ChapterNavigationButtons.module.css';
 
 const readerRoute = getRouteApi('/$translation/$book/$chapter');
 
-export interface ChapterNavigationButtonsProps extends BoxProps {
+export interface ChapterNavigationButtonsProps extends Omit<
+  BoxProps,
+  'emphasis'
+> {
   goTo: (chapter: BibleLocation) => void;
   active: BibleLocation;
   manifest: TranslationManifest;
+  emphasis?: ButtonProps['emphasis'];
 }
 
 export function ChapterNavigationButtons({
@@ -19,6 +23,7 @@ export function ChapterNavigationButtons({
   active,
   manifest,
   className,
+  emphasis,
   ...props
 }: ChapterNavigationButtonsProps) {
   const navigate = readerRoute.useNavigate();
@@ -51,13 +56,20 @@ export function ChapterNavigationButtons({
   };
 
   return (
-    <Box layout="center center" role="group" className={className} {...props}>
+    <Box
+      layout="center center"
+      role="group"
+      gap="xs"
+      className={className}
+      {...props}
+    >
       <Button
         aria-label={m.bible_previous_chapter()}
         onClick={() => {
           if (previousChapter) void navigateTo(previousChapter);
         }}
         className={cls.button}
+        emphasis={emphasis}
         disabled={!previousChapter}
       >
         <Icon name="arrowUp" />
@@ -68,6 +80,7 @@ export function ChapterNavigationButtons({
           if (nextChapter) void navigateTo(nextChapter);
         }}
         className={cls.button}
+        emphasis={emphasis}
         disabled={!nextChapter}
       >
         <Icon name="arrowDown" />

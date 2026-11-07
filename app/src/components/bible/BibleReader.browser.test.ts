@@ -661,15 +661,183 @@ describe('multi-chapter reader', () => {
     const view = await renderReader('');
     try {
       const historyLength = view.router.history.length;
-      await page.getByRole('button', { name: 'Genesis, Chapter 1' }).click();
-      await page.getByRole('button', { name: 'Exodus', exact: true }).click();
-      await page.getByRole('button', { name: '2', exact: true }).click();
+      const bookInput = page.getByRole('textbox', { name: 'Book' });
+      await bookInput.click();
+      await userEvent.keyboard('EXO');
+      await page.getByRole('option', { name: /Exodus/ }).click();
+      expect(view.router.state.location.pathname).toBe('/eng_test/GEN/1');
+      await expect
+        .poll(() => document.activeElement?.getAttribute('aria-label'))
+        .toBe('Chapter');
+      await expect
+        .poll(() => document.activeElement?.getAttribute('type'))
+        .toBe('number');
+      await page.getByRole('option', { name: '2', exact: true }).click();
       await expect
         .poll(() => view.router.state.location.pathname)
         .toBe('/eng_test/EXO/2');
       expect(view.router.history.length).toBe(historyLength + 1);
     } finally {
       await view.cleanup();
+    }
+  });
+
+  it.each([
+    { book: 'Exodus', bookQuery: 'EXO', chapter: 2, path: '/eng_test/EXO/2' },
+    {
+      book: 'Genesis',
+      bookQuery: undefined,
+      chapter: 2,
+      path: '/eng_test/GEN/2',
+    },
+  ])(
+    'retains the selected location while $book $chapter is loading',
+    async ({ book, bookQuery, chapter, path }) => {
+      const view = await renderReader('');
+      const loadGate = Promise.withResolvers<void>();
+      try {
+        const loadCount = view.load.mock.calls.length;
+        view.deferNextLoad(loadGate.promise);
+        if (bookQuery) {
+          await page.getByRole('textbox', { name: 'Book' }).click();
+          await userEvent.keyboard(bookQuery);
+          await page.getByRole('option', { name: book }).click();
+        } else {
+          await page.getByRole('spinbutton', { name: 'Chapter' }).click();
+        }
+        await page
+          .getByRole('option', { name: String(chapter), exact: true })
+          .click();
+        await expect
+          .poll(() => view.load.mock.calls.length)
+          .toBeGreaterThan(loadCount);
+        expect(
+          view.container.querySelector('[data-reader-chapter="GEN/1"]'),
+        ).not.toBeNull();
+        await expect(page.getByRole('textbox', { name: 'Book' })).toHaveValue(
+          book,
+        );
+        await expect(
+          page.getByRole('spinbutton', { name: 'Chapter' }),
+        ).toHaveValue(chapter);
+
+        loadGate.resolve();
+        await expect.poll(() => view.router.state.location.pathname).toBe(path);
+        await expect(page.getByRole('textbox', { name: 'Book' })).toHaveValue(
+          book,
+        );
+        await expect(
+          page.getByRole('spinbutton', { name: 'Chapter' }),
+        ).toHaveValue(chapter);
+      } finally {
+        loadGate.resolve();
+        await view.cleanup();
+      }
+    },
+  );
+
+  it('keeps the latest selection when a pending location is superseded', async () => {
+    const view = await renderReader('');
+    const loadGate = Promise.withResolvers<void>();
+    try {
+      const loadCount = view.load.mock.calls.length;
+      view.deferNextLoad(loadGate.promise);
+      await page.getByRole('textbox', { name: 'Book' }).click();
+      await userEvent.keyboard('EXO');
+      await page.getByRole('option', { name: 'Exodus' }).click();
+      await page.getByRole('option', { name: '2', exact: true }).click();
+      await expect
+        .poll(() => view.load.mock.calls.length)
+        .toBeGreaterThan(loadCount);
+      await expect(page.getByRole('textbox', { name: 'Book' })).toHaveValue(
+        'Exodus',
+      );
+
+      await page.getByRole('textbox', { name: 'Book' }).click();
+      await userEvent.keyboard('GEN');
+      await page.getByRole('option', { name: 'Genesis' }).click();
+      await page.getByRole('option', { name: '2', exact: true }).click();
+      await expect
+        .poll(() => view.router.state.location.pathname)
+        .toBe('/eng_test/GEN/2');
+      loadGate.resolve();
+      await expect(page.getByRole('textbox', { name: 'Book' })).toHaveValue(
+        'Genesis',
+      );
+      await expect(
+        page.getByRole('spinbutton', { name: 'Chapter' }),
+      ).toHaveValue(2);
+      expect(view.router.state.location.pathname).toBe('/eng_test/GEN/2');
+    } finally {
+      loadGate.resolve();
+      await view.cleanup();
+    }
+  });
+
+  it('discards a pending book selection when the reading location changes', async () => {
+    const view = await renderReader('');
+    try {
+      await page.getByRole('textbox', { name: 'Book' }).click();
+      await userEvent.keyboard('EXO');
+      await page.getByRole('option', { name: /Exodus/ }).click();
+      await userEvent.keyboard('{Escape}');
+      await expect(page.getByRole('textbox', { name: 'Book' })).toHaveValue(
+        'Exodus',
+      );
+
+      await page.getByRole('button', { name: 'Next chapter' }).click();
+      await expect
+        .poll(() => view.router.history.location.pathname)
+        .toBe('/eng_test/GEN/2');
+      await expect(page.getByRole('textbox', { name: 'Book' })).toHaveValue(
+        'Genesis',
+      );
+      await expect(
+        page.getByRole('spinbutton', { name: 'Chapter' }),
+      ).toHaveValue(2);
+    } finally {
+      await view.cleanup();
+    }
+  });
+
+  it('shows recent translations by name and opens translation management', async () => {
+    const savedRecentTranslations = localStorage.getItem(
+      'margins:recent-translations',
+    );
+    localStorage.setItem(
+      'margins:recent-translations',
+      JSON.stringify([
+        { id: 'eng_kjv', title: 'King James Version' },
+        { id: 'eng_msb', title: 'Majority Standard Bible' },
+      ]),
+    );
+    const view = await renderReader('');
+    try {
+      const translationInput = page.getByRole('combobox', {
+        name: 'Translation',
+      });
+      await expect(translationInput).toHaveTextContent('TES');
+      await translationInput.click();
+      await expect(page.getByRole('option', { name: 'Test' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(
+        page.getByRole('option', { name: 'King James Version' }),
+      ).toBeVisible();
+      await page.getByRole('option', { name: 'More', exact: true }).click();
+      await expect(
+        page.getByRole('heading', { name: 'Translations' }),
+      ).toBeVisible();
+    } finally {
+      await view.cleanup();
+      if (savedRecentTranslations === null)
+        localStorage.removeItem('margins:recent-translations');
+      else
+        localStorage.setItem(
+          'margins:recent-translations',
+          savedRecentTranslations,
+        );
     }
   });
 
@@ -705,9 +873,11 @@ describe('multi-chapter reader', () => {
           chapterBounds.top < bounds.bottom && chapterBounds.bottom > bounds.top
         );
       };
-      await page.getByRole('button', { name: 'Genesis, Chapter 1' }).click();
-      await page.getByRole('button', { name: 'Exodus', exact: true }).click();
-      await page.getByRole('button', { name: '2', exact: true }).click();
+      const bookInput = page.getByRole('textbox', { name: 'Book' });
+      await bookInput.click();
+      await userEvent.keyboard('EXO');
+      await page.getByRole('option', { name: /Exodus/ }).click();
+      await page.getByRole('option', { name: '2', exact: true }).click();
       await expect
         .poll(() => view.router.history.location.pathname)
         .toBe('/eng_test/EXO/2');
@@ -741,28 +911,20 @@ describe('multi-chapter reader', () => {
         )
         .not.toBeNull();
       const historyLength = view.router.history.length;
-      await page.getByRole('button', { name: 'Genesis, Chapter 2' }).click();
-      await page.getByRole('button', { name: '1', exact: true }).click();
+      await page.getByRole('spinbutton', { name: 'Chapter' }).click();
+      await page.getByRole('option', { name: '1', exact: true }).click();
       await expect
-        .poll(() =>
-          view.container.querySelector('[aria-label="Genesis, Chapter 1"]'),
-        )
-        .not.toBeNull();
+        .poll(() => view.router.state.location.pathname)
+        .toBe('/eng_test/GEN/1');
       expect(view.router.history.length).toBe(historyLength + 1);
       view.router.history.back();
       await expect
-        .poll(() =>
-          view.container.querySelector('[aria-label="Genesis, Chapter 2"]'),
-        )
-        .not.toBeNull();
-      expect(view.router.history.location.pathname).toBe('/eng_test/GEN/2');
+        .poll(() => view.router.history.location.pathname)
+        .toBe('/eng_test/GEN/2');
       view.router.history.forward();
       await expect
-        .poll(() =>
-          view.container.querySelector('[aria-label="Genesis, Chapter 1"]'),
-        )
-        .not.toBeNull();
-      expect(view.router.history.location.pathname).toBe('/eng_test/GEN/1');
+        .poll(() => view.router.history.location.pathname)
+        .toBe('/eng_test/GEN/1');
     } finally {
       await view.cleanup();
     }
@@ -1669,7 +1831,7 @@ describe('multi-chapter reader', () => {
         '[id="verse-GEN/1:1"]',
       )!;
       const header = view.container.querySelector<HTMLElement>(
-        '[aria-label="Genesis, Chapter 1"]',
+        '[data-reader-controls]',
       )!;
       await expect
         .poll(() => {
@@ -1726,8 +1888,15 @@ describe('multi-chapter reader', () => {
       );
       try {
         expect(
-          reopened.container.querySelector('[aria-label="Exodus, Chapter 1"]'),
-        ).not.toBeNull();
+          reopened.container.querySelector<HTMLInputElement>(
+            '[aria-label="Book"]',
+          )?.value,
+        ).toBe('Exodus');
+        expect(
+          reopened.container.querySelector<HTMLInputElement>(
+            '[aria-label="Chapter"]',
+          )?.value,
+        ).toBe('1');
         expect(reopened.router.state.location.search.verses).toBe('GEN/1:1');
       } finally {
         await reopened.cleanup();
@@ -1845,9 +2014,11 @@ describe('multi-chapter reader', () => {
       await expect
         .poll(() => view.router.history.location.pathname)
         .toBe('/eng_test/GEN/2');
-      await page.getByRole('button', { name: 'Genesis, Chapter 2' }).click();
-      await page.getByRole('button', { name: 'Exodus', exact: true }).click();
-      await page.getByRole('button', { name: '1', exact: true }).click();
+      const bookInput = page.getByRole('textbox', { name: 'Book' });
+      await bookInput.click();
+      await userEvent.keyboard('EXO');
+      await page.getByRole('option', { name: /Exodus/ }).click();
+      await page.getByRole('option', { name: '1', exact: true }).click();
       await expect
         .poll(() => view.router.state.location.pathname)
         .toBe('/eng_test/EXO/1');
@@ -1856,11 +2027,9 @@ describe('multi-chapter reader', () => {
       await expect
         .poll(() => view.router.history.location.pathname)
         .toBe('/eng_test/GEN/2');
-      await expect
-        .poll(() =>
-          view.container.querySelector('[aria-label="Genesis, Chapter 2"]'),
-        )
-        .not.toBeNull();
+      await expect(page.getByRole('textbox', { name: 'Book' })).toHaveValue(
+        'Genesis',
+      );
       expect(view.router.state.location.search.verses).toBe('GEN/1:1');
     } finally {
       scrollIntoView.mockRestore();
