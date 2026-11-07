@@ -10,7 +10,7 @@
 .location {
   display: flex;
   align-items: center;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   gap: var(--m-sp-xs);
   min-width: 0;
 }
