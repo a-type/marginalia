@@ -99,7 +99,12 @@ async function renderLectionary(unavailableIsaiah = false) {
 }
 
 function mockLectServe(
-  options: { empty?: boolean; fail?: boolean; weekday?: boolean } = {},
+  options: {
+    dailyMatchesSunday?: boolean;
+    empty?: boolean;
+    fail?: boolean;
+    weekday?: boolean;
+  } = {},
 ) {
   const requests: string[] = [];
   let fail = options.fail;
@@ -117,14 +122,17 @@ function mockLectServe(
           morning: {
             first: options.empty
               ? ''
-              : options.weekday
-                ? 'Acts 6:1-7:16'
-                : 'Luke 1:1-4',
+              : options.dailyMatchesSunday
+                ? 'Revelation 7:9-17'
+                : options.weekday
+                  ? 'Acts 6:1-7:16'
+                  : 'Luke 1:1-4',
             second: options.weekday ? 'John 14:15-31' : '',
           },
           evening: {
             second: options.weekday ? 'Mark 9:1-29' : '',
-            first: options.empty ? '' : 'Isaiah 10',
+            first:
+              options.empty || options.dailyMatchesSunday ? '' : 'Isaiah 10',
           },
         },
       },
@@ -162,6 +170,35 @@ function mockLectServe(
 }
 
 describe('homepage lectionary', () => {
+  it('hides daily readings when they match the upcoming Sunday readings', async () => {
+    mockLectServe({ dailyMatchesSunday: true });
+    const view = await renderLectionary();
+    try {
+      await expect
+        .element(
+          page.getByRole('link', {
+            name: 'Revelation 7:9-17',
+            exact: true,
+          }),
+        )
+        .toBeVisible();
+      const sections = view.container.querySelectorAll('section');
+      expect(sections).toHaveLength(2);
+      expect(
+        [...sections].some((section) =>
+          section.textContent?.includes('Daily Office'),
+        ),
+      ).toBe(false);
+      expect(
+        [...view.container.querySelectorAll('a')].filter(
+          (anchor) => anchor.textContent?.trim() === 'Revelation 7:9-17',
+        ),
+      ).toHaveLength(1);
+    } finally {
+      view.cleanup();
+    }
+  });
+
   it('shows daily and upcoming Sunday links when the selected RCL day has no feast readings', async () => {
     mockLectServe({ weekday: true });
     const view = await renderLectionary();
