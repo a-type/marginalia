@@ -124,9 +124,9 @@ function mockLectServe(
               ? ''
               : options.dailyMatchesSunday
                 ? 'Revelation 7:9-17'
-              : options.weekday
-                ? 'Acts 6:1-7:16'
-                : 'Luke 1:1-4',
+                : options.weekday
+                  ? 'Acts 6:1-7:16'
+                  : 'Luke 1:1-4',
             second: options.weekday ? 'John 14:15-31' : '',
           },
           evening: {
