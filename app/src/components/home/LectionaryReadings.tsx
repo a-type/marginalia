@@ -20,10 +20,23 @@ import { useReferenceSelections } from '../bible/useReferenceSelections';
 import cls from './LectionaryReadings.module.css';
 
 export function LectionaryReadings({ day }: { day: LectionaryDay }) {
+  const daily = day.sections.find((section) => section.kind === 'daily');
+  const sunday = day.sections.find((section) => section.kind === 'sunday');
+  const dailyMatchesSunday =
+    daily !== undefined &&
+    sunday !== undefined &&
+    daily.readings.length > 0 &&
+    sunday.readings.length > 0 &&
+    sameReadings(daily, sunday);
+
   return (
     <Box col gap="lg" aria-live="polite">
       {day.sections
-        .filter((section) => section.readings.length)
+        .filter(
+          (section) =>
+            section.readings.length &&
+            !(section.kind === 'daily' && dailyMatchesSunday),
+        )
         .map((section) => (
           <Box render={<section />} col gap key={section.kind}>
             <Heading emphasis="ambient" render={<h2 />}>
@@ -45,6 +58,30 @@ export function LectionaryReadings({ day }: { day: LectionaryDay }) {
           </Box>
         ))}
     </Box>
+  );
+}
+
+function sameReadings(
+  left: LectionarySection,
+  right: LectionarySection,
+): boolean {
+  const sortReadings = (section: LectionarySection) =>
+    section.readings
+      .map(({ citation, isAlternative }) => ({ citation, isAlternative }))
+      .sort(
+        (a, b) =>
+          a.citation.localeCompare(b.citation) ||
+          Number(a.isAlternative) - Number(b.isAlternative),
+      );
+  const leftReadings = sortReadings(left);
+  const rightReadings = sortReadings(right);
+  return (
+    leftReadings.length === rightReadings.length &&
+    leftReadings.every(
+      (reading, index) =>
+        reading.citation === rightReadings[index].citation &&
+        reading.isAlternative === rightReadings[index].isAlternative,
+    )
   );
 }
 
