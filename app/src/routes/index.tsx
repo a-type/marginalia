@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 
 import { InstallHint } from '#/components/app/InstallHint';
 import { m } from '#/paraglide/messages';
+import { ScrollArea } from '@a-type/ui';
 import { AppShell } from '../components/app/AppShell';
 import { Introduction } from '../components/home/Introduction';
 import { Lectionary } from '../components/home/Lectionary';
@@ -40,7 +41,11 @@ function HomePage() {
   return (
     <AppShell>
       <InstallHint content={m.install_hint()} />
-      {!visitedBefore ? <Introduction /> : <Lectionary />}
+      <ScrollArea>
+        <ScrollArea.Content>
+          {!visitedBefore ? <Introduction /> : <Lectionary />}
+        </ScrollArea.Content>
+      </ScrollArea>
     </AppShell>
   );
 }

@@ -1,5 +1,9 @@
 import { TanStackDevtools } from '@tanstack/react-devtools';
-import { Outlet, createRootRouteWithContext } from '@tanstack/react-router';
+import {
+  HeadContent,
+  Outlet,
+  createRootRouteWithContext,
+} from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools';
@@ -37,6 +41,7 @@ function RootRoute() {
     <QueryClientProvider client={queryClient}>
       <Provider>
         <AnnotationSyncCoordinator />
+        <HeadContent />
         <Outlet />
         <TanStackDevtools
           config={{

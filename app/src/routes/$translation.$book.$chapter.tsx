@@ -69,6 +69,18 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
       translationId: params.translation,
     };
   },
+  head: (ctx) => {
+    const { location, manifest } = ctx.loaderData ?? { location: null };
+    if (!location) return { meta: [{ title: 'Margins Bible' }] };
+    const book = getTranslationBook(manifest, location.bookId);
+    return {
+      meta: [
+        {
+          title: `${book?.title ?? location.bookId.toUpperCase()} ${location.chapter} | Margins Bible`,
+        },
+      ],
+    };
+  },
   component: ReaderPage,
 });
 
