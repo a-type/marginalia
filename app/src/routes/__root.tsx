@@ -39,7 +39,7 @@ function RootRoute() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Provider>
+      <Provider manifestPath="/manifest.webmanifest">
         <AnnotationSyncCoordinator />
         <HeadContent />
         <Outlet />
