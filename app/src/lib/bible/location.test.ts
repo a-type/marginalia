@@ -90,6 +90,7 @@ describe('parseScriptureCitation', () => {
     ['Genesis 1-3', 'GEN', 1, undefined, '1:start-3:end'],
     ['John 1:4-2:3, 5-7', 'JHN', 1, 4, '4-2:3,2:5-2:7'],
     ['Luke 1:39-45(46-55)', 'LUK', 1, 39, '39-45,46-55'],
+    ['Psalm 90:1-8 [9-11] 12', 'PSA', 90, 1, '1-8,9-11,12'],
     ['John 3:start-end', 'JHN', 3, undefined, 'start-end'],
     ['2 Chronicles 29 † 1-11,20-30,35-36', '2CH', 29, 1, '1-11,20-30,35-36'],
     ['Psalm 23†4', 'PSA', 23, 4, '4'],
@@ -143,6 +144,20 @@ describe('parseScriptureCitation', () => {
       ...availableVerses.slice(19, 30),
       ...availableVerses.slice(34, 36),
     ]);
+  });
+
+  it('includes bracketed verses in a lectionary citation selection', () => {
+    const reference = parseScriptureCitation('Psalm 90:1-8 [9-11] 12')!;
+    const availableVerses = Array.from({ length: 12 }, (_, index) =>
+      formatVerseId('PSA', 90, index + 1),
+    );
+
+    expect(
+      resolveVerseSelection(
+        referenceVerseSelection(reference)!,
+        availableVerses,
+      ),
+    ).toEqual(availableVerses);
   });
 
   it.each([
