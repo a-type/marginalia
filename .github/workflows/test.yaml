@@ -18,6 +18,7 @@ jobs:
         run: pnpm run -r build
       - name: Install playwright
         run: pnpm exec playwright install --with-deps
+        timeout-minutes: 15
       - name: Run tests
         run: pnpm run -r test
       - name: Run browser tests
