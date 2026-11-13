@@ -135,7 +135,10 @@ async function install(
       )
         ? parseTranslationExtra(
             await (
-              await fetchRemote(`/usfm/${id}/extra.json`, controller.signal)
+              await fetchRemote(
+                translationResourceUrl(id, 'extra.json'),
+                controller.signal,
+              )
             ).json(),
             id,
           )

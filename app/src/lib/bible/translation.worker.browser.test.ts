@@ -12,9 +12,8 @@ import {
   translationDatabase,
 } from './translations';
 
-// webc is not in fetch api
-it.each(builtinTranslations.filter((t) => t.id !== 'eng_webc'))(
-  'downloads and prepares $id from Fetch Bible metadata',
+it.each(builtinTranslations)(
+  'downloads and prepares $id from bundled metadata',
   async ({ id, title }) => {
     await deleteTranslation(id, false);
     const worker = new Worker(
