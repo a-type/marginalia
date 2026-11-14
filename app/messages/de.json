@@ -1,6 +1,10 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "home_page": "Startseite",
+  "settings_developer_status_bar": "Entwickler-Statusleiste",
+  "developer_chapters_loaded": "Geladene Kapitel:",
+  "developer_chapters_added": "Geladen:",
+  "developer_chapters_removed": "Entladen:",
   "lectionary_title": "Tägliche Lesungen",
   "lectionary_open_all_tabs": "Alle in Tabs öffnen",
   "lectionary_daily_section": "Tägliches Stundengebet",

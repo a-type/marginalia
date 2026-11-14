@@ -44,6 +44,7 @@ import { AnnotatedBibleChapter } from './AnnotatedBibleChapter';
 import cls from './BibleReader.module.css';
 import { BibleReaderLocation } from './BibleReaderLocation';
 import type { ReadingScrollPosition } from './ContinuousChaptersController';
+import { DeveloperStatusBar } from './DeveloperStatusBar';
 import { useContinuousChapters } from './useContinuousChapters';
 
 const readerRoute = getRouteApi('/$translation/$book/$chapter');
@@ -376,6 +377,11 @@ function BibleReaderContent({
         accountDid={accountDid}
         onOpenVerse={setAnnotationTarget}
         className={cls.annotationPane}
+      />
+      <DeveloperStatusBar
+        chapters={chapters
+          .filter((chapter) => getSource(chapter.bookId).data !== undefined)
+          .map((chapter) => `${chapter.bookId}/${chapter.chapter}`)}
       />
     </div>
   );

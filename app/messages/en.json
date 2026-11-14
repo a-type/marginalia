@@ -1,6 +1,10 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "home_page": "Home page",
+  "settings_developer_status_bar": "Developer status bar",
+  "developer_chapters_loaded": "Loaded chapters:",
+  "developer_chapters_added": "Loaded:",
+  "developer_chapters_removed": "Unloaded:",
   "lectionary_title": "Lectionary readings",
   "lectionary_open_all_tabs": "Open all",
   "lectionary_daily_section": "Daily Office",
