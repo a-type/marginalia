@@ -102,10 +102,11 @@ function BibleReaderContent({
   const selectedVerses = useSelectedVerseIds();
   const selectedVerse = selectedVerses.at(0);
   const search = readerRoute.useSearch();
-  const { pathname, maskedPathname } = useLocation({
+  const { pathname, maskedPathname, translationScrollPosition } = useLocation({
     select: (routeLocation) => ({
       pathname: routeLocation.pathname,
       maskedPathname: routeLocation.maskedLocation?.pathname,
+      translationScrollPosition: routeLocation.state.translationScrollPosition,
     }),
   });
   const readerSearch = { ...search, verses: selection };
@@ -123,11 +124,24 @@ function BibleReaderContent({
         );
   const tabPosition = savedTab?.position;
   const tabScrollProgress = savedTab?.scrollProgress;
+  const restoredTranslationPosition =
+    translationScrollPosition?.translationId === translationId &&
+    translationScrollPosition.location.bookId === location.bookId &&
+    translationScrollPosition.location.chapter === location.chapter &&
+    typeof translationScrollPosition.position.bookId === 'string' &&
+    Number.isSafeInteger(translationScrollPosition.position.chapter) &&
+    translationScrollPosition.position.chapter > 0 &&
+    Number.isFinite(translationScrollPosition.scrollProgress)
+      ? translationScrollPosition
+      : undefined;
   const restoredPosition =
     tabPosition ??
+    restoredTranslationPosition?.position ??
     (!savedTab
       ? getMaskedReadingPosition(translationId, maskedPathname)
       : undefined);
+  const restoredScrollProgress =
+    tabScrollProgress ?? restoredTranslationPosition?.scrollProgress;
   const {
     active,
     initialPositionSettled,
@@ -149,7 +163,7 @@ function BibleReaderContent({
     sources,
     translationId,
     readingPosition: restoredPosition,
-    scrollProgress: tabScrollProgress,
+    scrollProgress: restoredScrollProgress,
   });
   const readingScrollPositionRef = useRef(getScrollPosition);
   readingScrollPositionRef.current = getScrollPosition;
@@ -232,7 +246,7 @@ function BibleReaderContent({
     selectedLocation?.bookId === location.bookId &&
     selectedLocation.chapter === location.chapter &&
     !restoredPosition &&
-    tabScrollProgress === undefined;
+    restoredScrollProgress === undefined;
   const initialVerseTarget = useScrollToSelectedVerse(
     scrollToSelection ? selectedVerse : undefined,
   );

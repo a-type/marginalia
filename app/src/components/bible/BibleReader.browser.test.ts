@@ -113,6 +113,12 @@ async function renderReader(
   withNavigation = false,
   readerSources = sources,
   initialReadingPosition?: { bookId: string; chapter: number },
+  initialTranslationScrollPosition?: {
+    translationId: string;
+    location: { bookId: string; chapter: number };
+    position: { bookId: string; chapter: number };
+    scrollProgress: number;
+  },
   withSettings = false,
 ) {
   const dbClient = new DbClient();
@@ -190,11 +196,18 @@ async function renderReader(
   const history = browserHistory
     ? createBrowserHistory()
     : createMemoryHistory({ initialEntries: [initialUrl] });
-  if (activeReadingTabId)
+  if (
+    activeReadingTabId ||
+    initialReadingPosition ||
+    initialTranslationScrollPosition
+  )
     history.replace(initialUrl, {
-      activeReadingTabId,
+      ...(activeReadingTabId ? { activeReadingTabId } : {}),
       ...(initialReadingPosition
         ? { readingPosition: initialReadingPosition }
+        : {}),
+      ...(initialTranslationScrollPosition
+        ? { translationScrollPosition: initialTranslationScrollPosition }
         : {}),
     });
   const router = createRouter({
@@ -293,6 +306,7 @@ describe('multi-chapter reader', () => {
         statusManifest,
         false,
         statusSources,
+        undefined,
         undefined,
         true,
       );
@@ -1207,6 +1221,53 @@ describe('multi-chapter reader', () => {
       await view.cleanup();
       if (savedTabs === null) localStorage.removeItem('margins:reading-tabs');
       else localStorage.setItem('margins:reading-tabs', savedTabs);
+    }
+  });
+
+  it('restores the transferred tab position after switching translations', async () => {
+    const transferredPosition = {
+      translationId: 'eng_other',
+      location: { bookId: 'GEN', chapter: 1 },
+      position: { bookId: 'EXO', chapter: 1 },
+      scrollProgress: 0.2,
+    };
+    const view = await renderReader(
+      '',
+      undefined,
+      ['GEN', 'EXO'],
+      '/eng_other/GEN/1',
+      false,
+      '',
+      manifest,
+      false,
+      sources,
+      undefined,
+      transferredPosition,
+    );
+    try {
+      expect(
+        [
+          ...view.container.querySelectorAll<HTMLElement>(
+            '[data-reader-chapter]',
+          ),
+        ].map((element) => element.dataset.readerChapter),
+      ).toEqual(getExpectedChapterWindow('EXO/1'));
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      const chapter = view.container.querySelector<HTMLElement>(
+        '[data-reader-chapter="EXO/1"]',
+      )!;
+      await expect
+        .poll(
+          () =>
+            (viewport.getBoundingClientRect().top -
+              chapter.getBoundingClientRect().top) /
+            chapter.getBoundingClientRect().height,
+        )
+        .toBeCloseTo(0.2, 2);
+    } finally {
+      await view.cleanup();
     }
   });
 
