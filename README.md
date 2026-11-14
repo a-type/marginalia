@@ -44,6 +44,11 @@ above passes the root `.env` to the app; when running the app directly, Vite
 instead loads environment files from `app/`. Rebuild the Bible package after
 changing its source.
 
+Enable **Developer status bar** in Settings to inspect the reader's loaded
+chapter window. The bottom bar lists chapters currently rendered with source
+available and briefly highlights the latest loaded/unloaded chapters while
+scrolling. This setting is saved locally and is off by default.
+
 Sign in to the HappyView dashboard and create an admin API key with
 `settings:manage`, `scripts:manage`, `lexicons:create`, `backfill:create`,
 `api-clients:view`, `api-clients:create`, and `api-clients:edit` permissions.

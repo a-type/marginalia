@@ -9,7 +9,7 @@ import {
   Outlet,
   RouterProvider,
 } from '@tanstack/react-router';
-import { createElement } from 'react';
+import { createElement, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { describe, expect, it, vi } from 'vitest';
@@ -33,6 +33,7 @@ import {
 import type * as BibleSource from '../../lib/bible/source';
 import type * as HighlightReconcile from '../../lib/highlights/reconcile';
 import { AppNavigation } from '../app/AppNavigation';
+import { SettingsDialog } from '../settings/SettingsDialog';
 import { BibleReader } from './BibleReader';
 import { CHAPTER_BUFFER } from './useContinuousChapters';
 
@@ -75,6 +76,16 @@ const sources = [
   },
 ];
 
+function TestSettings() {
+  const [open, setOpen] = useState(false);
+  return createElement(
+    'div',
+    null,
+    createElement('button', { onClick: () => setOpen(true) }, 'Open settings'),
+    createElement(SettingsDialog, { open, onOpenChange: setOpen }),
+  );
+}
+
 function getExpectedChapterWindow(
   activeId: string,
   books: typeof manifest.books = manifest.books,
@@ -108,6 +119,7 @@ async function renderReader(
     position: { bookId: string; chapter: number };
     scrollProgress: number;
   },
+  withSettings = false,
 ) {
   const dbClient = new DbClient();
   const queryClient = new QueryClient({
@@ -115,7 +127,7 @@ async function renderReader(
   });
   queryClient.setQueryData(['user', 'did'], null);
   const rootRoute = createRootRoute({
-    ...(withNavigation
+    ...(withNavigation || withSettings
       ? {
           component: () =>
             createElement(
@@ -127,7 +139,8 @@ async function renderReader(
                   height: '100%',
                 },
               },
-              createElement(AppNavigation),
+              withNavigation && createElement(AppNavigation),
+              withSettings && createElement(TestSettings),
               createElement(
                 'div',
                 { style: { flex: 1, minHeight: 0 } },
@@ -262,6 +275,142 @@ async function renderReader(
 }
 
 describe('multi-chapter reader', () => {
+  it('toggles a persistent status bar showing loaded chapters and scroll lifecycle changes', async () => {
+    const storageKey = 'margins:developer-status-bar';
+    const savedSetting = localStorage.getItem(storageKey);
+    localStorage.removeItem(storageKey);
+    const chapterSource = (bookId: string) =>
+      `\\id ${bookId}\n` +
+      Array.from(
+        { length: 8 },
+        (_, index) => `\\c ${index + 1}\n\\p\n\\v 1 Chapter ${index + 1}`,
+      ).join('\n');
+    const statusManifest = {
+      ...manifest,
+      books: manifest.books.map((book) => ({ ...book, chapters: 8 })),
+    };
+    const statusSources = statusManifest.books.map((book) => ({
+      bookId: book.id,
+      source: chapterSource(book.id),
+    }));
+    const pendingSource = Promise.withResolvers<string>();
+    fetchSource.mockReturnValue(pendingSource.promise);
+    const renderStatusReader = () =>
+      renderReader(
+        '',
+        undefined,
+        ['GEN'],
+        '/eng_test/GEN/1',
+        false,
+        '[data-developer-status-bar] { --m-dur-long: 350ms; --m-ease: ease; }',
+        statusManifest,
+        false,
+        statusSources,
+        undefined,
+        undefined,
+        true,
+      );
+    let view = await renderStatusReader();
+    const openSettings = () =>
+      page.getByRole('button', { name: 'Open settings' }).click();
+    const toggle = page.getByRole('switch', { name: 'Developer status bar' });
+    const loadedChapters = () =>
+      view.container.querySelector('[data-loaded-chapters]')?.textContent;
+    const changes = () =>
+      view.container.querySelector('[data-chapter-change]')?.textContent;
+    try {
+      expect(
+        view.container.querySelector('[data-developer-status-bar]'),
+      ).toBeNull();
+      await openSettings();
+      await expect.element(toggle).not.toBeChecked();
+      await toggle.click();
+      expect(localStorage.getItem(storageKey)).toBe('true');
+      await userEvent.keyboard('{Escape}');
+      await expect
+        .poll(loadedChapters)
+        .toBe('Loaded chapters: GEN/1, GEN/2, GEN/3, GEN/4');
+
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      const bar = view.container.querySelector<HTMLElement>(
+        '[data-developer-status-bar]',
+      )!;
+      const barBottom = bar.getBoundingClientRect().bottom;
+      const moveTo = async (id: string) => {
+        const target = view.container.querySelector<HTMLElement>(
+          `[data-reader-chapter="${id}"]`,
+        )!;
+        viewport.scrollTop +=
+          target.getBoundingClientRect().top -
+          viewport.getBoundingClientRect().top +
+          100;
+        await expect
+          .poll(() =>
+            Array.from(
+              view.container.querySelectorAll<HTMLElement>(
+                '[data-reader-chapter]',
+              ),
+              (chapter) => chapter.dataset.readerChapter,
+            ),
+          )
+          .toEqual(getExpectedChapterWindow(id, statusManifest.books));
+      };
+      await moveTo('GEN/4');
+      await expect.poll(changes).toBe('Loaded: +GEN/5, +GEN/6, +GEN/7');
+      await moveTo('GEN/6');
+      await expect
+        .poll(loadedChapters)
+        .toBe('Loaded chapters: GEN/3, GEN/4, GEN/5, GEN/6, GEN/7, GEN/8');
+      await expect.poll(changes).toBe('Loaded: +GEN/8Unloaded: -GEN/1, -GEN/2');
+      expect(bar.getBoundingClientRect().bottom).toBeCloseTo(barBottom, 0);
+      expect(barBottom).toBeCloseTo(
+        view.container.getBoundingClientRect().bottom,
+        0,
+      );
+      expect(viewport.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+        bar.getBoundingClientRect().top,
+      );
+
+      pendingSource.resolve(statusSources[1].source);
+      await expect.poll(loadedChapters).toContain('EXO/1');
+      await expect.poll(changes).toBe('Loaded: +EXO/1');
+      const change = view.container.querySelector<HTMLElement>(
+        '[data-chapter-change]',
+      )!;
+      expect(change.getAnimations()).toHaveLength(1);
+      const session = cdp();
+      try {
+        await session.send('Emulation.setEmulatedMedia', {
+          features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+        });
+        await expect
+          .poll(() => getComputedStyle(change).animationName)
+          .toBe('none');
+      } finally {
+        await session.send('Emulation.setEmulatedMedia', { features: [] });
+      }
+
+      await view.cleanup();
+      view = await renderStatusReader();
+      await expect.poll(loadedChapters).toContain('GEN/1');
+      await openSettings();
+      await expect.element(toggle).toBeChecked();
+      await toggle.click();
+      expect(localStorage.getItem(storageKey)).toBe('false');
+      await userEvent.keyboard('{Escape}');
+      await expect
+        .poll(() => view.container.querySelector('[data-developer-status-bar]'))
+        .toBeNull();
+    } finally {
+      await view.cleanup();
+      fetchSource.mockReset();
+      if (savedSetting === null) localStorage.removeItem(storageKey);
+      else localStorage.setItem(storageKey, savedSetting);
+    }
+  });
+
   it.each(['anchor', 'fallback'])(
     'keeps the chapter window fixed during scrollbar dragging (%s positioning)',
     async (positioning) => {

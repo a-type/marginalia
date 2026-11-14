@@ -1,0 +1,37 @@
+.root {
+  @apply --mx-surface-ambient;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--m-sp-md);
+  padding: var(--m-sp-xs) var(--m-sp-sm);
+  padding-block-end: max(var(--m-sp-xs), env(safe-area-inset-bottom));
+  border-radius: 0;
+  border-width: 0;
+  border-block-start: var(--m-lw-sm) solid var(--m-gray-light);
+  font-size: var(--m-fs-sm);
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.change {
+  display: flex;
+  gap: var(--m-sp-sm);
+
+  & > span {
+    @apply --mx-fg(var(--m-tint-ink));
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: pulse calc(var(--m-dur-long) * 3) var(--m-ease);
+  }
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
