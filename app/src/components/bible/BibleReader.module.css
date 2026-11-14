@@ -62,8 +62,9 @@
 
 .scrollArea :global([data-scroll-direction='vertical']) {
   overflow-anchor: none;
-  scroll-snap-type: y proximity;
-  scroll-padding-block-start: var(--m-sp-sm);
+  overscroll-behavior-y: contain;
+  /* scroll-snap-type: y proximity; */
+  /* scroll-padding-block-start: var(--m-sp-sm); */
 }
 
 .scrollArea
