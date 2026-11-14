@@ -66,5 +66,11 @@ declare module '@tanstack/react-router' {
     skipHomeRestore?: boolean;
     noUpdate?: boolean;
     readingPosition?: { bookId: string; chapter: number };
+    translationScrollPosition?: {
+      translationId: string;
+      location: { bookId: string; chapter: number };
+      position: { bookId: string; chapter: number };
+      scrollProgress: number;
+    };
   }
 }

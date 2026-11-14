@@ -11,6 +11,10 @@ import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
+import {
+  createReadingTab,
+  storeReadingTabScrollPosition,
+} from '../../lib/bible/reading-tabs';
 import { normalizeVerseSelection } from '../../lib/bible/selection';
 import type * as BibleSource from '../../lib/bible/source';
 import type * as TranslationQueries from '../../queries/translations';
@@ -66,7 +70,11 @@ function SwitchTranslation() {
   );
 }
 
-async function renderNavigation(initialUrl: string, home: ReactNode) {
+async function renderNavigation(
+  initialUrl: string,
+  home: ReactNode,
+  activeReadingTabId?: string,
+) {
   const rootRoute = createRootRoute();
   const homeRoute = createRoute({
     getParentRoute: () => rootRoute,
@@ -81,9 +89,11 @@ async function renderNavigation(initialUrl: string, home: ReactNode) {
     }),
     component: SwitchTranslation,
   });
+  const history = createMemoryHistory({ initialEntries: [initialUrl] });
+  if (activeReadingTabId) history.replace(initialUrl, { activeReadingTabId });
   const router = createRouter({
     routeTree: rootRoute.addChildren([homeRoute, readerRoute]),
-    history: createMemoryHistory({ initialEntries: [initialUrl] }),
+    history,
   });
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -137,11 +147,16 @@ describe('selection navigation', () => {
   });
 
   it.each([
-    ['\\id JHN\n\\c 3\n\\p \\v 1 One \\v 2 Two', 'JHN/3:2'],
-    ['\\id JHN\n\\c 3\n\\p \\v 1 One', ''],
+    ['\\id JHN\n\\c 3\n\\p \\v 1 One \\v 2 Two', 'JHN/3:2', 'JHN/3:2'],
+    ['\\id JHN\n\\c 3\n\\p \\v 1 One', 'JHN/3:2', ''],
+    [
+      '\\id JHN\n\\c 3\n\\p \\v 1 One \\v 2 Two',
+      'JHN/3:1-JHN/3:2',
+      'JHN/3:1-JHN/3:2',
+    ],
   ])(
-    'keeps the selected ID only when it exists in the new translation',
-    async (source, expected) => {
+    'keeps the selected range only when its endpoints exist in the new translation',
+    async (source, selection, expected) => {
       fetchManifest.mockResolvedValue({
         id: 'eng_other',
         title: 'Other',
@@ -149,7 +164,7 @@ describe('selection navigation', () => {
       });
       fetchSource.mockResolvedValue(source);
       const view = await renderNavigation(
-        '/eng_test/JHN/3?verses=JHN%2F3%3A2',
+        `/eng_test/JHN/3?verses=${encodeURIComponent(selection)}`,
         null,
       );
       try {
@@ -163,4 +178,42 @@ describe('selection navigation', () => {
       }
     },
   );
+
+  it('carries the active reading tab scroll position into the new translation', async () => {
+    const savedTabs = localStorage.getItem('margins:reading-tabs');
+    localStorage.removeItem('margins:reading-tabs');
+    const tab = createReadingTab('eng_test', { bookId: 'JHN', chapter: 3 });
+    storeReadingTabScrollPosition(
+      tab.id,
+      tab,
+      tab.translationId,
+      { bookId: 'JHN', chapter: 2 },
+      0.25,
+    );
+    fetchManifest.mockResolvedValue({
+      id: 'eng_other',
+      title: 'Other',
+      books: [{ id: 'JHN', title: 'John', chapters: 3 }],
+    });
+    fetchSource.mockResolvedValue('\\id JHN\n\\c 3\n\\p \\v 1 One');
+    const view = await renderNavigation('/eng_test/JHN/3', null, tab.id);
+    try {
+      await page.getByRole('button', { name: 'Switch' }).click();
+      await expect
+        .poll(() => view.router.state.location.pathname)
+        .toBe('/eng_other/JHN/3');
+      expect(
+        view.router.state.location.state.translationScrollPosition,
+      ).toEqual({
+        translationId: 'eng_other',
+        location: { bookId: 'JHN', chapter: 3 },
+        position: { bookId: 'JHN', chapter: 2 },
+        scrollProgress: 0.25,
+      });
+    } finally {
+      view.cleanup();
+      if (savedTabs === null) localStorage.removeItem('margins:reading-tabs');
+      else localStorage.setItem('margins:reading-tabs', savedTabs);
+    }
+  });
 });
