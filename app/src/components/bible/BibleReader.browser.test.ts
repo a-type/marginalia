@@ -2153,7 +2153,7 @@ describe('multi-chapter reader', () => {
     try {
       await expect
         .poll(() => scrollIntoView.mock.calls)
-        .toContainEqual([expect.objectContaining({ behavior: 'auto' })]);
+        .toContainEqual([expect.objectContaining({ behavior: 'instant' })]);
     } finally {
       mediaQuery.mockRestore();
       scrollIntoView.mockRestore();
@@ -2192,6 +2192,103 @@ describe('multi-chapter reader', () => {
         .toBe(true);
     } finally {
       await view.cleanup();
+    }
+  });
+
+  it('scrolls a late-chapter pericope into view while neighboring books load', async () => {
+    const savedTabs = localStorage.getItem('margins:reading-tabs');
+    localStorage.removeItem('margins:reading-tabs');
+    const lukeManifest = {
+      id: 'eng_msb',
+      title: 'MSB',
+      books: [
+        { id: 'MRK', title: 'Mark', chapters: 16 },
+        { id: 'LUK', title: 'Luke', chapters: 3 },
+      ],
+    };
+    const lukeSources = [
+      {
+        bookId: 'LUK',
+        source:
+          '\\id LUK\n\\c 1\n\\p\n\\v 1 First chapter\n\\c 2\n' +
+          Array.from(
+            { length: 52 },
+            (_, index) => `\\p\n\\v ${index + 1} Luke verse ${index + 1}.`,
+          ).join('\n') +
+          '\n\\c 3\n\\p\n\\v 1 Next chapter',
+      },
+    ];
+    const neighboringSource = Promise.withResolvers<string>();
+    fetchSource.mockReturnValue(neighboringSource.promise);
+    const scrollIntoView = Element.prototype.scrollIntoView;
+    const scroll = vi
+      .spyOn(Element.prototype, 'scrollIntoView')
+      .mockImplementation(function (this: Element, options) {
+        scrollIntoView.call(this, options);
+        if (this.id === 'verse-LUK/2:22') {
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() =>
+              neighboringSource.resolve(
+                '\\id MRK\n\\c 16\n\\p\n\\v 1 Neighboring book',
+              ),
+            ),
+          );
+        }
+      });
+    const view = await renderReader(
+      '',
+      undefined,
+      ['LUK'],
+      '/eng_msb/LUK/2?pericope=LUK%2F2%3A22-LUK%2F2%3A52',
+      false,
+      '.usfm-paragraph { min-height: 60px; }',
+      lukeManifest,
+      true,
+      lukeSources,
+    );
+    try {
+      await expect
+        .poll(() => view.router.state.location.state.activeReadingTabId)
+        .toBeTruthy();
+      await expect
+        .poll(() => {
+          const viewport = view.container.querySelector<HTMLElement>(
+            '[data-scroll-direction="vertical"]',
+          )!;
+          const verse = view.container.querySelector<HTMLElement>(
+            '[id="verse-LUK/2:22"]',
+          )!;
+          const offset =
+            verse.getBoundingClientRect().top -
+            viewport.getBoundingClientRect().top;
+          return offset >= 0 && offset < viewport.clientHeight * 0.4;
+        })
+        .toBe(true);
+      expect(view.container.querySelector('[data-selected]')).toBeNull();
+      await expect
+        .poll(() =>
+          view.container
+            .querySelector('[data-reader-chapter="MRK/16"]')
+            ?.getAttribute('data-reader-chapter-loaded'),
+        )
+        .toBe('true');
+      const viewport = view.container.querySelector<HTMLElement>(
+        '[data-scroll-direction="vertical"]',
+      )!;
+      const verse = view.container.querySelector<HTMLElement>(
+        '[id="verse-LUK/2:22"]',
+      )!;
+      expect(
+        verse.getBoundingClientRect().top -
+          viewport.getBoundingClientRect().top,
+      ).toBeLessThan(viewport.clientHeight * 0.4);
+    } finally {
+      neighboringSource.resolve('\\id MRK\n\\c 16\n\\p\n\\v 1 Neighbor');
+      scroll.mockRestore();
+      fetchSource.mockReset();
+      await view.cleanup();
+      if (savedTabs === null) localStorage.removeItem('margins:reading-tabs');
+      else localStorage.setItem('margins:reading-tabs', savedTabs);
     }
   });
 

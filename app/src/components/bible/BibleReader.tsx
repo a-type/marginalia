@@ -535,10 +535,8 @@ function useScrollToInitialVerse(verseId: VerseId | undefined) {
           scrolled = true;
           verse.scrollIntoView({
             block: 'start',
-            behavior: window.matchMedia('(prefers-reduced-motion: reduce)')
-              .matches
-              ? 'auto'
-              : 'smooth',
+            // Buffer adjustments can interrupt an animated initial scroll.
+            behavior: 'instant',
           });
         });
         return () => cancelAnimationFrame(frame);

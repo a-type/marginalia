@@ -119,7 +119,8 @@ verse IDs and ranges, such as `?verses=JHN/3:8-JHN/4:2,JHN/4:5` or
 The `pericope` parameter uses the same format, for example
 `?pericope=JHN/3:8-JHN/4:2,JHN/4:5`, without selecting those verses.
 Both parameters can be used together. Without a saved scroll position or a
-selection, a pericope link scrolls to the first verse of the pericope.
+selection, a pericope link scrolls to the first verse of the pericope. Initial
+verse positioning is immediate so loading neighboring chapters cannot interrupt it.
 Whole-chapter citations are resolved to the translation's actual first and last
 verses before navigation. Ranges resolve against the selected translation. All chapters
 can be read in order, including across book boundaries, with dividers between
