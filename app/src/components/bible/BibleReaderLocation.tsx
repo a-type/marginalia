@@ -76,7 +76,9 @@ export function BibleReaderLocation({
         activeReadingTabId,
         readingPosition: undefined,
       }),
-      search: {},
+      search: (previous) => ({
+        ...(previous.pericope ? { pericope: previous.pericope } : {}),
+      }),
     });
     if (location.bookId === nextBookId && location.chapter === nextChapter)
       onCurrentRouteChapterChange(nextBookId, nextChapter);

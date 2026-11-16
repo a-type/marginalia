@@ -346,4 +346,38 @@ describe('reading tabs', () => {
     expect(tab.verses).toBe('JHN/3:2-JHN/3:3');
     expect(readReadingTabsState().tabs[0].verses).toBe('JHN/3:2-JHN/3:3');
   });
+
+  it('keeps the original pericope through selection, location and translation changes', () => {
+    const pericope = 'JHN/3:2-JHN/4:1,JHN/4:3';
+    const tab = createReadingTab('eng_webu', {
+      bookId: 'JHN',
+      chapter: 3,
+      pericope: ` ${pericope} , invalid `,
+    });
+    const other = createReadingTab('eng_webu', {
+      bookId: 'GEN',
+      chapter: 1,
+    });
+    storeReadingTabLocation(tab.id, tab, tab.translationId, 'JHN/3:5');
+    storeReadingTabLocation(tab.id, { bookId: 'JHN', chapter: 4 }, 'eng_asv');
+    visitReadingTab(other.id);
+    visitReadingTab(tab.id);
+    storeReadingTabScrollPosition(
+      tab.id,
+      { bookId: 'JHN', chapter: 4 },
+      'eng_asv',
+      { bookId: 'JHN', chapter: 5 },
+      0.2,
+    );
+
+    const restored = readReadingTabsState().tabs[0];
+    expect(restored.pericope).toBe(pericope);
+    expect(restored.verses).toBeUndefined();
+    expect(getReadingTabDestination(restored)).toMatchObject({
+      params: { translation: 'eng_asv', book: 'JHN', chapter: '4' },
+      search: { pericope },
+      mask: { search: { pericope } },
+    });
+    expect(readReadingTabsState().tabs[1].pericope).toBeUndefined();
+  });
 });

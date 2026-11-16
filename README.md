@@ -102,17 +102,24 @@ Selecting RCL or ACNA changes the Sunday/feast tradition and uses the ACNA civil
 Daily Office; selecting a Daily Office calendar uses ACNA Sunday/feast readings.
 Links use the selected Bible
 translation. Citations which cannot be resolved remain visible as text.
-Each reading opens a new Bible reading tab with all cited verses selected.
+Each reading opens a new Bible reading tab with all cited verses underlined as a
+pericope, independently of verse selection and saved highlights. The pericope
+stays fixed for the lifetime of that tab, including when selecting verses,
+changing reading locations or translations, and revisiting or reloading the tab.
 Discontinuous, optional, cross-chapter, and whole-chapter readings are supported.
 Each group also offers **Open all in tabs**, which opens every resolvable
 reading in that group and activates the first new tab.
-Tabs restore their initial verse selection when revisited, including after
+For `verses` links, tabs restore their initial selection when revisited, including after
 reloading the app. Clearing or changing the selection, or navigating to another
 reading location, removes the tab's saved selection; later selections are not saved.
 
 Reader URLs accept a `verses` search parameter containing comma-separated full
 verse IDs and ranges, such as `?verses=JHN/3:8-JHN/4:2,JHN/4:5` or
 `?verses=GEN/50:26-EXO/1:2`. Both endpoints of each range must be full verse IDs.
+The `pericope` parameter uses the same format, for example
+`?pericope=JHN/3:8-JHN/4:2,JHN/4:5`, without selecting those verses.
+Both parameters can be used together. Without a saved scroll position or a
+selection, a pericope link scrolls to the first verse of the pericope.
 Whole-chapter citations are resolved to the translation's actual first and last
 verses before navigation. Ranges resolve against the selected translation. All chapters
 can be read in order, including across book boundaries, with dividers between

@@ -186,12 +186,12 @@ describe('homepage lectionary', () => {
       expect(sections).toHaveLength(2);
       expect(
         [...sections].some((section) =>
-          section.textContent?.includes('Daily Office'),
+          section.textContent.includes('Daily Office'),
         ),
       ).toBe(false);
       expect(
         [...view.container.querySelectorAll('a')].filter(
-          (anchor) => anchor.textContent?.trim() === 'Revelation 7:9-17',
+          (anchor) => anchor.textContent.trim() === 'Revelation 7:9-17',
         ),
       ).toHaveLength(1);
     } finally {
@@ -249,7 +249,8 @@ describe('homepage lectionary', () => {
       const url = new URL(link!.href);
       expect(url.pathname).toBe('/eng_webu/MAT/22');
       expect(url.hash).toBe('#verse-MAT/22:34');
-      expect(url.searchParams.get('verses')).toBe('MAT/22:34-MAT/22:46');
+      expect(url.searchParams.get('pericope')).toBe('MAT/22:34-MAT/22:46');
+      expect(url.searchParams.has('verses')).toBe(false);
       await expect.element(page.getByText('(alt)')).toBeVisible();
       await expect
         .element(
@@ -313,9 +314,9 @@ describe('homepage lectionary', () => {
         .poll(() => view.router.state.location.pathname)
         .toBe('/eng_webu/LUK/1');
       expect(view.router.state.location.search).toEqual({
-        verses: 'LUK/1:1-LUK/1:4',
+        pericope: 'LUK/1:1-LUK/1:4',
       });
-      expect(view.router.state.location.hash).toBe('verse-LUK/1:1');
+      expect(view.router.state.location.hash).toBe('');
       const tabs = readReadingTabsState().tabs;
       expect(tabs).toHaveLength(2);
       expect(tabs[0]).toEqual(previousTab);
@@ -323,7 +324,9 @@ describe('homepage lectionary', () => {
         bookId: 'LUK',
         chapter: 1,
         translationId: 'eng_webu',
+        pericope: 'LUK/1:1-LUK/1:4',
       });
+      expect(tabs[1].verses).toBeUndefined();
       expect(view.router.state.location.state.activeReadingTabId).toBe(
         tabs[1].id,
       );
@@ -369,13 +372,14 @@ describe('homepage lectionary', () => {
         tabs[1].id,
       );
       expect(view.router.state.location.search).toEqual({
-        verses: 'MAT/22:34-MAT/22:46',
+        pericope: 'MAT/22:34-MAT/22:46',
       });
-      expect(tabs.slice(1).map((tab) => tab.verses)).toEqual([
+      expect(tabs.slice(1).map((tab) => tab.pericope)).toEqual([
         'MAT/22:34-MAT/22:46',
         'LUK/6:20-LUK/6:26',
         'PSA/90:1-PSA/90:6,PSA/90:13-PSA/90:17',
       ]);
+      expect(tabs.slice(1).every((tab) => tab.verses === undefined)).toBe(true);
     } finally {
       view.cleanup();
     }
@@ -409,15 +413,15 @@ describe('homepage lectionary', () => {
         { bookId: 'JHN', chapter: 14 },
       ]);
       expect(view.router.state.location.search).toEqual({
-        verses: 'ACT/6:1-ACT/7:16',
+        pericope: 'ACT/6:1-ACT/7:16',
       });
-      expect(view.router.state.location.hash).toBe('verse-ACT/6:1');
+      expect(view.router.state.location.hash).toBe('');
     } finally {
       view.cleanup();
     }
   });
 
-  it('opens chapter-only readings with the entire chapter selected', async () => {
+  it('opens chapter-only readings with the entire chapter in the pericope', async () => {
     mockLectServe();
     const view = await renderLectionary();
     try {
@@ -430,10 +434,10 @@ describe('homepage lectionary', () => {
         .toBe('/eng_webu/ISA/10');
       expect(readReadingTabsState().tabs).toHaveLength(1);
       expect(view.router.state.location.search).toEqual({
-        verses: 'ISA/10:1-ISA/10:34',
+        pericope: 'ISA/10:1-ISA/10:34',
       });
 
-      expect(view.router.state.location.hash).toBe('verse-ISA/10:1');
+      expect(view.router.state.location.hash).toBe('');
     } finally {
       view.cleanup();
     }
@@ -454,7 +458,7 @@ describe('homepage lectionary', () => {
         .poll(() => view.router.state.location.pathname)
         .toBe('/eng_webu/MRK/9');
       expect(readReadingTabsState().tabs).toMatchObject([
-        { bookId: 'MRK', verses: 'MRK/9:1-MRK/9:29' },
+        { bookId: 'MRK', pericope: 'MRK/9:1-MRK/9:29' },
       ]);
     } finally {
       view.cleanup();

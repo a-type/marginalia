@@ -172,7 +172,7 @@ function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
                 translation,
                 book: target.bookId,
                 chapter: target.chapter,
-                verses,
+                pericope: verses,
                 activate: index === 0,
               });
             });
@@ -258,10 +258,10 @@ function ReadingLink({
               translation,
               book: target.bookId,
               chapter: target.chapter,
-              verses,
+              pericope: verses,
             });
           }}
-          search={{ verses }}
+          search={{ pericope: verses }}
           hash={
             target.verse
               ? `verse-${formatVerseId(target.bookId, target.chapter, target.verse)}`

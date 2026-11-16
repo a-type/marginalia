@@ -44,6 +44,7 @@ import { AnnotatedBibleChapter } from './AnnotatedBibleChapter';
 import cls from './BibleReader.module.css';
 import { BibleReaderLocation } from './BibleReaderLocation';
 import type { ReadingScrollPosition } from './ContinuousChaptersController';
+import { PericopeProvider, usePericopeVerseIds } from './Pericope';
 import { useContinuousChapters } from './useContinuousChapters';
 
 const readerRoute = getRouteApi('/$translation/$book/$chapter');
@@ -77,14 +78,17 @@ export function BibleReader() {
 
   const activeTab = tabs.find((tab) => tab.id === activeReadingTabId);
   const selection = routeReady ? search.verses : activeTab?.verses;
+  const pericope = activeTab ? activeTab.pericope : search.pericope;
 
   return (
     <VerseSelectionProvider selectionOverride={selection ?? null}>
-      <BibleReaderContent
-        key={`${translationId}/${location.bookId}/${location.chapter}/${activeReadingTabId ?? ''}`}
-        activeReadingTabId={activeReadingTabId}
-        selection={selection}
-      />
+      <PericopeProvider pericope={pericope}>
+        <BibleReaderContent
+          key={`${translationId}/${location.bookId}/${location.chapter}/${activeReadingTabId ?? ''}`}
+          activeReadingTabId={activeReadingTabId}
+          selection={selection}
+        />
+      </PericopeProvider>
     </VerseSelectionProvider>
   );
 }
@@ -100,6 +104,8 @@ function BibleReaderContent({
     readerRoute.useLoaderData();
   const selectedVerses = useSelectedVerseIds();
   const selectedVerse = selectedVerses.at(0);
+  const pericopeVerses = usePericopeVerseIds();
+  const initialVerse = selectedVerse ?? pericopeVerses.at(0);
   const search = readerRoute.useSearch();
   const { pathname, maskedPathname, translationScrollPosition } = useLocation({
     select: (routeLocation) => ({
@@ -241,13 +247,16 @@ function BibleReaderContent({
     queryIsSuccess: primaryChapterAnnotationsQuery.isSuccess,
     userQueryIsSuccess: userDidQuery.isSuccess && primaryChapterOutsideWindow,
   });
-  const scrollToSelection =
-    selectedLocation?.bookId === location.bookId &&
-    selectedLocation.chapter === location.chapter &&
+  const initialVerseLocation = initialVerse
+    ? parseVerseId(initialVerse)
+    : undefined;
+  const scrollToInitialVerse =
+    initialVerseLocation?.bookId === location.bookId &&
+    initialVerseLocation.chapter === location.chapter &&
     !restoredPosition &&
     restoredScrollProgress === undefined;
-  const initialVerseTarget = useScrollToSelectedVerse(
-    scrollToSelection ? selectedVerse : undefined,
+  const initialVerseTarget = useScrollToInitialVerse(
+    scrollToInitialVerse ? initialVerse : undefined,
   );
   useStoreBibleReaderLocation(
     pathname,
@@ -511,7 +520,7 @@ function ReaderChapter({
   );
 }
 
-function useScrollToSelectedVerse(verseId: VerseId | undefined) {
+function useScrollToInitialVerse(verseId: VerseId | undefined) {
   const [target] = useState(() => {
     if (!verseId) return undefined;
     const { bookId, chapter } = parseVerseId(verseId);
@@ -611,7 +620,9 @@ function useSyncReadingMask(
       (currentLocation.search.verses || undefined) !==
         (search.verses || undefined) ||
       (currentLocation.search.annotation || undefined) !==
-        (search.annotation || undefined)
+        (search.annotation || undefined) ||
+      (currentLocation.search.pericope || undefined) !==
+        (search.pericope || undefined)
     )
       return;
     const mask = getReadingMask(translationId, location, active, search);
@@ -625,7 +636,8 @@ function useSyncReadingMask(
             `/${translationId}/${active.bookId}/${active.chapter}` &&
           (currentMask.search.verses || undefined) === mask.search.verses &&
           (currentMask.search.annotation || undefined) ===
-            mask.search.annotation
+            mask.search.annotation &&
+          (currentMask.search.pericope || undefined) === mask.search.pericope
         : !currentMask)
     )
       return;

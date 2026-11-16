@@ -40,18 +40,21 @@ export function useAddReadingTab() {
     book,
     chapter = 1,
     verses,
+    pericope,
     activate = true,
   }: {
     translation: string;
     book: string;
     chapter?: number;
     verses?: string;
+    pericope?: string;
     activate?: boolean;
   }) => {
     const tab = createReadingTab(translation, {
       bookId: book,
       chapter: chapter,
       verses,
+      pericope,
     });
     if (activate) navigateToReadingTab(tab);
     setVisitedBefore();

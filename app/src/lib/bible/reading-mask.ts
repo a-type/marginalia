@@ -15,7 +15,7 @@ export function getReadingMask(
   translationId: string,
   routeLocation: BibleLocation,
   position: BibleLocation | undefined,
-  search: { verses?: string; annotation?: string },
+  search: { verses?: string; annotation?: string; pericope?: string },
 ) {
   if (
     !position ||
@@ -32,6 +32,7 @@ export function getReadingMask(
     },
     search: {
       ...(search.verses ? { verses: search.verses } : {}),
+      ...(search.pericope ? { pericope: search.pericope } : {}),
       ...(search.verses && search.annotation
         ? { annotation: search.annotation }
         : {}),

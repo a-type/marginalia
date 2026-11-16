@@ -1,4 +1,5 @@
 import { eq, useLiveQuery } from '@tanstack/react-db';
+import { clsx } from '@a-type/ui';
 
 import {
   formatVerseAnchorName,
@@ -12,6 +13,8 @@ import {
   useVerseIncludedInOpenAnnotation,
 } from '../annotations/annotationPaneStore';
 import { useBookId, useChapterNumber, VerseIdProvider } from './contexts';
+import { usePericopeVerseIds } from '../bible/Pericope';
+import cls from './Verse.module.css';
 import type { USFMNodeComponentProps } from './types';
 
 export function Verse({
@@ -26,6 +29,7 @@ export function Verse({
     !isContinuation && Boolean(verseNumber && !/[b-z]$/.test(argument ?? ''));
   const verseId = formatVerseId(bookId, chapterNumber, verseNumber);
   const selected = useIsSelectedVerse(verseId);
+  const inPericope = usePericopeVerseIds().includes(verseId);
   const includedInOpenAnnotation = useVerseIncludedInOpenAnnotation(verseId);
   const { data: appliedHighlight } = useLiveQuery({
     query: (query) =>
@@ -57,10 +61,15 @@ export function Verse({
   return (
     <VerseIdProvider verseId={verseId}>
       <span
-        className={`usfm-verse${highlightColor ? ` @mode-${highlightColor}` : ''}`}
+        className={clsx(
+          'usfm-verse',
+          cls.verse,
+          highlightColor && `@mode-${highlightColor}`,
+        )}
         id={isAnchor ? `verse-${verseId}` : undefined}
         data-verse-id={verseId}
         data-selected={selected || undefined}
+        data-pericope={inPericope || undefined}
         data-annotated={includedInOpenAnnotation || undefined}
         data-highlighted={highlightColor || undefined}
         role="button"

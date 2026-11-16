@@ -27,17 +27,21 @@ export const Route = createFileRoute('/$translation/$book/$chapter')({
   notFoundComponent: BibleRecovery,
   validateSearch: (search: Record<string, unknown>) => {
     const verses = normalizeVerseSelection(search.verses);
+    const pericope = normalizeVerseSelection(search.pericope);
     const annotation =
       typeof search.annotation === 'string' && search.annotation
         ? search.annotation
         : undefined;
     return {
       ...(verses ? { verses } : {}),
+      ...(pericope ? { pericope } : {}),
       ...(verses && annotation ? { annotation } : {}),
     };
   },
   loaderDeps: ({ search }) => ({
-    bookRanges: selectionBookRanges(search.verses),
+    bookRanges: selectionBookRanges(
+      [search.verses, search.pericope].filter(Boolean).join(','),
+    ),
   }),
   loader: async ({ params, deps, context }) => {
     const location = parseBibleLocation(params.book, params.chapter);

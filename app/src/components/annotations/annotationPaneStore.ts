@@ -95,6 +95,9 @@ export function useIsAnnotationPaneActive() {
 
 function useNavigateSelection() {
   const navigate = readerRoute.useNavigate();
+  const pericope = readerRoute.useSearch({
+    select: (search) => search.pericope,
+  });
   const { location, translationId } = readerRoute.useLoaderData();
   const position = useLocation({
     select: (routeLocation) => routeLocation.state.readingPosition,
@@ -102,6 +105,7 @@ function useNavigateSelection() {
   return (verses?: string, annotation?: string) => {
     const search = {
       ...(verses ? { verses } : {}),
+      ...(pericope ? { pericope } : {}),
       ...(verses && annotation ? { annotation } : {}),
     };
     return navigate({

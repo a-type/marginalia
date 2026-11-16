@@ -45,7 +45,9 @@ export function ChapterNavigationButtons({
         activeReadingTabId,
         readingPosition: undefined,
       }),
-      search: {},
+      search: (previous) => ({
+        ...(previous.pericope ? { pericope: previous.pericope } : {}),
+      }),
       resetScroll: false,
     });
     if (

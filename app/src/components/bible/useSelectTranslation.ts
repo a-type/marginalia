@@ -109,7 +109,10 @@ export function useSelectTranslation({
                 }
               : undefined),
         }),
-        search: selectedExists ? { verses: search.verses } : {},
+        search: {
+          ...(selectedExists ? { verses: search.verses } : {}),
+          ...(search.pericope ? { pericope: search.pericope } : {}),
+        },
       });
       onChange?.({ translation, book: book.id, chapter: nextChapter });
     },

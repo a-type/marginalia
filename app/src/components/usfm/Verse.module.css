@@ -1,0 +1,5 @@
+.verse[data-pericope] {
+  text-decoration-line: underline;
+  text-underline-offset: --fn-literal(0.15em);
+  text-decoration-color: --fn-color-lighter(var(--m-gray), 2);
+}

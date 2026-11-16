@@ -86,6 +86,7 @@ async function renderNavigation(
     path: '/$translation/$book/$chapter',
     validateSearch: (search) => ({
       verses: normalizeVerseSelection(search.verses),
+      pericope: normalizeVerseSelection(search.pericope),
     }),
     component: SwitchTranslation,
   });
@@ -163,8 +164,9 @@ describe('selection navigation', () => {
         books: [{ id: 'JHN', title: 'John', chapters: 3 }],
       });
       fetchSource.mockResolvedValue(source);
+      const pericope = 'JHN/3:1-JHN/3:3';
       const view = await renderNavigation(
-        `/eng_test/JHN/3?verses=${encodeURIComponent(selection)}`,
+        `/eng_test/JHN/3?verses=${encodeURIComponent(selection)}&pericope=${encodeURIComponent(pericope)}`,
         null,
       );
       try {
@@ -173,6 +175,7 @@ describe('selection navigation', () => {
           .poll(() => view.router.state.location.pathname)
           .toBe('/eng_other/JHN/3');
         expect(view.router.state.location.search.verses).toBe(expected);
+        expect(view.router.state.location.search.pericope).toBe(pericope);
       } finally {
         view.cleanup();
       }
