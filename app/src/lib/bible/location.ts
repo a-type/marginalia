@@ -157,6 +157,7 @@ export function parseScriptureCitation(
   const passage = parsePassage(
     match[2]
       .replace(/(\d)\s*\(/g, '$1,(')
+      .replace(/:\s*\[([^\]]+)\]/g, ':$1')
       .replace(/\s*\[([^\]]+)\]\s*/g, ',$1,')
       .replace(/^,|,$/g, '')
       .replace(/[\s()[\]]/g, '')

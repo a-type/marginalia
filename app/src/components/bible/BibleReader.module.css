@@ -59,7 +59,7 @@
   min-height: 0;
   anchor-scope: --reader-scroll-thumb;
 }
-
+/*
 .scrollArea :global([data-scroll-direction='vertical']) {
   overflow-anchor: none;
   scroll-snap-type: y proximity;
@@ -68,8 +68,8 @@
 
 .scrollArea
   :global([data-reader-book-start][data-reader-chapter-loaded='true']) {
-  /* scroll-snap-align: start; */
-}
+  scroll-snap-align: start;
+} */
 
 .scrollArea :global([data-reader-scrubbing]) {
   opacity: 1;
