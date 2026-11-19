@@ -132,6 +132,12 @@ export function getInitialTranslationBook(
   return manifest.books.find((book) => book.id === 'GEN') ?? manifest.books[0];
 }
 
+export function translationShortCode(translationId: string): string {
+  return (translationId.split(/[-_]/)[1] ?? translationId)
+    .slice(0, 3)
+    .toUpperCase();
+}
+
 export function isTranslationId(value: string): boolean {
   return /^[a-z0-9]+(?:[_-][a-z0-9]+)*$/.test(value);
 }

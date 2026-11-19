@@ -7,6 +7,7 @@ import {
   type BibleReference,
 } from '../../lib/bible/location';
 import { getMostRecentlyVisitedReadingTab } from '../../lib/bible/reading-tabs';
+import { translationShortCode } from '../../lib/bible/manifests';
 import { readStoredTranslationId } from '../../lib/bible/source';
 import { formatVerseId } from '../../lib/bible/verse';
 import { verseHashScrollIntoView } from '../../lib/bible/verse-scroll';
@@ -16,6 +17,7 @@ import type {
   LectionarySection,
 } from '../../lib/lectionary';
 import { useAddReadingTab } from '../app/readingTabs';
+import { useCompatibleTranslations } from '../bible/useCompatibleTranslations';
 import { useReferenceSelections } from '../bible/useReferenceSelections';
 import cls from './LectionaryReadings.module.css';
 
@@ -131,10 +133,21 @@ function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
   const validTargets = targets.filter(
     (target): target is BibleReference => target !== null,
   );
-  const selections = useReferenceSelections(translation, validTargets);
+  const compatible = useCompatibleTranslations(translation, [
+    ...new Set(validTargets.map(({ bookId }) => bookId)),
+  ]);
+  const translationFor = (target: BibleReference) =>
+    compatible.resolved.get(target.bookId) ?? null;
+  const rawSelections = useReferenceSelections(translationFor, validTargets);
+  const selections = rawSelections.map((selection) => ({
+    ...selection,
+    loading: selection.loading || compatible.loading,
+    unavailable: !compatible.loading && selection.unavailable,
+  }));
   const openable = validTargets.flatMap((target, index) => {
     const verses = selections[index].verses;
-    return verses ? [{ target, verses }] : [];
+    const id = translationFor(target);
+    return verses && id ? [{ target, verses, translation: id }] : [];
   });
   let validIndex = 0;
   return (
@@ -154,7 +167,8 @@ function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
                 reading={reading}
                 target={target}
                 selection={selection}
-                translation={translation}
+                translation={target ? translationFor(target) : null}
+                currentTranslation={translation}
               />
             </Box>
           );
@@ -167,7 +181,7 @@ function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
             selections.some((selection) => selection.loading)
           }
           onClick={() => {
-            openable.forEach(({ target, verses }, index) => {
+            openable.forEach(({ target, verses, translation }, index) => {
               addReadingTab({
                 translation,
                 book: target.bookId,
@@ -190,6 +204,7 @@ function ReadingLink({
   target,
   selection,
   translation,
+  currentTranslation,
 }: {
   reading: LectionaryReading;
   target: BibleReference | null;
@@ -201,7 +216,8 @@ function ReadingLink({
         retry?: () => unknown;
       }
     | undefined;
-  translation: string;
+  translation: string | null;
+  currentTranslation: string;
 }) {
   const addReadingTab = useAddReadingTab();
   if (!target) {
@@ -212,7 +228,14 @@ function ReadingLink({
       </>
     );
   }
-  if (!selection?.verses) {
+  if (!translation && !selection?.loading) {
+    return (
+      <Chip disabled aria-disabled="true">
+        {reading.citation}
+      </Chip>
+    );
+  }
+  if (!translation || !selection?.verses) {
     return (
       <>
         <Text>{reading.citation}</Text>
@@ -272,6 +295,7 @@ function ReadingLink({
       }
     >
       {reading.citation}
+      {translation !== currentTranslation && ` (${translationShortCode(translation)})`}
       {reading.isAlternative && (
         <Text emphasis="ambient" dim className={cls.alt}>
           {m.lectionary_alternative()}

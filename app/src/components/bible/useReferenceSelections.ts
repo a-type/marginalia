@@ -7,24 +7,33 @@ import {
 import { translationBookVersesQueryOptions } from '../../queries/translations';
 
 export function useReferenceSelections(
-  translation: string,
+  translation: string | ((reference: BibleReference) => string | null),
   references: readonly BibleReference[],
 ) {
-  const books = [
-    ...new Set(
-      references.filter(referenceNeedsVerses).map(({ bookId }) => bookId),
-    ),
+  const translationFor = (reference: BibleReference) =>
+    typeof translation === 'function' ? translation(reference) : translation;
+  const keys = [
+    ...new Map(
+      references.flatMap((reference) => {
+        const id = translationFor(reference);
+        return referenceNeedsVerses(reference) && id
+          ? [[`${id}:${reference.bookId}`, { id, bookId: reference.bookId }]]
+          : [];
+      }),
+    ).entries(),
   ];
   const queries = useQueries({
-    queries: books.map((bookId) =>
-      translationBookVersesQueryOptions(translation, bookId),
+    queries: keys.map(([, { id, bookId }]) =>
+      translationBookVersesQueryOptions(id, bookId),
     ),
   });
   return references.map((reference) => {
     const needsVerses = referenceNeedsVerses(reference);
-    const query = needsVerses
-      ? queries[books.indexOf(reference.bookId)]
-      : undefined;
+    const id = translationFor(reference);
+    const query =
+      needsVerses && id
+        ? queries[keys.findIndex(([key]) => key === `${id}:${reference.bookId}`)]
+        : undefined;
     const loading = !!query?.isPending;
     const verses = referenceVerseSelection(
       reference,

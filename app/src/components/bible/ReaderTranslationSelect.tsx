@@ -2,6 +2,7 @@ import { Select } from '@a-type/ui';
 import { useState } from 'react';
 
 import { m } from '#/paraglide/messages';
+import { translationShortCode } from '../../lib/bible/manifests';
 import { readRecentTranslations } from '../../lib/bible/source';
 import type { BookId } from '../../lib/bible/verse';
 import { TranslationManagerDialog } from '../settings/TranslationManagerDialog';
@@ -52,9 +53,7 @@ export function ReaderTranslationSelect({
   const translationById = new Map(
     recentTranslations.map((translation) => [translation.id, translation]),
   );
-  const translationShortId = (translationId.split(/[-_]/)[1] ?? translationId)
-    .slice(0, 3)
-    .toUpperCase();
+  const translationShortId = translationShortCode(translationId);
 
   return (
     <>
