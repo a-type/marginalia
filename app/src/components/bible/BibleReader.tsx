@@ -255,8 +255,10 @@ function BibleReaderContent({
     initialVerseLocation.chapter === location.chapter &&
     !restoredPosition &&
     restoredScrollProgress === undefined;
-  const initialVerseTarget = useScrollToInitialVerse(
+  useScrollToInitialVerse(
     scrollToInitialVerse ? initialVerse : undefined,
+    viewportRef,
+    initialPositionSettled,
   );
   useStoreBibleReaderLocation(
     pathname,
@@ -327,13 +329,6 @@ function BibleReaderContent({
                     }
                     data-reader-chapter-loaded={
                       chapterSource.data !== undefined
-                    }
-                    ref={
-                      chapterSource.data !== undefined &&
-                      initialVerseTarget?.chapterKey ===
-                        `${chapter.bookId}/${chapter.chapter}`
-                        ? initialVerseTarget.ref
-                        : undefined
                     }
                   >
                     {index > 0 && <Box className={cls.chapterDivider} />}
@@ -520,30 +515,40 @@ function ReaderChapter({
   );
 }
 
-function useScrollToInitialVerse(verseId: VerseId | undefined) {
-  const [target] = useState(() => {
-    if (!verseId) return undefined;
-    const { bookId, chapter } = parseVerseId(verseId);
-    let scrolled = false;
-    return {
-      chapterKey: `${bookId}/${chapter}`,
-      ref(element: HTMLElement | null) {
-        if (!element || scrolled) return;
-        const frame = requestAnimationFrame(() => {
-          const verse = document.getElementById(`verse-${verseId}`);
-          if (!verse || !element.contains(verse)) return;
-          scrolled = true;
-          verse.scrollIntoView({
-            block: 'start',
-            // Buffer adjustments can interrupt an animated initial scroll.
-            behavior: 'instant',
-          });
-        });
-        return () => cancelAnimationFrame(frame);
-      },
-    };
-  });
-  return target;
+function useScrollToInitialVerse(
+  verseId: VerseId | undefined,
+  viewportRef: RefObject<HTMLDivElement | null>,
+  initialPositionSettled: boolean,
+) {
+  const [initialVerseId] = useState(verseId);
+  const scrolled = useRef(false);
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    if (
+      !initialVerseId ||
+      scrolled.current ||
+      !initialPositionSettled ||
+      !viewport
+    )
+      return;
+    const verse = document.getElementById(`verse-${initialVerseId}`);
+    if (!verse) return;
+    const initialScrollTop = viewport.scrollTop;
+    const frame = requestAnimationFrame(() => {
+      if (viewport.scrollTop !== initialScrollTop) {
+        scrolled.current = true;
+        return;
+      }
+      if (!verse.isConnected) return;
+      scrolled.current = true;
+      verse.scrollIntoView({
+        block: 'start',
+        // Buffer adjustments can interrupt an animated initial scroll.
+        behavior: 'instant',
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [initialVerseId, viewportRef, initialPositionSettled]);
 }
 
 function useStoreReadingTabScrollPosition(

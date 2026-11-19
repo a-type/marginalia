@@ -1,4 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  getCurrentBlueskyProfile,
+  getCurrentProfile,
+  getProfileSetup,
+  getProfilesForDids,
+  listFollowedProfiles,
+  listFollowSuggestions,
+  lookupProfileByHandle,
+} from './functions';
 
 const {
   fetchAllXrpcRecords,
@@ -53,8 +62,6 @@ describe('current Bluesky profile and graph queries', () => {
     );
     getHappyViewSession.mockResolvedValue({ did, fetchHandler });
 
-    const { getCurrentBlueskyProfile } = await import('./functions');
-
     await expect(getCurrentBlueskyProfile()).resolves.toEqual({
       did,
       handle: 'reader.example',
@@ -86,8 +93,6 @@ describe('current Bluesky profile and graph queries', () => {
     getHappyViewSession.mockResolvedValue({ did, fetchHandler });
     fetchAllXrpcRecords.mockResolvedValue([]);
 
-    const { getProfileSetup } = await import('./functions');
-
     await expect(getProfileSetup()).resolves.toEqual({
       profile: null,
       seed: {
@@ -117,8 +122,6 @@ describe('current Bluesky profile and graph queries', () => {
       return new Response(JSON.stringify(profile), { status: 200 });
     });
 
-    const { lookupProfileByHandle } = await import('./functions');
-
     await expect(
       lookupProfileByHandle({ data: { handle: profile.handle } }),
     ).resolves.toEqual(profile);
@@ -144,8 +147,6 @@ describe('current Bluesky profile and graph queries', () => {
     ]);
     parseAtRecordUri.mockReturnValue({ authorDid: did, rkey: 'self' });
 
-    const { getCurrentProfile } = await import('./functions');
-
     await expect(getCurrentProfile()).resolves.toMatchObject({
       authorDid: did,
       handle: 'reader.example',
@@ -156,8 +157,6 @@ describe('current Bluesky profile and graph queries', () => {
 
   it('does not return a successful null result when the session is missing', async () => {
     getHappyViewSession.mockResolvedValue(null);
-
-    const { getProfileSetup } = await import('./functions');
 
     await expect(getProfileSetup()).rejects.toThrow(
       'Invalid HappyView session',
@@ -192,8 +191,6 @@ describe('current Bluesky profile and graph queries', () => {
         { status: 200 },
       );
     });
-
-    const { listFollowSuggestions } = await import('./functions');
 
     await expect(listFollowSuggestions()).resolves.toEqual([]);
 
@@ -231,8 +228,6 @@ describe('current Bluesky profile and graph queries', () => {
       rkey: 'self',
     }));
 
-    const { listFollowedProfiles } = await import('./functions');
-
     await expect(listFollowedProfiles()).resolves.toMatchObject([
       { authorDid: followedDid, handle: 'followed.example' },
     ]);
@@ -259,8 +254,6 @@ describe('current Bluesky profile and graph queries', () => {
     });
     parseAtRecordUri.mockReturnValue({ authorDid, rkey: 'self' });
 
-    const { getProfilesForDids } = await import('./functions');
-
     await expect(
       getProfilesForDids({ data: { dids: [authorDid] } }),
     ).resolves.toMatchObject([{ authorDid, handle: 'author.example' }]);
@@ -274,8 +267,6 @@ describe('current Bluesky profile and graph queries', () => {
   it('does not request annotation author profiles without a session', async () => {
     getHappyViewSession.mockResolvedValue(null);
     const authorDid = 'did:plc:zyxwvutsrqponmlkjihgfedcba';
-
-    const { getProfilesForDids } = await import('./functions');
 
     await expect(
       getProfilesForDids({ data: { dids: [authorDid] } }),

@@ -59,7 +59,7 @@ export const bookNames: Readonly<Record<BookId, readonly string[]>> = {
   MAN: ['Prayer of Manasseh'],
   PS2: ['Psalm 151'],
   MAT: ['Matthew'],
-  MRK: ['Mark'],
+  MRK: ['Mark', 'Mrk'],
   LUK: ['Luke'],
   JHN: ['John'],
   ACT: ['Acts', 'Acts of the Apostles'],

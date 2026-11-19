@@ -36,7 +36,7 @@ export function LectionaryReadings({ day }: { day: LectionaryDay }) {
       {day.sections
         .filter(
           (section) =>
-            section.readings.length &&
+            (section.readings.length || section.kind === 'red_letter') &&
             !(section.kind === 'daily' && dailyMatchesSunday),
         )
         .map((section) => (

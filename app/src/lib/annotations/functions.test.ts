@@ -1,4 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  deleteAnnotation,
+  listChapterAnnotations,
+  listMyAnnotationsPage,
+} from './functions';
 
 const {
   fetchXrpcRecordPage,
@@ -45,7 +50,6 @@ describe('chapter annotation records', () => {
     fetchXrpcRecordPage.mockResolvedValue({ records: [record] });
     parseAtRecordUri.mockReturnValue({ authorDid: did, rkey: 'rkey' });
 
-    const { listChapterAnnotations } = await import('./functions');
     const snapshot = await listChapterAnnotations({
       data: { bookId: 'GEN', chapter: 1 },
     });
@@ -78,7 +82,6 @@ describe('chapter annotation records', () => {
 
     parseAtRecordUri.mockReturnValue({ authorDid: did, rkey: 'rkey' });
 
-    const { listMyAnnotationsPage } = await import('./functions');
     const page = await listMyAnnotationsPage({ data: { cursor: 'previous' } });
 
     expect(fetchXrpcRecordPage).toHaveBeenCalledWith(
@@ -104,7 +107,6 @@ describe('chapter annotation records', () => {
     fetchXrpcRecordPage.mockResolvedValue({ records: [record] });
     parseAtRecordUri.mockReturnValue({ authorDid: did, rkey: 'rkey' });
 
-    const { listMyAnnotationsPage } = await import('./functions');
     const page = await listMyAnnotationsPage({ data: {} });
 
     expect(page.annotations[0]).toMatchObject({
@@ -130,7 +132,6 @@ describe('chapter annotation records', () => {
     fetchXrpcRecordPage.mockResolvedValue({ records: [record] });
     parseAtRecordUri.mockReturnValue({ authorDid: otherDid, rkey: 'rkey' });
 
-    const { listMyAnnotationsPage } = await import('./functions');
     const page = await listMyAnnotationsPage({ data: {} });
 
     expect(page.annotations).toEqual([]);
@@ -145,7 +146,6 @@ describe('chapter annotation records', () => {
     });
     parseAtRecordUri.mockReturnValue({ authorDid: did, rkey: 'rkey' });
 
-    const { deleteAnnotation } = await import('./functions');
     await deleteAnnotation({
       data: {
         uri: `at://${did}/com.marginsbible.annotation/rkey`,
@@ -171,7 +171,6 @@ describe('chapter annotation records', () => {
       rkey: 'rkey',
     });
 
-    const { deleteAnnotation } = await import('./functions');
     await expect(
       deleteAnnotation({
         data: {
