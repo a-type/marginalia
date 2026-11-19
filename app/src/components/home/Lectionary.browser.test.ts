@@ -108,10 +108,20 @@ function mockLectServe(
 ) {
   const requests: string[] = [];
   let fail = options.fail;
-  const fetch = vi.fn(async (input: string) => {
-    requests.push(input);
+  const originalFetch = globalThis.fetch;
+  const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const requestUrl =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.href
+          : input.url;
+    const url = new URL(requestUrl, location.origin);
+    if (!url.pathname.startsWith('/lectserve/date/')) {
+      return originalFetch(input, init);
+    }
+    requests.push(`${url.pathname}${url.search}`);
     if (fail) return Response.json({ error: 'Unavailable' }, { status: 503 });
-    const url = new URL(input, location.origin);
     const date = url.pathname.split('/').at(-1);
     const dailyLect = url.searchParams.get('dailyLect');
     return Response.json({
@@ -349,6 +359,7 @@ describe('homepage lectionary', () => {
       const sections = view.container.querySelectorAll('section');
       const button = sections[1].querySelector('button');
       expect(button?.textContent).toBe(m.lectionary_open_all_tabs());
+      await expect.poll(() => button?.disabled).toBe(false);
       button!.click();
       await expect
         .poll(() => view.router.state.location.pathname)
@@ -399,6 +410,7 @@ describe('homepage lectionary', () => {
         m.lectionary_open_all_tabs(),
         m.lectionary_open_all_tabs(),
       ]);
+      await expect.poll(() => buttons[0].disabled).toBe(false);
       buttons[0].click();
       await expect
         .poll(() => view.router.state.location.pathname)
