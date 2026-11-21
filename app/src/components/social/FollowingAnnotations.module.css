@@ -1,0 +1,43 @@
+.feed {
+  display: grid;
+}
+
+.post {
+  @apply --mx-surface-ambient;
+  display: grid;
+  min-width: 0;
+  gap: var(--m-sp-sm);
+  border: none;
+  border-radius: 0;
+
+  & + & {
+    border-top: var(--m-lw) solid var(--m-surface-ambient-b-color);
+  }
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: var(--m-sp-sm);
+  overflow-wrap: anywhere;
+}
+
+.excerpt {
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.verse {
+  @apply --mx-surface-ambient;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+.annotation {
+  padding-block: var(--m-sp-sm);
+}

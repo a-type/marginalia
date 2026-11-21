@@ -5,12 +5,17 @@ import { useState } from 'react';
 import {
   formatLectionaryDate,
   lectionaryTraditions,
+  type LectionaryReadingType,
 } from '../../lib/lectionary';
 import { lectionaryReadingsQueryOptions } from '../../queries/lectionary';
 import { LectionaryDatePicker } from './LectionaryDatePicker';
 import { LectionaryReadings } from './LectionaryReadings';
 
-export function Lectionary() {
+export function Lectionary({
+  readingTypes = ['daily', 'red_letter', 'sunday'],
+}: {
+  readingTypes?: readonly LectionaryReadingType[];
+}) {
   const [date, setDate] = useState(() => new Date());
   const [selectedTradition, setSelectedTradition] = useState('rcl');
   const tradition =
@@ -22,7 +27,9 @@ export function Lectionary() {
 
   return (
     <Box p col gap="lg" overflow="auto-y">
-      <Heading render={<h1 />}>{m.lectionary_title()}</Heading>
+      <Heading className="sr-only" render={<h1 />}>
+        {m.lectionary_title()}
+      </Heading>
       <Box gap wrap items="center">
         <Select
           value={tradition.id}
@@ -48,6 +55,14 @@ export function Lectionary() {
           </Select.Content>
         </Select>
         <LectionaryDatePicker value={date} onChange={setDate} />
+        <TextLink
+          emphasis="ambient"
+          dim
+          className="@mode-dense"
+          href="https://www.lectserve.com/html/about"
+        >
+          {m.lectionary_attribution()}
+        </TextLink>
       </Box>
       {readings.isPending ? (
         <P role="status">{m.lectionary_loading()}</P>
@@ -63,11 +78,8 @@ export function Lectionary() {
           </Button>
         </Box>
       ) : (
-        <LectionaryReadings day={readings.data} />
+        <LectionaryReadings day={readings.data} readingTypes={readingTypes} />
       )}
-      <TextLink emphasis="ambient" href="https://www.lectserve.com/html/about">
-        {m.lectionary_attribution()}
-      </TextLink>
     </Box>
   );
 }

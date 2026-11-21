@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   deleteAnnotation,
   listChapterAnnotations,
+  listFollowingAnnotationsPage,
   listMyAnnotationsPage,
 } from './functions';
 
@@ -33,6 +34,51 @@ describe('chapter annotation records', () => {
     getAuthenticatedHappyViewClient.mockReset();
     getHappyViewSession.mockReset();
     parseAtRecordUri.mockReset();
+  });
+
+  it('does not request the following feed without a session', async () => {
+    getHappyViewSession.mockResolvedValue(null);
+    await expect(listFollowingAnnotationsPage({ data: {} })).resolves.toEqual({
+      annotations: [],
+    });
+    expect(fetchXrpcRecordPage).not.toHaveBeenCalled();
+  });
+
+  it('preserves the feed page order and cursor while discarding malformed records', async () => {
+    const did = 'did:plc:me';
+    const authorDid = 'did:plc:friend';
+    const record = {
+      uri: `at://${authorDid}/com.marginsbible.annotation/new`,
+      $type: 'com.marginsbible.annotation',
+      verses: [{ id: 'GEN/1:1' }, { id: 'EXO/2:1' }],
+      comment: 'A note',
+      createdAt: '2026-10-29T11:30:00-01:00',
+    };
+    const earlier = {
+      ...record,
+      uri: `at://${authorDid}/com.marginsbible.annotation/old`,
+      createdAt: '2026-10-29T12:00:00Z',
+    };
+    getHappyViewSession.mockResolvedValue({ did });
+    fetchXrpcRecordPage.mockResolvedValue({
+      records: [record, { ...record, comment: '' }, earlier],
+      cursor: 'next',
+    });
+    parseAtRecordUri.mockReturnValue({ authorDid, rkey: 'unused' });
+
+    const page = await listFollowingAnnotationsPage({
+      data: { cursor: 'previous' },
+    });
+    expect(fetchXrpcRecordPage).toHaveBeenCalledWith(
+      { did },
+      'com.marginsbible.annotation.listFollowing',
+      { cursor: 'previous' },
+    );
+    expect(page.annotations.map(({ id }) => id)).toEqual([
+      record.uri,
+      earlier.uri,
+    ]);
+    expect(page.cursor).toBe('next');
   });
 
   it('parses the complete lexicon record including its $type', async () => {

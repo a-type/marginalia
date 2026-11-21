@@ -40,6 +40,7 @@ export function useAddReadingTab() {
     book,
     chapter = 1,
     verses,
+    annotation,
     pericope,
     activate = true,
   }: {
@@ -47,6 +48,7 @@ export function useAddReadingTab() {
     book: string;
     chapter?: number;
     verses?: string;
+    annotation?: string;
     pericope?: string;
     activate?: boolean;
   }) => {
@@ -54,6 +56,7 @@ export function useAddReadingTab() {
       bookId: book,
       chapter: chapter,
       verses,
+      annotation,
       pericope,
     });
     if (activate) navigateToReadingTab(tab);

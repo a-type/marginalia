@@ -18,9 +18,12 @@ function getHappyViewProxyPath(url: string | undefined) {
   const queryStart = url.indexOf('?');
   const pathname = queryStart === -1 ? url : url.slice(0, queryStart);
 
-  if (pathname === '/api' || pathname.startsWith('/api/')) return url;
-  if (pathname === '/xrpc' || pathname.startsWith('/xrpc/'))
+  if (pathname === '/api' || pathname.startsWith('/api/')) {
+    return url;
+  }
+  if (pathname === '/xrpc' || pathname.startsWith('/xrpc/')) {
     return `/api${url}`;
+  }
   return undefined;
 }
 

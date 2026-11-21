@@ -306,15 +306,25 @@ indexer resolves self/followed authors and exact chapter membership in SQL
 before loading documents. Cross-book and noncontiguous verse selections work;
 blank comments and invalid records are logged and excluded. Results retain
 newest-first ordering, ascending URI ties, and the existing all-results shape.
+The Social tab uses `com.marginsbible.annotation.listFollowing` to page through
+annotations from followed accounts, newest first. It previews verses in the
+current translation and opens the annotation in a new reading tab. Deploy the
+updated indexer and re-provision HappyView before using the feed. Existing
+OAuth sessions may need to sign in again to grant the new RPC scope.
 Highlights and the caller's annotation sync endpoint still use HappyView.
 
 Provisioning substitutes `ANNOTATION_INDEXER_URL` into the Lua scripts. For
 Compose, the default is `http://annotation-indexer:3000`. For Railway, set it
 to `http://annotation-indexer.railway.internal:3000` (or the service's actual
 private domain) in the environment running `pnpm happyview:provision`.
-Changing this address requires re-provisioning. The indexer listens on `::`
-to support Railway's private IPv6 network. Keep it at one replica with its
-own persistent volume; never mount HappyView's live database into it.
+Changing this address requires re-provisioning. If HappyView runs in Compose
+but the indexer runs on the host, use `http://host.docker.internal:<port>`; do
+not use `localhost`, which refers to the HappyView container. The indexer must
+listen on a Docker-reachable interface. Compose provisioning and rebuild
+containers use the same configured URL; for a rebuild command running directly
+on the host, use `http://127.0.0.1:<port>` instead. The indexer listens on `::`
+to support Railway's private IPv6 network. Keep it at one replica with its own
+persistent volume; never mount HappyView's live database into it.
 
 #### Initial indexing and reconciliation
 

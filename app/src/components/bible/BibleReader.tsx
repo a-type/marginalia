@@ -267,6 +267,7 @@ function BibleReaderContent({
     translationId,
     manifest.title,
     selection,
+    search.annotation,
   );
   useStoreReadingTabScrollPosition(
     activeReadingTabId,
@@ -730,6 +731,7 @@ function useStoreBibleReaderLocation(
   translationId: string,
   translationTitle: string,
   selection: string | undefined,
+  annotation: string | undefined,
 ) {
   useEffect(() => {
     if (pathname !== `/${translationId}/${location.bookId}/${location.chapter}`)
@@ -740,6 +742,7 @@ function useStoreBibleReaderLocation(
       location,
       translationId,
       selection,
+      annotation,
     );
     storeTranslationId(translationId);
     rememberTranslation({ id: translationId, title: translationTitle });
@@ -750,6 +753,7 @@ function useStoreBibleReaderLocation(
     translationId,
     translationTitle,
     selection,
+    annotation,
   ]);
 }
 

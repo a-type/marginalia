@@ -23,7 +23,7 @@ if (
 const clientScopes = [
   'atproto',
   'repo?collection=com.marginsbible.annotation&collection=com.marginsbible.highlight&collection=com.marginsbible.profile&collection=com.marginsbible.follow&action=create&action=update&action=delete',
-  'rpc?lxm=com.marginsbible.annotation.listForChapter&lxm=com.marginsbible.annotation.listMine&lxm=com.marginsbible.highlight.listForChapter&lxm=com.marginsbible.profile.list&lxm=com.marginsbible.profile.getForDids&lxm=com.marginsbible.follow.list&lxm=app.bsky.actor.getProfile&aud=*',
+  'rpc?lxm=com.marginsbible.annotation.listForChapter&lxm=com.marginsbible.annotation.listMine&lxm=com.marginsbible.annotation.listFollowing&lxm=com.marginsbible.highlight.listForChapter&lxm=com.marginsbible.profile.list&lxm=com.marginsbible.profile.getForDids&lxm=com.marginsbible.follow.list&lxm=app.bsky.actor.getProfile&aud=*',
 ].join(' ');
 
 if (!baseUrl) {
@@ -283,6 +283,7 @@ const queryLexicons = lexicons
 const queryTargets = new Map([
   ['com.marginsbible.annotation.listForChapter', 'com.marginsbible.annotation'],
   ['com.marginsbible.annotation.listMine', 'com.marginsbible.annotation'],
+  ['com.marginsbible.annotation.listFollowing', 'com.marginsbible.annotation'],
   ['com.marginsbible.follow.list', 'com.marginsbible.follow'],
   ['com.marginsbible.highlight.listForChapter', 'com.marginsbible.highlight'],
   ['com.marginsbible.profile.getForDids', 'com.marginsbible.profile'],
@@ -328,6 +329,11 @@ const scripts = [
     id: 'xrpc.query:com.marginsbible.annotation.listMine',
     file: 'list-my-annotations.lua',
     description: 'Lists the authenticated caller annotations newest first.',
+  },
+  {
+    id: 'xrpc.query:com.marginsbible.annotation.listFollowing',
+    file: 'list-following-annotations.lua',
+    description: 'Pages through annotations from followed accounts.',
   },
   {
     id: 'xrpc.query:com.marginsbible.follow.list',

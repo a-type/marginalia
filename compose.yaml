@@ -44,6 +44,8 @@ services:
       RUST_LOG: ${HAPPYVIEW_RUST_LOG:-happyview=info,tower_http=info}
       SESSION_SECRET: ${HAPPYVIEW_SESSION_SECRET:?Set HAPPYVIEW_SESSION_SECRET in .env}
       TOKEN_ENCRYPTION_KEY: ${HAPPYVIEW_TOKEN_ENCRYPTION_KEY:?Set HAPPYVIEW_TOKEN_ENCRYPTION_KEY in .env}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     ports:
       - '127.0.0.1:3001:3000'
     volumes:
@@ -83,7 +85,7 @@ services:
       APP_URL: ${APP_URL:-http://127.0.0.1:7654}
       HAPPYVIEW_ADMIN_KEY: ${HAPPYVIEW_ADMIN_KEY:-}
       HAPPYVIEW_BASE_URL: http://happyview:3000/api
-      ANNOTATION_INDEXER_URL: http://annotation-indexer:3000
+      ANNOTATION_INDEXER_URL: ${ANNOTATION_INDEXER_URL:-http://annotation-indexer:3000}
       VITE_HAPPYVIEW_CLIENT_KEY: ${VITE_HAPPYVIEW_CLIENT_KEY:-}
     depends_on:
       - happyview
@@ -99,10 +101,12 @@ services:
     environment:
       HAPPYVIEW_ADMIN_KEY: ${HAPPYVIEW_ADMIN_KEY:-}
       HAPPYVIEW_BASE_URL: http://happyview:3000/api
-      ANNOTATION_INDEXER_URL: http://annotation-indexer:3000
+      ANNOTATION_INDEXER_URL: ${ANNOTATION_INDEXER_URL:-http://annotation-indexer:3000}
     depends_on:
       - happyview
       - annotation-indexer
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
 
 volumes:
   annotation-indexer-data:

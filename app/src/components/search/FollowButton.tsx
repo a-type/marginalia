@@ -4,6 +4,7 @@ import { useRouter } from '@tanstack/react-router';
 import { followProfile } from '../../lib/social/functions';
 import {
   followedProfilesQueryOptions,
+  followingAnnotationsQueryKey,
   followSuggestionsQueryOptions,
 } from '../../queries/social';
 
@@ -23,6 +24,9 @@ export function FollowButton({ did, ...props }: FollowButtonProps) {
         }),
         queryClient.invalidateQueries({
           queryKey: followedProfilesQueryOptions.queryKey,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: followingAnnotationsQueryKey,
         }),
         router.invalidate(),
       ]);

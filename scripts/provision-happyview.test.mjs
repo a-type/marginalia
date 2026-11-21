@@ -79,7 +79,11 @@ it('provisions private indexing hooks before backfill and preserves the chapter 
         call.body.id ===
         'xrpc.query:com.marginsbible.annotation.listForChapter',
     );
-    for (const script of [...hooks, chapterQuery]) {
+    const feedNsid = 'com.marginsbible.annotation.listFollowing';
+    const feedQuery = scriptCalls.find(
+      (call) => call.body.id === `xrpc.query:${feedNsid}`,
+    );
+    for (const script of [...hooks, chapterQuery, feedQuery]) {
       expect(script.body.body).toContain(
         '"http://annotation-indexer.railway.internal:3000"',
       );
@@ -87,6 +91,8 @@ it('provisions private indexing hooks before backfill and preserves the chapter 
     }
     expect(chapterQuery.body.body).toContain('callerDid = caller_did');
     expect(chapterQuery.body.body).not.toContain('db.query');
+    expect(feedQuery.body.body).toContain('callerDid = caller_did');
+    expect(feedQuery.body.body).toContain('/annotations/following');
     expect(
       calls.find(
         (call) =>
@@ -94,6 +100,10 @@ it('provisions private indexing hooks before backfill and preserves the chapter 
           call.body.lexicon_json.id ===
             'com.marginsbible.annotation.listForChapter',
       ).body.target_collection,
+    ).toBe('com.marginsbible.annotation');
+    expect(
+      calls.find((call) => call.body?.lexicon_json?.id === feedNsid).body
+        .target_collection,
     ).toBe('com.marginsbible.annotation');
     const client = calls.find(
       (call) =>
@@ -107,6 +117,7 @@ it('provisions private indexing hooks before backfill and preserves the chapter 
     });
     const clientId = new URL(client.client_id_url);
     expect(clientId.origin).toBe('http://localhost');
+    expect(clientId.searchParams.get('scope')).toContain(`lxm=${feedNsid}`);
     expect(clientId.searchParams.get('redirect_uri')).toBe(
       'http://127.0.0.1:7654/oauth/callback',
     );

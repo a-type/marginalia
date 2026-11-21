@@ -1,19 +1,19 @@
 import { m } from '#/paraglide/messages';
-import { getLocale } from '#/paraglide/runtime';
-import { Box, Button, Chip, Heading, Icon, P, Text } from '@a-type/ui';
+import { Box, Button, Chip, Heading, Icon, Text, Tooltip } from '@a-type/ui';
 import { Link } from '@tanstack/react-router';
 import {
   parseScriptureCitation,
   type BibleReference,
 } from '../../lib/bible/location';
-import { getMostRecentlyVisitedReadingTab } from '../../lib/bible/reading-tabs';
 import { translationShortCode } from '../../lib/bible/manifests';
+import { getMostRecentlyVisitedReadingTab } from '../../lib/bible/reading-tabs';
 import { readStoredTranslationId } from '../../lib/bible/source';
 import { formatVerseId } from '../../lib/bible/verse';
 import { verseHashScrollIntoView } from '../../lib/bible/verse-scroll';
 import type {
   LectionaryDay,
   LectionaryReading,
+  LectionaryReadingType,
   LectionarySection,
 } from '../../lib/lectionary';
 import { useAddReadingTab } from '../app/readingTabs';
@@ -21,41 +21,35 @@ import { useCompatibleTranslations } from '../bible/useCompatibleTranslations';
 import { useReferenceSelections } from '../bible/useReferenceSelections';
 import cls from './LectionaryReadings.module.css';
 
-export function LectionaryReadings({ day }: { day: LectionaryDay }) {
-  const daily = day.sections.find((section) => section.kind === 'daily');
-  const sunday = day.sections.find((section) => section.kind === 'sunday');
+export function LectionaryReadings({
+  day,
+  readingTypes,
+}: {
+  day: LectionaryDay;
+  readingTypes: readonly LectionaryReadingType[];
+}) {
+  const sections = day.sections.filter(
+    (section) =>
+      readingTypes.includes(section.kind) && section.readings.length > 0,
+  );
+  const daily = sections.find((section) => section.kind === 'daily');
+  const sunday = sections.find((section) => section.kind === 'sunday');
   const dailyMatchesSunday =
-    daily !== undefined &&
-    sunday !== undefined &&
-    daily.readings.length > 0 &&
-    sunday.readings.length > 0 &&
-    sameReadings(daily, sunday);
+    daily !== undefined && sunday !== undefined && sameReadings(daily, sunday);
 
   return (
     <Box col gap="lg" aria-live="polite">
-      {day.sections
-        .filter(
-          (section) =>
-            (section.readings.length || section.kind === 'red_letter') &&
-            !(section.kind === 'daily' && dailyMatchesSunday),
-        )
+      {sections
+        .filter((section) => !(section.kind === 'daily' && dailyMatchesSunday))
         .map((section) => (
           <Box render={<section />} col gap key={section.kind}>
-            <Heading emphasis="ambient" render={<h2 />}>
+            <Heading emphasis="ambient" className="@mode-dense" render={<h2 />}>
               {section.kind === 'daily'
                 ? m.lectionary_daily_section()
                 : section.kind === 'red_letter'
                   ? m.lectionary_feast_section()
                   : m.lectionary_sunday_section()}
             </Heading>
-            <Text emphasis="ambient">
-              <time dateTime={section.date}>
-                {new Date(`${section.date}T12:00:00`).toLocaleDateString(
-                  getLocale(),
-                  { dateStyle: 'long' },
-                )}
-              </time>
-            </Text>
             <SectionReadings section={section} />
           </Box>
         ))}
@@ -88,41 +82,49 @@ function sameReadings(
 }
 
 function SectionReadings({ section }: { section: LectionarySection }) {
-  if (!section.readings.length) {
-    return (
-      <P role="status" emphasis="ambient" dim>
-        {m.lectionary_empty()}
-      </P>
-    );
-  }
   const offices = [
     ...new Set(section.readings.map((reading) => reading.office)),
   ];
+  const isDaily = section.kind === 'daily';
+
   return (
     <Box col gap="lg">
-      {offices.map((office) => (
-        <Box col key={office}>
-          {office && office !== 'sunday' && (
-            <Text bold render={<h3 />} emphasis="ambient">
-              {office === 'morning'
-                ? m.lectionary_morning()
-                : office === 'evening'
-                  ? m.lectionary_evening()
-                  : office}
-            </Text>
-          )}
-          <ReadingGroup
-            readings={section.readings.filter(
-              (reading) => reading.office === office,
+      {offices.map((office) => {
+        const dailyOffice =
+          isDaily && (office === 'morning' || office === 'evening')
+            ? office
+            : undefined;
+        return (
+          <Box col key={office}>
+            {!dailyOffice && office && office !== 'sunday' && (
+              <Text bold render={<h3 />} emphasis="ambient">
+                {office === 'morning'
+                  ? m.lectionary_morning()
+                  : office === 'evening'
+                    ? m.lectionary_evening()
+                    : office}
+              </Text>
             )}
-          />
-        </Box>
-      ))}
+            <ReadingGroup
+              readings={section.readings.filter(
+                (reading) => reading.office === office,
+              )}
+              dailyOffice={dailyOffice}
+            />
+          </Box>
+        );
+      })}
     </Box>
   );
 }
 
-function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
+function ReadingGroup({
+  readings,
+  dailyOffice,
+}: {
+  readings: LectionaryReading[];
+  dailyOffice?: 'morning' | 'evening';
+}) {
   const addReadingTab = useAddReadingTab();
   const translation =
     getMostRecentlyVisitedReadingTab()?.translationId ??
@@ -153,13 +155,24 @@ function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
   return (
     <Box col gap>
       <Box gap wrap items="center" render={<ul style={{ margin: 0 }} />}>
+        {dailyOffice && (
+          <Box render={<li />} gap="xs" items="center" key="office-label">
+            <Icon name={dailyOffice === 'morning' ? 'sun' : 'moon'} />
+            <Text bold emphasis="ambient" render={<span />}>
+              {dailyOffice === 'morning'
+                ? m.lectionary_morning_short()
+                : m.lectionary_evening_short()}
+            </Text>
+          </Box>
+        )}
         {readings.map((reading, index) => {
           const target = targets[index];
           const selection = target ? selections[validIndex++] : undefined;
           return (
             <Box
               render={<li />}
-              col
+              col={!dailyOffice}
+              items={dailyOffice ? 'center' : undefined}
               gap="xs"
               key={`${reading.citation}-${index}`}
             >
@@ -173,27 +186,29 @@ function ReadingGroup({ readings }: { readings: LectionaryReading[] }) {
             </Box>
           );
         })}
-        <Button
-          emphasis="light"
-          size="small"
-          disabled={
-            !openable.length ||
-            selections.some((selection) => selection.loading)
-          }
-          onClick={() => {
-            openable.forEach(({ target, verses, translation }, index) => {
-              addReadingTab({
-                translation,
-                book: target.bookId,
-                chapter: target.chapter,
-                pericope: verses,
-                activate: index === 0,
+        <Box render={<li />}>
+          <Button
+            emphasis="light"
+            size="small"
+            disabled={
+              !openable.length ||
+              selections.some((selection) => selection.loading)
+            }
+            onClick={() => {
+              openable.forEach(({ target, verses, translation }, index) => {
+                addReadingTab({
+                  translation,
+                  book: target.bookId,
+                  chapter: target.chapter,
+                  pericope: verses,
+                  activate: index === 0,
+                });
               });
-            });
-          }}
-        >
-          {m.lectionary_open_all_tabs()}
-        </Button>
+            }}
+          >
+            {m.lectionary_open_all_tabs()}
+          </Button>
+        </Box>
       </Box>
     </Box>
   );
@@ -222,37 +237,25 @@ function ReadingLink({
   const addReadingTab = useAddReadingTab();
   if (!target) {
     return (
-      <>
-        <Text>{reading.citation}</Text>
-        <Text emphasis="secondary">{m.lectionary_unresolved()}</Text>
-      </>
-    );
-  }
-  if (!translation && !selection?.loading) {
-    return (
-      <Chip disabled aria-disabled="true">
+      <Text>
         {reading.citation}
-      </Chip>
+        <Tooltip content={m.lectionary_unresolved()}>
+          <Button
+            size="small"
+            emphasis="ghost"
+            aria-label={m.lectionary_unresolved()}
+          >
+            <Icon name="info" />
+          </Button>
+        </Tooltip>
+      </Text>
     );
   }
-  if (!translation || !selection?.verses) {
+  if (!translation || !selection) {
     return (
-      <>
-        <Text>{reading.citation}</Text>
-        <Text
-          role={selection?.unavailable ? 'alert' : 'status'}
-          emphasis="secondary"
-        >
-          {selection?.unavailable
-            ? m.lexicon_passage_unavailable()
-            : m.lexicon_passage_loading()}
-        </Text>
-        {selection?.retry && (
-          <Button size="small" onClick={() => selection.retry?.()}>
-            {m.interlinear_retry()}
-          </Button>
-        )}
-      </>
+      <Tooltip content={m.lexicon_passage_unavailable()}>
+        <Chip aria-disabled="true">{reading.citation}</Chip>
+      </Tooltip>
     );
   }
   const verses = selection.verses;
@@ -295,7 +298,8 @@ function ReadingLink({
       }
     >
       {reading.citation}
-      {translation !== currentTranslation && ` (${translationShortCode(translation)})`}
+      {translation !== currentTranslation &&
+        ` (${translationShortCode(translation)})`}
       {reading.isAlternative && (
         <Text emphasis="ambient" dim className={cls.alt}>
           {m.lectionary_alternative()}

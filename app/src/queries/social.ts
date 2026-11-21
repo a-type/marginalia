@@ -1,5 +1,6 @@
-import { queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
+import { listFollowingAnnotationsPage } from '../lib/annotations/functions';
 import {
   getCurrentBlueskyProfile,
   getCurrentProfile,
@@ -26,6 +27,19 @@ export const followedProfilesQueryOptions = queryOptions({
   queryKey: ['social', 'followed-profiles'],
   queryFn: listFollowedProfiles,
 });
+
+export const followingAnnotationsQueryKey = ['social', 'following-annotations'];
+
+export const followingAnnotationsQueryOptions = (accountDid: string) =>
+  infiniteQueryOptions({
+    queryKey: [...followingAnnotationsQueryKey, accountDid],
+    queryFn: ({ pageParam }) =>
+      listFollowingAnnotationsPage({ data: { cursor: pageParam } }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage, _pages, _lastPageParam, pageParams) =>
+      pageParams.includes(lastPage.cursor) ? undefined : lastPage.cursor,
+    staleTime: 30_000,
+  });
 
 export const currentProfileQueryOptions = queryOptions({
   queryKey: ['social', 'current-profile'],

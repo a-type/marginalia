@@ -46,6 +46,8 @@ export interface LectionarySection {
   readings: LectionaryReading[];
 }
 
+export type LectionaryReadingType = LectionarySection['kind'];
+
 export interface LectionaryReading {
   citation: string;
   office: string;

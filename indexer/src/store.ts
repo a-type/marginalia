@@ -37,6 +37,30 @@ export const chapterQuerySchema = z.object({
   chapter: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
 });
 
+const feedCursorSchema = z.tuple([
+  z.number(),
+  z.string().startsWith('at://').max(2048),
+]);
+
+const followingQuerySchema = z.object({
+  callerDid: z.string().refine(isValidDid, 'Invalid caller DID'),
+  limit: z.number().int().min(1).max(100).default(20),
+  cursor: z
+    .string()
+    .min(1)
+    .max(4096)
+    .transform((value) => feedCursorSchema.parse(JSON.parse(value)))
+    .optional(),
+});
+
+function readAnnotationRow(row: { uri?: unknown; record?: unknown }) {
+  if (typeof row.record !== 'string' || typeof row.uri !== 'string') {
+    throw new Error('Invalid indexed annotation');
+  }
+  const record: unknown = JSON.parse(row.record);
+  return { ...Annotation.$parse(record), uri: row.uri };
+}
+
 type RecordEvent = z.infer<typeof eventSchema>;
 
 export class IndexStore {
@@ -56,6 +80,8 @@ export class IndexStore {
       );
       CREATE INDEX IF NOT EXISTS annotations_by_author
         ON annotations(author_did, created_at DESC, uri DESC);
+      CREATE INDEX IF NOT EXISTS annotation_feed_by_author
+        ON annotations(author_did, julianday(created_at) DESC, uri DESC);
       CREATE TABLE IF NOT EXISTS annotation_chapters (
         book_id TEXT NOT NULL,
         chapter INTEGER NOT NULL,
@@ -195,13 +221,36 @@ export class IndexStore {
          ORDER BY a.created_at DESC, a.uri ASC`,
       )
       .all(query.callerDid, query.callerDid, query.bookId, query.chapter);
+    return { records: rows.map(readAnnotationRow) };
+  }
+
+  listFollowing(input: unknown) {
+    const { callerDid, limit, cursor } = followingQuerySchema.parse(input);
+    if (!this.ready) throw new IndexNotReadyError();
+    const rows = this.db
+      .prepare(
+        `WITH followed_authors(did) AS (
+           SELECT DISTINCT subject_did FROM follows
+           WHERE author_did = ? AND subject_did <> ?
+         )
+         SELECT a.uri, a.record, julianday(a.created_at) AS instant
+         FROM followed_authors f
+         CROSS JOIN annotations a ON a.author_did = f.did
+         WHERE julianday(a.created_at) IS NOT NULL
+           AND EXISTS (
+             SELECT 1 FROM annotation_chapters c WHERE c.annotation_uri = a.uri
+           )
+           ${cursor ? 'AND (julianday(a.created_at), a.uri) < (?, ?)' : ''}
+         ORDER BY instant DESC, a.uri DESC
+         LIMIT ?`,
+      )
+      .all(callerDid, callerDid, ...(cursor ?? []), limit + 1);
+    const records = rows.slice(0, limit).map(readAnnotationRow);
+    const last = rows[limit - 1];
     return {
-      records: rows.map((row) => {
-        if (typeof row.record !== 'string' || typeof row.uri !== 'string') {
-          throw new Error('Invalid indexed annotation');
-        }
-        const record: unknown = JSON.parse(row.record);
-        return { ...Annotation.$parse(record), uri: row.uri };
+      records,
+      ...(rows.length > limit && {
+        cursor: JSON.stringify([last.instant, last.uri]),
       }),
     };
   }

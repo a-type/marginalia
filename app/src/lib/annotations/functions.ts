@@ -43,6 +43,12 @@ const listMyAnnotationsSchema = z.object({
   cursor: z.string().optional(),
 });
 
+const listFollowingAnnotationsSchema = z.object({
+  cursor: z.string().min(1).max(4096).optional(),
+});
+
+type FollowedAnnotation = AnnotationRecord & { authorDid: string };
+
 const remoteAnnotationSchema = z
   .object({
     uri: z.string(),
@@ -108,7 +114,7 @@ export async function listChapterAnnotations({
       chapter: String(location.chapter),
     },
   );
-  return parseAnnotationRecords(page.records, location);
+  return sortAnnotationSnapshot(parseAnnotationRecords(page.records, location));
 }
 
 export async function listMyAnnotationsPage({
@@ -128,16 +134,35 @@ export async function listMyAnnotationsPage({
       ...(cursor ? { cursor } : {}),
     },
   );
-  const snapshot = parseAnnotationRecords(page.records, undefined, session.did);
+  const snapshot = sortAnnotationSnapshot(
+    parseAnnotationRecords(page.records, undefined, session.did),
+  );
   return { ...snapshot, cursor: page.cursor };
+}
+
+export async function listFollowingAnnotationsPage({
+  data,
+}: {
+  data: z.input<typeof listFollowingAnnotationsSchema>;
+}): Promise<{ annotations: FollowedAnnotation[]; cursor?: string }> {
+  const { cursor } = listFollowingAnnotationsSchema.parse(data);
+  const session = await getHappyViewSession();
+  if (!session) return { annotations: [] };
+
+  const page = await fetchXrpcRecordPage(
+    session,
+    marginsbible.annotation.listFollowing.$nsid,
+    cursor ? { cursor } : {},
+  );
+  return { ...parseAnnotationRecords(page.records), cursor: page.cursor };
 }
 
 function parseAnnotationRecords(
   candidates: unknown[],
   location?: BibleLocation,
   expectedAuthorDid?: string,
-): ChapterAnnotationSnapshot {
-  const annotations = new Map<string, AnnotationRecord>();
+) {
+  const annotations = new Map<string, FollowedAnnotation>();
 
   for (const candidate of candidates) {
     const parsed = remoteAnnotationSchema.safeParse(candidate);
@@ -199,9 +224,11 @@ function parseAnnotationRecords(
       }
       const parsedVerse = parseVerseId(verseId);
       if (
-        !location ||
-        (parsedVerse.bookId === location.bookId &&
-          parsedVerse.chapter === location.chapter)
+        Number.isSafeInteger(parsedVerse.chapter) &&
+        Number.isSafeInteger(parsedVerse.verse) &&
+        (!location ||
+          (parsedVerse.bookId === location.bookId &&
+            parsedVerse.chapter === location.chapter))
       ) {
         verses.set(verseId, parsedVerse);
       }
@@ -234,8 +261,13 @@ function parseAnnotationRecords(
   }
 
   return {
-    annotations: [...annotations.values()].sort((left, right) =>
-      right.createdAt.localeCompare(left.createdAt),
-    ),
+    annotations: [...annotations.values()],
   };
+}
+
+function sortAnnotationSnapshot(snapshot: ChapterAnnotationSnapshot) {
+  snapshot.annotations.sort((left, right) =>
+    right.createdAt.localeCompare(left.createdAt),
+  );
+  return snapshot;
 }

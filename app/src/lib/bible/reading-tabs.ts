@@ -11,6 +11,7 @@ export interface ReadingTab extends BibleLocation {
   createdAt: number;
   visitedAt: number;
   verses?: string;
+  annotation?: string;
   readonly pericope?: string;
   position?: BibleLocation;
   scrollProgress?: number;
@@ -78,7 +79,12 @@ export function parseReadingTabsState(value: unknown): ReadingTabsState {
         createdAt: tab.createdAt,
         visitedAt: tab.visitedAt,
         ...(normalizeVerseSelection(tab.verses)
-          ? { verses: normalizeVerseSelection(tab.verses) }
+          ? {
+              verses: normalizeVerseSelection(tab.verses),
+              ...(typeof tab.annotation === 'string' && tab.annotation
+                ? { annotation: tab.annotation }
+                : {}),
+            }
           : {}),
         ...(normalizeVerseSelection(tab.pericope)
           ? { pericope: normalizeVerseSelection(tab.pericope) }
@@ -104,7 +110,12 @@ export function getMostRecentlyVisitedReadingTab(): ReadingTab | undefined {
 
 export function getReadingTabDestination(tab: ReadingTab) {
   const search = {
-    ...(tab.verses ? { verses: tab.verses } : {}),
+    ...(tab.verses
+      ? {
+          verses: tab.verses,
+          ...(tab.annotation ? { annotation: tab.annotation } : {}),
+        }
+      : {}),
     ...(tab.pericope ? { pericope: tab.pericope } : {}),
   };
   return {
@@ -127,17 +138,23 @@ export function getReadingTabDestination(tab: ReadingTab) {
 
 export function createReadingTab(
   translationId: string,
-  location: BibleLocation & { verses?: string; pericope?: string } = {
+  location: BibleLocation & {
+    verses?: string;
+    pericope?: string;
+    annotation?: string;
+  } = {
     bookId: 'GEN',
     chapter: 1,
   },
 ): ReadingTab {
   const now = Date.now();
+  const verses = normalizeVerseSelection(location.verses) || undefined;
   const tab: ReadingTab = {
     id: crypto.randomUUID(),
     translationId,
     ...location,
-    verses: normalizeVerseSelection(location.verses) || undefined,
+    verses,
+    annotation: verses ? location.annotation : undefined,
     pericope: normalizeVerseSelection(location.pericope) || undefined,
     createdAt: now,
     visitedAt: now,
@@ -171,6 +188,7 @@ export function storeReadingTabLocation(
   location: BibleLocation,
   translationId: string,
   verses?: string,
+  annotation?: string,
 ): void {
   if (!activeReadingTabId) return;
   const state = readReadingTabsState();
@@ -183,15 +201,15 @@ export function storeReadingTabLocation(
         tab.bookId === location.bookId &&
         tab.chapter === location.chapter &&
         tab.translationId === translationId;
+      const keepVerses =
+        sameLocation &&
+        tab.verses === (normalizeVerseSelection(verses) || undefined);
       return {
         ...tab,
         ...location,
         translationId,
-        verses:
-          sameLocation &&
-          tab.verses === (normalizeVerseSelection(verses) || undefined)
-            ? tab.verses
-            : undefined,
+        verses: keepVerses ? tab.verses : undefined,
+        annotation: keepVerses && tab.annotation ? annotation : undefined,
         position: sameLocation ? tab.position : undefined,
         scrollProgress: sameLocation ? tab.scrollProgress : undefined,
         visitedAt: Date.now(),

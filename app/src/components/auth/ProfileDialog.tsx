@@ -13,6 +13,7 @@ import { followProfile, saveProfile } from '../../lib/social/functions';
 import {
   currentProfileQueryOptions,
   followedProfilesQueryOptions,
+  followingAnnotationsQueryKey,
   followSuggestionsQueryOptions,
   profileSetupQueryOptions,
 } from '../../queries/social';
@@ -48,6 +49,9 @@ export function ProfileDialog({ open, setOpen }: ProfileDialogProps) {
         }),
         queryClient.invalidateQueries({
           queryKey: followedProfilesQueryOptions.queryKey,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: followingAnnotationsQueryKey,
         }),
       ]);
     },

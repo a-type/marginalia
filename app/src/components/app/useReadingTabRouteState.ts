@@ -50,6 +50,7 @@ export function useReadingTabRouteState(): string | undefined {
         bookId,
         chapter: Number(chapterValue),
         verses: search.verses,
+        annotation: search.annotation,
         pericope: search.pericope,
       });
     pendingTab.current = { historyKey, tabId: tab.id };

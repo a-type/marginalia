@@ -68,6 +68,66 @@ afterEach(() => {
 });
 
 describe('annotation index', () => {
+  it('pages only through followed authors by creation time and URI, even when new posts arrive', () => {
+    const index = store();
+    ready(index);
+    const secondFriend = 'did:plc:second';
+    const newest = annotation(
+      friend,
+      'newest',
+      ['EXO/2:1'],
+      '2026-10-29T11:30:00-01:00',
+    );
+    const tieA = annotation(friend, 'a', ['GEN/1:1', 'GEN/2:1']);
+    const tieB = annotation(secondFriend, 'b');
+    const oldest = annotation(
+      secondFriend,
+      'oldest',
+      ['GEN/1:1'],
+      '2026-10-29T12:15:00+01:00',
+    );
+    for (const event of [
+      newest,
+      oldest,
+      tieA,
+      tieB,
+      annotation(me),
+      annotation(stranger),
+    ]) {
+      index.ingest(event);
+    }
+    for (const event of [
+      follow(),
+      follow(friend, 'duplicate'),
+      follow(secondFriend, 'second'),
+      follow(me, 'self'),
+    ]) {
+      index.ingest(event);
+    }
+    expect(index.listFollowing({ callerDid: stranger })).toEqual({
+      records: [],
+    });
+    const first = index.listFollowing({ callerDid: me, limit: 2 });
+    expect(first.records.map(({ uri }) => uri)).toEqual([newest.uri, tieB.uri]);
+    expect(first.cursor).toBeDefined();
+    index.ingest(
+      annotation(friend, 'new', ['GEN/1:1'], '2026-10-30T12:00:00Z'),
+    );
+    const second = index.listFollowing({
+      callerDid: me,
+      limit: 2,
+      cursor: first.cursor,
+    });
+    expect(second.records.map(({ uri }) => uri)).toEqual([
+      tieA.uri,
+      oldest.uri,
+    ]);
+    expect(second.cursor).toBeUndefined();
+    expect(() =>
+      index.listFollowing({ callerDid: me, cursor: '[]' }),
+    ).toThrow();
+  });
+
   it('requires a completed initial rebuild, not merely an empty database', () => {
     const index = store();
     index.ingest(annotation());

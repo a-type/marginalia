@@ -49,6 +49,9 @@ export function createIndexerServer(store: IndexStore) {
         case '/annotations/chapter':
           send(200, store.listChapter(input));
           break;
+        case '/annotations/following':
+          send(200, store.listFollowing(input));
+          break;
         case '/rebuild/start':
           send(200, { id: store.startRebuild() });
           break;

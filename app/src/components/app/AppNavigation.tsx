@@ -68,14 +68,6 @@ export function AppNavigation() {
         >
           <Icon name="search" />
         </NavTab>
-        <NavTab
-          tooltip={m.app_tab_social()}
-          location="/social"
-          active={pathname === '/social'}
-          aria-label={m.app_tab_social()}
-        >
-          <Icon name="globe" />
-        </NavTab>
 
         {readingTabs.tabs.map((tab) => {
           const destination = getReadingTabDestination(tab);

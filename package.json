@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --parallel --filter @marginsbible/app --filter @marginsbible/indexer run dev",
+    "dev": "pnpm --filter @marginsbible/app run dev",
+    "backend": "docker compose up --build -d happyview annotation-indexer",
     "usfm:download": "node ./scripts/download-usfm.mjs",
     "happyview:provision": "dotenv -e .env -- node ./scripts/provision-happyview.mjs",
     "lint": "eslint",

@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as SearchRouteImport } from './routes/search'
-import { Route as SocialRouteImport } from './routes/social'
 import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
 import { Route as TranslationBookChapterRouteImport } from './routes/$translation.$book.$chapter'
 
@@ -31,11 +30,6 @@ const SearchRoute = SearchRouteImport.update({
   path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SocialRoute = SocialRouteImport.update({
-  id: '/social',
-  path: '/social',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const OauthCallbackRoute = OauthCallbackRouteImport.update({
   id: '/oauth/callback',
   path: '/oauth/callback',
@@ -51,7 +45,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/search': typeof SearchRoute
-  '/social': typeof SocialRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/$translation/$book/$chapter': typeof TranslationBookChapterRoute
 }
@@ -59,7 +52,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/search': typeof SearchRoute
-  '/social': typeof SocialRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/$translation/$book/$chapter': typeof TranslationBookChapterRoute
 }
@@ -68,7 +60,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/search': typeof SearchRoute
-  '/social': typeof SocialRoute
   '/oauth/callback': typeof OauthCallbackRoute
   '/$translation/$book/$chapter': typeof TranslationBookChapterRoute
 }
@@ -78,7 +69,6 @@ export interface FileRouteTypes {
     | '/'
     | '/health'
     | '/search'
-    | '/social'
     | '/oauth/callback'
     | '/$translation/$book/$chapter'
   fileRoutesByTo: FileRoutesByTo
@@ -86,7 +76,6 @@ export interface FileRouteTypes {
     | '/'
     | '/health'
     | '/search'
-    | '/social'
     | '/oauth/callback'
     | '/$translation/$book/$chapter'
   id:
@@ -94,7 +83,6 @@ export interface FileRouteTypes {
     | '/'
     | '/health'
     | '/search'
-    | '/social'
     | '/oauth/callback'
     | '/$translation/$book/$chapter'
   fileRoutesById: FileRoutesById
@@ -103,7 +91,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HealthRoute: typeof HealthRoute
   SearchRoute: typeof SearchRoute
-  SocialRoute: typeof SocialRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
   TranslationBookChapterRoute: typeof TranslationBookChapterRoute
 }
@@ -131,13 +118,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/social': {
-      id: '/social'
-      path: '/social'
-      fullPath: '/social'
-      preLoaderRoute: typeof SocialRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/oauth/callback': {
       id: '/oauth/callback'
       path: '/oauth/callback'
@@ -159,7 +139,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HealthRoute: HealthRoute,
   SearchRoute: SearchRoute,
-  SocialRoute: SocialRoute,
   OauthCallbackRoute: OauthCallbackRoute,
   TranslationBookChapterRoute: TranslationBookChapterRoute,
 }

@@ -5,7 +5,7 @@ import { m } from '#/paraglide/messages';
 import { followSuggestionsQueryOptions } from '../../queries/social';
 import { currentUserDidQueryOptions } from '../../queries/user';
 import { FollowButton } from '../search/FollowButton';
-import cls from './SocialSidebar.module.css';
+import cls from './FollowSuggestions.module.css';
 
 export interface Person {
   authorDid: string;
