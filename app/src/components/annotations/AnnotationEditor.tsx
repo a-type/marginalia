@@ -5,6 +5,7 @@ import { m } from '#/paraglide/messages';
 import z from 'zod';
 import { createAnnotation } from '../../lib/annotations/create';
 import type { VerseId } from '../../lib/bible/verse';
+import { readerRoute } from './AnnotationPane';
 import cls from './AnnotationEditor.module.css';
 
 export interface AnnotationEditorProps {
@@ -34,10 +35,15 @@ export function AnnotationEditor({
   onSaved,
 }: AnnotationEditorProps) {
   const dbClient = useDbClient();
+  const { translationId } = readerRoute.useLoaderData();
   const submit = async ({ comment }: { comment: string }) => {
     if (!comment.trim()) return;
 
-    await createAnnotation(dbClient, { verses, comment });
+    await createAnnotation(dbClient, {
+      verses,
+      comment,
+      translation: translationId,
+    });
     await onSaved();
   };
 

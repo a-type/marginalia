@@ -337,6 +337,22 @@ describe('reading tabs', () => {
     expect(readReadingTabsState().tabs[0].verses).toBeUndefined();
   });
 
+  it('retains the open annotation when switching translations at the same passage', () => {
+    const tab = createReadingTab('eng_webu', {
+      bookId: 'JHN',
+      chapter: 3,
+      verses: 'JHN/3:2',
+      annotation: 'note',
+    });
+    storeReadingTabLocation(tab.id, tab, 'eng_asv', 'JHN/3:2', 'note');
+    expect(
+      getReadingTabDestination(readReadingTabsState().tabs[0]),
+    ).toMatchObject({
+      params: { translation: 'eng_asv' },
+      search: { verses: 'JHN/3:2', annotation: 'note' },
+    });
+  });
+
   it('normalizes supplied selections before storing them', () => {
     const tab = createReadingTab('eng_webu', {
       bookId: 'JHN',

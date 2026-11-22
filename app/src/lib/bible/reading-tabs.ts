@@ -197,12 +197,11 @@ export function storeReadingTabLocation(
   writeReadingTabsState({
     tabs: state.tabs.map((tab) => {
       if (tab.id !== activeReadingTabId) return tab;
-      const sameLocation =
-        tab.bookId === location.bookId &&
-        tab.chapter === location.chapter &&
-        tab.translationId === translationId;
+      const samePassage =
+        tab.bookId === location.bookId && tab.chapter === location.chapter;
+      const sameLocation = samePassage && tab.translationId === translationId;
       const keepVerses =
-        sameLocation &&
+        samePassage &&
         tab.verses === (normalizeVerseSelection(verses) || undefined);
       return {
         ...tab,

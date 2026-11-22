@@ -138,6 +138,8 @@
   "annotation_color_none": "Keine",
   "annotation_comment_label": "Kommentar",
   "annotation_comment_placeholder": "Kommentar hinzufügen",
+  "annotation_translation_note": "Anmerkung aus {translation}",
+  "annotation_translation_view": "Ansehen",
   "annotation_submit": "Anmerkung speichern",
   "annotation_validation": "Wähle eine Markierungsfarbe oder gib einen Kommentar ein.",
   "annotation_indicator": "Anmerkung öffnen",

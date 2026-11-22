@@ -50,6 +50,7 @@ async function synchronizeAnnotations(dbClient: DbClient, ownerDid: string) {
           rkey: annotation.rkey,
           verses: annotation.verses,
           comment: annotation.comment,
+          translation: annotation.translation?.toLowerCase(),
           createdAt: annotation.createdAt,
         },
       });

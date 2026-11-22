@@ -18,6 +18,7 @@ export interface AnnotationRecord {
   chapterKeys: string[];
   verses: VerseId[];
   comment: string;
+  translation?: string;
   createdAt: string;
   status: AnnotationStatus;
   syncError: string | null;

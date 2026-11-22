@@ -24,6 +24,7 @@ const uploadAnnotationSchema = z.object({
     .array(z.string().refine(isValidVerseId, 'Invalid annotation verse'))
     .min(1, 'Invalid annotation verses'),
   comment: z.string().trim().min(1, 'Annotation requires a comment'),
+  translation: z.string().toLowerCase().optional(),
   createdAt: z
     .string()
     .refine(
@@ -69,6 +70,7 @@ export async function uploadAnnotation({
   const record = marginsbible.annotation.$build({
     verses: input.verses.map((id) => ({ id })),
     comment: input.comment,
+    translation: input.translation,
     createdAt: input.createdAt as Annotation['createdAt'],
   });
   const response = await client.putRecord(record, input.rkey);
@@ -254,6 +256,7 @@ function parseAnnotationRecords(
       chapterKeys: getAnnotationChapterKeys(orderedVerses),
       verses: orderedVerses,
       comment,
+      translation: record.translation?.toLowerCase(),
       createdAt: record.createdAt,
       status: 'synced',
       syncError: null,

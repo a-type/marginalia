@@ -30,6 +30,11 @@ type Main = { $type: "com.marginsbible.annotation";
   "comment":string;
 
   /**
+   * The lowercase translation code used when creating the annotation.
+   */
+  "translation"?:string;
+
+  /**
    * Client-side creation time
    */
   "createdAt":l.DatetimeString };
@@ -37,7 +42,7 @@ type Main = { $type: "com.marginsbible.annotation";
 export type { Main };
 
 /** An individual comment on a group of verses */
-const main = /*#__PURE__*/ l.record<"tid", Main>("tid", $nsid, /*#__PURE__*/ l.object({"commentaryId":/*#__PURE__*/ l.optional(/*#__PURE__*/ l.ref<MarginsbibleCommentary.Main>((() => MarginsbibleCommentary.main) as any)),"verses":/*#__PURE__*/ l.array(/*#__PURE__*/ l.ref<VerseRef>((() => verseRef) as any), ),"comment":/*#__PURE__*/ l.string(),"createdAt":/*#__PURE__*/ l.string({"format":"datetime"})}));
+const main = /*#__PURE__*/ l.record<"tid", Main>("tid", $nsid, /*#__PURE__*/ l.object({"commentaryId":/*#__PURE__*/ l.optional(/*#__PURE__*/ l.ref<MarginsbibleCommentary.Main>((() => MarginsbibleCommentary.main) as any)),"verses":/*#__PURE__*/ l.array(/*#__PURE__*/ l.ref<VerseRef>((() => verseRef) as any), ),"comment":/*#__PURE__*/ l.string(),"translation":/*#__PURE__*/ l.optional(/*#__PURE__*/ l.string()),"createdAt":/*#__PURE__*/ l.string({"format":"datetime"})}));
 
 export { main };
 

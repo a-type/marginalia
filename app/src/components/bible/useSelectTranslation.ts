@@ -111,6 +111,9 @@ export function useSelectTranslation({
         }),
         search: {
           ...(selectedExists ? { verses: search.verses } : {}),
+          ...(selectedExists && search.annotation
+            ? { annotation: search.annotation }
+            : {}),
           ...(search.pericope ? { pericope: search.pericope } : {}),
         },
       });

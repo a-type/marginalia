@@ -149,6 +149,8 @@
   "annotation_color_none": "None",
   "annotation_comment_label": "Comment",
   "annotation_comment_placeholder": "Add a comment",
+  "annotation_translation_note": "Annotated from {translation}",
+  "annotation_translation_view": "View",
   "annotation_submit": "Save annotation",
   "annotation_validation": "Choose a highlight color or enter a comment.",
   "annotation_indicator": "Open annotation",

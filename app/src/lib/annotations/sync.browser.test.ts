@@ -72,6 +72,7 @@ describe('requestAnnotationSync', () => {
       chapterKeys: ['GEN/1'],
       verses: ['GEN/1:2'],
       comment: 'Created offline',
+      translation: 'eng_webu',
       createdAt: '2026-10-01T00:00:00.000Z',
       status: 'pending',
       syncError: null,
@@ -102,7 +103,10 @@ describe('requestAnnotationSync', () => {
       status: 'uploaded',
     });
     expect(uploadAnnotation).toHaveBeenCalledWith({
-      data: expect.objectContaining({ verses: ['GEN/1:2'] }),
+      data: expect.objectContaining({
+        verses: ['GEN/1:2'],
+        translation: 'eng_webu',
+      }),
     });
     expect(collections.annotations.has(localId)).toBe(false);
     expect(collections.annotations.has(firstPage.annotations[0].id)).toBe(true);

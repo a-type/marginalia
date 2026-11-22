@@ -25,6 +25,7 @@ describe('creating annotations for ranges', () => {
     const annotation = await createAnnotation(client, {
       verses,
       comment: 'A cross-chapter note',
+      translation: 'ENG_WEBU',
     });
     expect(annotation).toMatchObject({
       bookId: 'JHN',
@@ -32,6 +33,7 @@ describe('creating annotations for ranges', () => {
       chapterKeys: ['JHN/3', 'JHN/4'],
       verses,
       comment: 'A cross-chapter note',
+      translation: 'eng_webu',
     });
 
     const restored = new DbClient();
@@ -39,6 +41,9 @@ describe('creating annotations for ranges', () => {
     const collections = getAnnotationCollections(restored);
     await ensureAnnotationCollectionReady(collections.annotations);
     await collections.annotations.utils.loadAll();
-    expect(collections.annotations.get(annotation.id)?.verses).toEqual(verses);
+    expect(collections.annotations.get(annotation.id)).toMatchObject({
+      verses,
+      translation: 'eng_webu',
+    });
   });
 });

@@ -16,8 +16,10 @@ import {
   storeReadingTabScrollPosition,
 } from '../../lib/bible/reading-tabs';
 import { normalizeVerseSelection } from '../../lib/bible/selection';
+import type { AnnotationRecord } from '../../lib/annotations/collections';
 import type * as BibleSource from '../../lib/bible/source';
 import type * as TranslationQueries from '../../queries/translations';
+import { AnnotationView } from '../annotations/AnnotationView';
 import { BibleSearch } from '../search/BibleSearch';
 import { useSelectTranslation } from './useSelectTranslation';
 
@@ -74,6 +76,7 @@ async function renderNavigation(
   initialUrl: string,
   home: ReactNode,
   activeReadingTabId?: string,
+  reader?: ReactNode,
 ) {
   const rootRoute = createRootRoute();
   const homeRoute = createRoute({
@@ -87,8 +90,14 @@ async function renderNavigation(
     validateSearch: (search) => ({
       verses: normalizeVerseSelection(search.verses),
       pericope: normalizeVerseSelection(search.pericope),
+      annotation:
+        typeof search.annotation === 'string' ? search.annotation : undefined,
     }),
-    component: SwitchTranslation,
+    loader: ({ params }) => ({
+      location: { bookId: 'JHN' as const, chapter: 3 },
+      translationId: params.translation,
+    }),
+    component: () => reader ?? createElement(SwitchTranslation),
   });
   const history = createMemoryHistory({ initialEntries: [initialUrl] });
   if (activeReadingTabId) history.replace(initialUrl, { activeReadingTabId });
@@ -123,6 +132,118 @@ async function renderNavigation(
 }
 
 describe('selection navigation', () => {
+  it.each([undefined, 'ENG_TEST', 'bad code', 'eng_missing'])(
+    'does not show a source translation note for %s',
+    async (translation) => {
+      fetchManifest.mockRejectedValue(new Error('Translation unavailable'));
+      const annotation: AnnotationRecord = {
+        id: 'note',
+        rkey: 'note',
+        uri: null,
+        cid: null,
+        authorDid: null,
+        bookId: 'JHN',
+        chapter: 3,
+        chapterKeys: ['JHN/3'],
+        verses: ['JHN/3:2'],
+        comment: 'My note',
+        translation,
+        createdAt: '2026-10-01T00:00:00.000Z',
+        status: 'pending',
+        syncError: null,
+      };
+      const view = await renderNavigation(
+        '/eng_test/JHN/3?verses=JHN%2F3%3A2&annotation=note',
+        null,
+        undefined,
+        createElement(AnnotationView, {
+          annotation,
+          onAdd: () => {},
+          onClose: () => {},
+        }),
+      );
+      try {
+        await expect.element(page.getByText('My note')).toBeVisible();
+        if (translation === 'eng_missing') {
+          await expect
+            .poll(() => fetchManifest)
+            .toHaveBeenCalledWith('eng_missing');
+        } else {
+          expect(fetchManifest).not.toHaveBeenCalled();
+        }
+        await expect
+          .element(page.getByRole('button', { name: 'View' }))
+          .not.toBeInTheDocument();
+      } finally {
+        view.cleanup();
+      }
+    },
+  );
+
+  it('shows the source translation and switches the current tab while keeping the open annotation', async () => {
+    const savedTabs = localStorage.getItem('margins:reading-tabs');
+    localStorage.removeItem('margins:reading-tabs');
+    const tab = createReadingTab('eng_test', {
+      bookId: 'JHN',
+      chapter: 3,
+      verses: 'JHN/3:2',
+      annotation: 'note',
+    });
+    const annotation: AnnotationRecord = {
+      id: 'note',
+      rkey: 'note',
+      uri: null,
+      cid: null,
+      authorDid: null,
+      bookId: 'JHN',
+      chapter: 3,
+      chapterKeys: ['JHN/3'],
+      verses: ['JHN/3:2'],
+      comment: 'My note',
+      translation: 'ENG_OTHER',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      status: 'pending',
+      syncError: null,
+    };
+    fetchManifest.mockResolvedValue({
+      id: 'eng_other',
+      title: 'Other translation',
+      books: [{ id: 'JHN', title: 'John', chapters: 3 }],
+    });
+    fetchSource.mockResolvedValue('\\id JHN\n\\c 3\n\\p \\v 2 Two');
+    const view = await renderNavigation(
+      '/eng_test/JHN/3?verses=JHN%2F3%3A2&annotation=note',
+      null,
+      tab.id,
+      createElement(AnnotationView, {
+        annotation,
+        onAdd: () => {},
+        onClose: () => {},
+      }),
+    );
+    try {
+      await expect
+        .element(page.getByText('Annotated from Other translation'))
+        .toBeVisible();
+      await page.getByRole('button', { name: 'View' }).click();
+      await expect
+        .poll(() => view.router.state.location.pathname)
+        .toBe('/eng_other/JHN/3');
+      expect(view.router.state.location.search).toMatchObject({
+        verses: 'JHN/3:2',
+        annotation: 'note',
+      });
+      expect(view.router.state.location.state.activeReadingTabId).toBe(tab.id);
+      await expect
+        .element(page.getByText('Annotated from Other translation'))
+        .not.toBeInTheDocument();
+    } finally {
+      view.cleanup();
+      if (savedTabs === null) localStorage.removeItem('margins:reading-tabs');
+      else localStorage.setItem('margins:reading-tabs', savedTabs);
+    }
+  });
+
   it('opens a search result with its full verse ID', async () => {
     const view = await renderNavigation(
       '/',

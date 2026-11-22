@@ -28,6 +28,10 @@
             "type": "string",
             "description": "Supports markdown with extensions."
           },
+          "translation": {
+            "type": "string",
+            "description": "The lowercase translation code used when creating the annotation."
+          },
           "createdAt": {
             "type": "string",
             "format": "datetime",

@@ -4,6 +4,7 @@ import {
   listChapterAnnotations,
   listFollowingAnnotationsPage,
   listMyAnnotationsPage,
+  uploadAnnotation,
 } from './functions';
 
 const {
@@ -90,6 +91,7 @@ describe('chapter annotation records', () => {
       $type: 'com.marginsbible.annotation',
       verses: [{ id: 'GEN/1:1' }],
       comment: 'A note',
+      translation: 'ENG_WEBU',
       createdAt,
     };
     getHappyViewSession.mockResolvedValue({ did });
@@ -106,8 +108,31 @@ describe('chapter annotation records', () => {
       authorDid: did,
       chapterKeys: ['GEN/1'],
       comment: 'A note',
+      translation: 'eng_webu',
       createdAt,
     });
+  });
+
+  it('uploads a lowercase translation and supports older records without one', async () => {
+    const putRecord = vi.fn().mockResolvedValue({
+      body: { uri: 'at://example', cid: 'cid' },
+    });
+    getAuthenticatedHappyViewClient.mockResolvedValue({
+      client: { putRecord },
+    });
+    const data = {
+      rkey: '3jzfcijpj2z2a',
+      verses: ['GEN/1:1'],
+      comment: 'A note',
+      createdAt: '2026-09-30T12:00:00.000Z',
+    };
+
+    await uploadAnnotation({ data: { ...data, translation: 'ENG_WEBU' } });
+    expect(putRecord.mock.calls[0][0]).toMatchObject({
+      translation: 'eng_webu',
+    });
+    await uploadAnnotation({ data });
+    expect(putRecord.mock.calls[1][0].translation).toBeUndefined();
   });
 
   it('lists only caller annotations and forwards its page cursor', async () => {

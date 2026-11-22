@@ -1,8 +1,13 @@
-import { Box, Button, Dialog, Icon } from '@a-type/ui';
+import { Box, Button, Dialog, Icon, Text } from '@a-type/ui';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { m } from '#/paraglide/messages';
 import type { AnnotationRecord } from '../../lib/annotations/collections';
+import { isTranslationId } from '../../lib/bible/source';
+import { readerManifestQueryOptions } from '../../queries/translations';
+import { useSelectTranslation } from '../bible/useSelectTranslation';
+import { readerRoute } from './AnnotationPane';
 import cls from './AnnotationView.module.css';
 
 export interface AnnotationViewProps {
@@ -71,6 +76,7 @@ export function AnnotationView({
             </Button>
           </Box>
         </Box>
+        <AnnotationTranslationNote translation={annotation.translation} />
         <span className={cls.comment}>{annotation.comment}</span>
       </Box>
       {onDelete && (
@@ -101,6 +107,46 @@ export function AnnotationView({
             </Dialog.Actions>
           </Dialog.Content>
         </Dialog>
+      )}
+    </>
+  );
+}
+
+function AnnotationTranslationNote({ translation }: { translation?: string }) {
+  const { location, translationId } = readerRoute.useLoaderData();
+  const code = translation?.toLowerCase();
+  const shouldShow =
+    !!code && isTranslationId(code) && code !== translationId.toLowerCase();
+  const manifest = useQuery({
+    ...readerManifestQueryOptions(code ?? ''),
+    enabled: shouldShow,
+  });
+  const changeTranslation = useSelectTranslation({
+    bookId: location.bookId,
+    chapter: location.chapter,
+  });
+
+  if (!shouldShow || !manifest.data || !code) return null;
+
+  return (
+    <>
+      <Box gap="sm" items="center">
+        <Text emphasis="secondary">
+          {m.annotation_translation_note({ translation: manifest.data.title })}
+        </Text>
+        <Button
+          size="small"
+          emphasis="ghost"
+          loading={changeTranslation.isPending}
+          onClick={() => changeTranslation.mutate(code)}
+        >
+          {m.annotation_translation_view()}
+        </Button>
+      </Box>
+      {changeTranslation.error && (
+        <p role="alert">
+          {m.translation_unavailable()} {changeTranslation.error.message}
+        </p>
       )}
     </>
   );

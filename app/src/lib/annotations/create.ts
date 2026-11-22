@@ -13,7 +13,12 @@ import {
 
 export async function createAnnotation(
   dbClient: DbClient,
-  input: { verses: readonly VerseId[]; comment: string; createdAt?: string },
+  input: {
+    verses: readonly VerseId[];
+    comment: string;
+    translation: string;
+    createdAt?: string;
+  },
 ): Promise<AnnotationRecord> {
   const verses = [...new Set(input.verses)];
   if (verses.length === 0) throw new Error('An annotation requires verses');
@@ -57,6 +62,7 @@ export async function createAnnotation(
       return a.chapter - b.chapter || a.verse - b.verse;
     }),
     comment,
+    translation: input.translation.toLowerCase(),
     createdAt: input.createdAt ?? new Date().toISOString(),
     status: 'pending',
     syncError: null,
