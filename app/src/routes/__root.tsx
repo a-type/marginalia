@@ -14,6 +14,7 @@ import { Provider } from '@a-type/ui';
 import type { DbClient } from '@tanstack/react-db';
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import { AnnotationSyncCoordinator } from '../components/annotations/AnnotationSyncCoordinator';
+import { SessionRecovery } from '../components/auth/SessionRecovery';
 import { initializeAnnotationStorage } from '../lib/annotations/indexeddb';
 
 interface MyRouterContext {
@@ -41,6 +42,7 @@ function RootRoute() {
     <QueryClientProvider client={queryClient}>
       <Provider manifestPath="/manifest.webmanifest">
         <AnnotationSyncCoordinator />
+        <SessionRecovery />
         <HeadContent />
         <Outlet />
         <TanStackDevtools

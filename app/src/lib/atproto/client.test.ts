@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { clientOptions, init, initCallback } = vi.hoisted(() => ({
+import { AppError } from '../error';
+
+const { clientOptions, init, initCallback, signIn } = vi.hoisted(() => ({
   clientOptions: vi.fn(),
   init: vi.fn(),
   initCallback: vi.fn(),
+  signIn: vi.fn(),
 }));
 
 vi.mock('@happyview/oauth-client-browser', () => ({
@@ -14,6 +17,7 @@ vi.mock('@happyview/oauth-client-browser', () => ({
 
     init = init;
     initCallback = initCallback;
+    signIn = signIn;
   },
 }));
 
@@ -31,6 +35,7 @@ describe('HappyView OAuth callback initialization', () => {
     clientOptions.mockReset();
     init.mockReset();
     initCallback.mockReset();
+    signIn.mockReset();
     vi.resetModules();
     vi.stubEnv('VITE_HAPPYVIEW_CLIENT_KEY', 'public-test-client-key');
     vi.stubGlobal('window', {
@@ -45,7 +50,10 @@ describe('HappyView OAuth callback initialization', () => {
   });
 
   it('shares initialization when callback and session consumers run together', async () => {
-    const session = { did: 'did:plc:abcdefghijklmnopqrstuvwx' };
+    const session = {
+      did: 'did:plc:abcdefghijklmnopqrstuvwx',
+      fetchHandler: vi.fn(),
+    };
     init.mockResolvedValue({ session });
 
     const { completeHappyViewOAuthCallback, getHappyViewSession } =
@@ -66,7 +74,10 @@ describe('HappyView OAuth callback initialization', () => {
   });
 
   it('retries session initialization after an unauthenticated result', async () => {
-    const session = { did: 'did:plc:abcdefghijklmnopqrstuvwx' };
+    const session = {
+      did: 'did:plc:abcdefghijklmnopqrstuvwx',
+      fetchHandler: vi.fn(),
+    };
     init.mockResolvedValueOnce(null).mockResolvedValueOnce({ session });
 
     const { getHappyViewSession } = await import('./client');
@@ -99,5 +110,194 @@ describe('HappyView OAuth callback initialization', () => {
       'http://127.0.0.1:7654/api/oauth/dpop-keys',
       'http://127.0.0.1:7654/xrpc/com.atproto.repo.describeRepo?repo=did%3Aplc%3Atest',
     ]);
+  });
+
+  it('prompts once on expiration, pauses requests, and keeps the account identity', async () => {
+    const fetchHandler = vi
+      .fn()
+      .mockResolvedValue(
+        Response.json(
+          { error: 'session expired, please re-authenticate' },
+          { status: 401 },
+        ),
+      );
+    const session = {
+      did: 'did:plc:abcdefghijklmnopqrstuvwx',
+      fetchHandler,
+    };
+    init.mockResolvedValue({ session });
+    const { getHappyViewSession, happyViewAuthState } =
+      await import('./client');
+    await getHappyViewSession();
+
+    await expect(
+      session.fetchHandler('/xrpc/com.atproto.repo.putRecord', {
+        method: 'POST',
+      }),
+    ).rejects.toMatchObject({ code: AppError.Code.SessionExpired });
+    expect(happyViewAuthState).toMatchObject({
+      expiredDid: session.did,
+      promptOpen: true,
+    });
+    await expect(getHappyViewSession()).resolves.toBe(session);
+
+    happyViewAuthState.promptOpen = false;
+    await expect(
+      session.fetchHandler('/xrpc/com.atproto.repo.putRecord', {
+        method: 'POST',
+      }),
+    ).rejects.toMatchObject({ code: AppError.Code.SessionExpired });
+    expect(fetchHandler).toHaveBeenCalledOnce();
+    expect(happyViewAuthState.promptOpen).toBe(false);
+  });
+
+  it.each([
+    Response.json({ error: 'insufficient_scope' }, { status: 401 }),
+    new Response('Unauthorized', { status: 401 }),
+    Response.json(
+      { error: 'session expired, please re-authenticate' },
+      { status: 403 },
+    ),
+  ])(
+    'preserves other authentication responses without prompting',
+    async (response) => {
+      const session = {
+        did: 'did:plc:abcdefghijklmnopqrstuvwx',
+        fetchHandler: vi.fn().mockResolvedValue(response),
+      };
+      init.mockResolvedValue({ session });
+      const { getHappyViewSession, happyViewAuthState } =
+        await import('./client');
+      await getHappyViewSession();
+
+      const result = await session.fetchHandler(
+        '/xrpc/com.atproto.repo.putRecord',
+        {
+          method: 'POST',
+        },
+      );
+      expect(result).toBe(response);
+      expect(result.bodyUsed).toBe(false);
+      expect(happyViewAuthState.expiredDid).toBeNull();
+    },
+  );
+
+  it('recovers in one shared popup and replaces the session used for subsequent writes', async () => {
+    const did = 'did:plc:abcdefghijklmnopqrstuvwx';
+    const expired = {
+      did,
+      fetchHandler: vi
+        .fn()
+        .mockResolvedValue(
+          Response.json(
+            { error: 'session expired, please re-authenticate' },
+            { status: 401 },
+          ),
+        ),
+    };
+    const freshFetch = vi
+      .fn()
+      .mockResolvedValue(Response.json({ uri: 'record' }));
+    const fresh = { did, fetchHandler: freshFetch };
+    init.mockResolvedValue({ session: expired });
+    signIn.mockResolvedValue(fresh);
+    const { getHappyViewSession, happyViewAuthState, reauthenticateHappyView } =
+      await import('./client');
+    await getHappyViewSession();
+    await expect(
+      expired.fetchHandler('/xrpc/com.atproto.repo.putRecord', {
+        method: 'POST',
+      }),
+    ).rejects.toMatchObject({ code: AppError.Code.SessionExpired });
+
+    await Promise.all([reauthenticateHappyView(), reauthenticateHappyView()]);
+
+    expect(signIn).toHaveBeenCalledExactlyOnceWith(did, { display: 'popup' });
+    expect(happyViewAuthState).toMatchObject({
+      expiredDid: null,
+      promptOpen: false,
+    });
+    await expect(getHappyViewSession()).resolves.toBe(fresh);
+    await fresh.fetchHandler('/xrpc/com.atproto.repo.putRecord', {
+      method: 'POST',
+    });
+    expect(freshFetch).toHaveBeenCalledOnce();
+    expect(init).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the expired account recoverable when popup sign-in fails', async () => {
+    const did = 'did:plc:abcdefghijklmnopqrstuvwx';
+    init.mockResolvedValue({ session: { did, fetchHandler: vi.fn() } });
+    const { getHappyViewSession, happyViewAuthState, reauthenticateHappyView } =
+      await import('./client');
+    await getHappyViewSession();
+    happyViewAuthState.expiredDid = did;
+    happyViewAuthState.promptOpen = true;
+    signIn
+      .mockRejectedValueOnce(new Error('Popup login failed'))
+      .mockResolvedValueOnce({ did, fetchHandler: vi.fn() });
+
+    await expect(reauthenticateHappyView()).rejects.toThrow(
+      'Popup login failed',
+    );
+    expect(happyViewAuthState.expiredDid).toBe(did);
+    expect(happyViewAuthState.promptOpen).toBe(true);
+    await reauthenticateHappyView();
+    expect(happyViewAuthState.expiredDid).toBeNull();
+  });
+
+  it('does not resume pending writes under a different account', async () => {
+    const did = 'did:plc:abcdefghijklmnopqrstuvwx';
+    const original = { did, fetchHandler: vi.fn() };
+    init.mockResolvedValue({ session: original });
+    signIn.mockResolvedValue({
+      did: 'did:plc:aaaaaaaaaaaaaaaaaaaaaaaa',
+      fetchHandler: vi.fn(),
+    });
+    const { getHappyViewSession, happyViewAuthState, reauthenticateHappyView } =
+      await import('./client');
+    await getHappyViewSession();
+    happyViewAuthState.expiredDid = did;
+
+    await expect(reauthenticateHappyView()).rejects.toMatchObject({
+      code: AppError.Code.SessionInvalid,
+    });
+    expect(happyViewAuthState.expiredDid).toBe(did);
+    await expect(getHappyViewSession()).resolves.toBe(original);
+  });
+
+  it('does not expire a recovered session when an old request finishes late', async () => {
+    const did = 'did:plc:abcdefghijklmnopqrstuvwx';
+    let finishRequest!: (response: Response) => void;
+    const expired = {
+      did,
+      fetchHandler: vi.fn().mockImplementation(
+        () =>
+          new Promise<Response>((resolve) => {
+            finishRequest = resolve;
+          }),
+      ),
+    };
+    init.mockResolvedValue({ session: expired });
+    signIn.mockResolvedValue({ did, fetchHandler: vi.fn() });
+    const { getHappyViewSession, happyViewAuthState, reauthenticateHappyView } =
+      await import('./client');
+    await getHappyViewSession();
+    const pending = expired.fetchHandler('/xrpc/com.atproto.repo.putRecord', {
+      method: 'POST',
+    });
+    const rejection = expect(pending).rejects.toMatchObject({
+      code: AppError.Code.SessionExpired,
+    });
+    happyViewAuthState.expiredDid = did;
+    await reauthenticateHappyView();
+    finishRequest(
+      Response.json(
+        { error: 'session expired, please re-authenticate' },
+        { status: 401 },
+      ),
+    );
+    await rejection;
+    expect(happyViewAuthState.expiredDid).toBeNull();
   });
 });

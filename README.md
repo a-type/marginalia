@@ -457,6 +457,11 @@ install icons, Apple touch icon, and favicon using `@vite-pwa/assets-generator`.
   `@happyview/oauth-client-browser` and `@happyview/lex-agent`.
 - The Bible reader keeps pending annotations and highlights in browser storage
   for offline use; HappyView is the authoritative remote record index.
+- HappyView refreshes PDS access tokens automatically. If the refresh grant is
+  rejected, Margins pauses syncing and offers **Sign in again** in a dialog and
+  the user menu. Recovery uses a popup (allow popups for the app), keeping the
+  reading tab and unfinished edits open. Pending annotations and highlight
+  uploads/removals resume after signing in with the same account.
 - `indexer/` owns the private, rebuildable SQLite projection used by the
   chapter annotation query. `Indexer.Dockerfile` builds its shared workspace
   dependencies and deploys its source plus an isolated production dependency

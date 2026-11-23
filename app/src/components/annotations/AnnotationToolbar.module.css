@@ -23,10 +23,8 @@
   }
 }
 
-.swatch {
-  display: block;
-  width: var(--m-sp-md);
-  height: var(--m-sp-md);
-  border-radius: 50%;
-  background: var(--m-tint-heavy);
+.divider {
+  width: 1px;
+  background: var(--m-gray);
+  margin: 0 var(--m-sp-xs);
 }

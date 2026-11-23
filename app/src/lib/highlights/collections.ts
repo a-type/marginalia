@@ -8,7 +8,8 @@ import {
 import type { BookId, VerseId } from '../bible/verse';
 import type { HighlightColor } from './types';
 
-export type HighlightStatus = 'pending' | 'uploaded' | 'synced';
+export type HighlightStatus =
+  'pending' | 'uploaded' | 'synced' | 'deleting' | 'deleted';
 
 export interface HighlightRecord {
   id: string;

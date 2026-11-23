@@ -1,4 +1,4 @@
-import { eq, useLiveQuery } from '@tanstack/react-db';
+import { useDbClient, useLiveQuery } from '@tanstack/react-db';
 import { clsx } from '@a-type/ui';
 
 import {
@@ -6,7 +6,7 @@ import {
   formatVerseId,
   parseVerseLabel,
 } from '../../lib/bible/verse';
-import { highlightCollectionOptions } from '../../lib/highlights/collections';
+import { getHighlightCollections } from '../../lib/highlights/collections';
 import {
   useIsSelectedVerse,
   useToggleVerseSelected,
@@ -31,14 +31,16 @@ export function Verse({
   const selected = useIsSelectedVerse(verseId);
   const inPericope = usePericopeVerseIds().includes(verseId);
   const includedInOpenAnnotation = useVerseIncludedInOpenAnnotation(verseId);
-  const { data: appliedHighlight } = useLiveQuery({
-    query: (query) =>
-      query
-        .from({ highlight: highlightCollectionOptions })
-        .where(({ highlight }) => eq(highlight.verseId, verseId))
-        .select(({ highlight }) => ({ color: highlight.color }))
-        .findOne(),
-  });
+  const dbClient = useDbClient();
+  const { data: highlights } = useLiveQuery(
+    getHighlightCollections(dbClient).highlights,
+  );
+  const appliedHighlight = highlights?.find(
+    (highlight) =>
+      highlight.verseId === verseId &&
+      highlight.status !== 'deleting' &&
+      highlight.status !== 'deleted',
+  );
   const highlightColor = appliedHighlight?.color;
   const toggle = useToggleVerseSelected(verseId);
 

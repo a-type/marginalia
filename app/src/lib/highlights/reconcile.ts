@@ -19,7 +19,7 @@ export async function reconcileChapterHighlights(
       (highlight) =>
         highlight.bookId === location.bookId &&
         highlight.chapter === location.chapter &&
-        highlight.status === 'synced' &&
+        (highlight.status === 'synced' || highlight.status === 'deleted') &&
         !remoteIds.has(highlight.id),
     )
     .map((highlight) => highlight.id);
@@ -33,6 +33,14 @@ export async function reconcileChapterHighlights(
     if (staleIds.length > 0) highlights.delete(staleIds);
     for (const highlight of snapshot.highlights) {
       if (highlights.has(highlight.id)) {
+        const existing = highlights.get(highlight.id);
+        if (
+          existing?.status === 'pending' ||
+          existing?.status === 'deleting' ||
+          existing?.status === 'deleted'
+        ) {
+          continue;
+        }
         highlights.update(highlight.id, (draft) =>
           Object.assign(draft, highlight),
         );

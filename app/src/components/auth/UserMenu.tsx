@@ -2,6 +2,8 @@ import { m } from '#/paraglide/messages';
 import { Button, clsx, DropdownMenu } from '@a-type/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useSnapshot } from 'valtio';
+import { happyViewAuthState } from '../../lib/atproto/client';
 import { logout } from '../../lib/auth/functions';
 import { currentUserDidQueryOptions } from '../../queries/user';
 import { SettingsDialog } from '../settings/SettingsDialog';
@@ -17,6 +19,7 @@ export interface UserMenuProps {
 }
 
 export function UserMenu({ className }: UserMenuProps) {
+  const { expiredDid } = useSnapshot(happyViewAuthState);
   const userDidQuery = useQuery({
     ...currentUserDidQueryOptions,
     enabled: typeof window !== 'undefined',
@@ -50,6 +53,16 @@ export function UserMenu({ className }: UserMenuProps) {
         <DropdownMenu.Content>
           {userDid ? (
             <>
+              {expiredDid ? (
+                <DropdownMenu.Item
+                  className="@mode-attention"
+                  onClick={() => {
+                    happyViewAuthState.promptOpen = true;
+                  }}
+                >
+                  {m.session_recovery_sign_in()}
+                </DropdownMenu.Item>
+              ) : null}
               <DropdownMenu.Item onClick={() => setShowProfile(true)}>
                 {m.profile_setup_title()}
               </DropdownMenu.Item>

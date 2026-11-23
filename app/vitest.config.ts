@@ -15,6 +15,24 @@ export default defineConfig({
         },
       },
       {
+        optimizeDeps: {
+          include: [
+            'react',
+            'react-dom',
+            'react-dom/client',
+            'react/jsx-dev-runtime',
+            'valtio',
+            '@a-type/ui',
+            '@tanstack/react-db',
+            '@tanstack/react-query',
+            '@atproto/lex',
+            '@atproto/common-web',
+            '@atproto/syntax',
+            '@happyview/lex-agent',
+            '@happyview/oauth-client-browser',
+            'zod',
+          ],
+        },
         test: {
           name: 'browser',
           include: ['src/**/*.browser.test.ts'],

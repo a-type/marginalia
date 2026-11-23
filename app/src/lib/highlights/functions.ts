@@ -1,6 +1,7 @@
 import { marginsbible, type Highlight } from '@marginsbible/atproto/lexicons';
 import { z } from 'zod';
 import { logger } from '../../logger';
+import { AppError } from '../error';
 import {
   getAuthenticatedHappyViewClient,
   getHappyViewSession,
@@ -54,6 +55,23 @@ export async function uploadHighlight({
     formatHighlightRkey(input.verseId),
   );
   return { uri: response.body.uri, cid: response.body.cid };
+}
+
+export async function deleteHighlight({ data }: { data: { uri: string } }) {
+  const uriParts = parseAtRecordUri(data.uri, marginsbible.highlight.$nsid);
+  if (!uriParts) {
+    throw new AppError(AppError.Code.BadRequest, 'Invalid highlight URI');
+  }
+  const { session, client } = await getAuthenticatedHappyViewClient();
+  if (uriParts.authorDid !== session.did) {
+    throw new AppError(
+      AppError.Code.Forbidden,
+      "Cannot delete another account's highlight",
+    );
+  }
+  await client.deleteRecord(marginsbible.highlight.$nsid, uriParts.rkey, {
+    repo: session.did,
+  });
 }
 
 export async function listChapterHighlights({

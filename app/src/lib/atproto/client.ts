@@ -1,7 +1,9 @@
 import { Client } from '@atproto/lex';
 import { createAgent } from '@happyview/lex-agent';
 import { HappyViewBrowserClient } from '@happyview/oauth-client-browser';
+import { proxy } from 'valtio';
 
+import { logger } from '../../logger';
 import { AppError } from '../error';
 import { getOAuthClientMetadata, oauthScope } from './client-metadata';
 
@@ -11,6 +13,70 @@ export type HappyViewSession = NonNullable<
 
 let oauthClient: HappyViewBrowserClient | undefined;
 let sessionPromise: Promise<HappyViewSession | null> | undefined;
+let activeSession: HappyViewSession | null = null;
+let reauthenticationPromise: Promise<void> | undefined;
+
+export const happyViewAuthState = proxy<{
+  expiredDid: string | null;
+  promptOpen: boolean;
+}>({
+  expiredDid: null,
+  promptOpen: false,
+});
+
+async function isExpiredSessionResponse(response: Response) {
+  if (response.status !== 401) return false;
+
+  let body: unknown;
+  try {
+    body = await response.clone().json();
+  } catch (error) {
+    logger.warn('HappyView returned a non-JSON authentication error', error);
+    return false;
+  }
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'error' in body &&
+    body.error === 'session expired, please re-authenticate'
+  );
+}
+
+function activateSession(session: HappyViewSession) {
+  if (activeSession === session) return session;
+
+  const fetchHandler = session.fetchHandler.bind(session);
+  session.fetchHandler = async (path, init) => {
+    const url = new URL(path, window.location.origin);
+    const isXrpc =
+      url.origin === window.location.origin &&
+      (url.pathname.startsWith('/xrpc/') ||
+        url.pathname.startsWith('/api/xrpc/'));
+    if (isXrpc && happyViewAuthState.expiredDid === session.did) {
+      throw new AppError(
+        AppError.Code.SessionExpired,
+        'Sign in again required',
+      );
+    }
+
+    const response = await fetchHandler(path, init);
+    // Inspect after the SDK has completed DPoP nonce negotiation.
+    if (isXrpc && (await isExpiredSessionResponse(response))) {
+      if (activeSession === session && !happyViewAuthState.expiredDid) {
+        happyViewAuthState.expiredDid = session.did;
+        happyViewAuthState.promptOpen = true;
+      }
+      throw new AppError(
+        AppError.Code.SessionExpired,
+        'HappyView session expired; sign in again to resume syncing',
+        response,
+      );
+    }
+    return response;
+  };
+  activeSession = session;
+  return session;
+}
 
 export function createHappyViewFetch(
   origin: string,
@@ -69,7 +135,9 @@ export async function getHappyViewSession(): Promise<HappyViewSession | null> {
   if (!sessionPromise) {
     sessionPromise = getOAuthClient()
       .init()
-      .then((result) => result?.session ?? null);
+      .then((result) =>
+        result?.session ? activateSession(result.session) : null,
+      );
   }
 
   const pendingSession = sessionPromise;
@@ -102,12 +170,46 @@ export async function signInToHappyView(identifier: string) {
   await getOAuthClient().signIn(identifier);
 }
 
+export function reauthenticateHappyView(): Promise<void> {
+  if (reauthenticationPromise) return reauthenticationPromise;
+
+  const did = happyViewAuthState.expiredDid;
+  if (!did) {
+    return Promise.reject(
+      new AppError(
+        AppError.Code.SessionInvalid,
+        'No expired session to recover',
+      ),
+    );
+  }
+
+  const recovery = async () => {
+    const session = await getOAuthClient().signIn(did, { display: 'popup' });
+    if (!session || session.did !== did) {
+      throw new AppError(
+        AppError.Code.SessionInvalid,
+        'Sign in again with the same account to resume syncing',
+      );
+    }
+    sessionPromise = Promise.resolve(activateSession(session));
+    happyViewAuthState.expiredDid = null;
+    happyViewAuthState.promptOpen = false;
+  };
+  reauthenticationPromise = recovery().finally(() => {
+    reauthenticationPromise = undefined;
+  });
+  return reauthenticationPromise;
+}
+
 export async function signOutOfHappyView() {
   const session = await getHappyViewSession();
   if (session) {
     await getOAuthClient().revoke(session.did);
   }
   sessionPromise = undefined;
+  activeSession = null;
+  happyViewAuthState.expiredDid = null;
+  happyViewAuthState.promptOpen = false;
   window.location.replace('/');
 }
 

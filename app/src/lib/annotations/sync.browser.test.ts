@@ -1,6 +1,8 @@
 import { DbClient } from '@tanstack/react-db';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { happyViewAuthState } from '../atproto/client';
+import { AppError } from '../error';
 import type { AnnotationRecord } from './collections';
 import {
   ensureAnnotationCollectionReady,
@@ -44,6 +46,8 @@ function remoteSnapshot(rkey: string, createdAt: string) {
 
 afterEach(async () => {
   await Promise.all(clients.splice(0).map((client) => client.cleanup()));
+  happyViewAuthState.expiredDid = null;
+  happyViewAuthState.promptOpen = false;
 });
 
 beforeEach(() => {
@@ -52,6 +56,107 @@ beforeEach(() => {
 });
 
 describe('requestAnnotationSync', () => {
+  it('resumes after an expired in-flight request finishes following recovery', async () => {
+    const ownerDid = 'did:plc:bbbbbbbbbbbbbbbbbbbbbbbb';
+    const dbClient = new DbClient();
+    clients.push(dbClient);
+    const { annotations } = getAnnotationCollections(dbClient);
+    await ensureAnnotationCollectionReady(annotations);
+    const annotation = remoteSnapshot(
+      crypto.randomUUID(),
+      new Date().toISOString(),
+    ).annotations[0];
+    const id = `at://${ownerDid}/com.marginsbible.annotation/${annotation.rkey}`;
+    await annotations.insert({
+      ...annotation,
+      id,
+      authorDid: ownerDid,
+      status: 'pending',
+      uri: null,
+      cid: null,
+    }).isPersisted.promise;
+    let failUpload!: (error: Error) => void;
+    uploadAnnotation
+      .mockImplementationOnce(
+        () =>
+          new Promise((_, reject) => {
+            failUpload = reject;
+          }),
+      )
+      .mockResolvedValueOnce({ uri: id, cid: 'recovered-cid' });
+    listMyAnnotationsPage.mockResolvedValue({ annotations: [] });
+
+    const previousSync = requestAnnotationSync(dbClient, ownerDid);
+    await vi.waitFor(() => expect(uploadAnnotation).toHaveBeenCalledOnce());
+    const recoveredSync = requestAnnotationSync(dbClient, ownerDid);
+    failUpload(
+      new AppError(AppError.Code.SessionExpired, 'Old session expired'),
+    );
+    await Promise.all([previousSync, recoveredSync]);
+
+    expect(uploadAnnotation).toHaveBeenCalledTimes(2);
+    expect(annotations.get(id)).toMatchObject({
+      status: 'uploaded',
+      syncError: null,
+      cid: 'recovered-cid',
+    });
+  });
+
+  it('preserves pending records and stops the batch until re-authentication', async () => {
+    const ownerDid = 'did:plc:aaaaaaaaaaaaaaaaaaaaaaaa';
+    const dbClient = new DbClient();
+    clients.push(dbClient);
+    const { annotations } = getAnnotationCollections(dbClient);
+    await ensureAnnotationCollectionReady(annotations);
+    const pending = ['first', 'second'].map((comment) => {
+      const annotation = remoteSnapshot(
+        crypto.randomUUID(),
+        new Date().toISOString(),
+      ).annotations[0];
+      return {
+        ...annotation,
+        id: `at://${ownerDid}/com.marginsbible.annotation/${annotation.rkey}`,
+        authorDid: ownerDid,
+        comment,
+        status: 'pending' as const,
+        uri: null,
+        cid: null,
+      };
+    });
+    await annotations.insert(pending).isPersisted.promise;
+    uploadAnnotation.mockImplementationOnce(() => {
+      happyViewAuthState.expiredDid = ownerDid;
+      throw new AppError(AppError.Code.SessionExpired, 'Session expired');
+    });
+
+    await requestAnnotationSync(dbClient, ownerDid);
+    expect(uploadAnnotation).toHaveBeenCalledOnce();
+    expect(listMyAnnotationsPage).not.toHaveBeenCalled();
+    for (const annotation of pending) {
+      expect(annotations.get(annotation.id)).toMatchObject({
+        authorDid: ownerDid,
+        comment: annotation.comment,
+        status: 'pending',
+      });
+    }
+    await requestAnnotationSync(dbClient, ownerDid);
+    expect(uploadAnnotation).toHaveBeenCalledOnce();
+
+    happyViewAuthState.expiredDid = null;
+    uploadAnnotation.mockImplementation(({ data }) => ({
+      uri: `at://${ownerDid}/com.marginsbible.annotation/${data.rkey}`,
+      cid: 'uploaded-cid',
+    }));
+    listMyAnnotationsPage.mockResolvedValue({ annotations: [] });
+    await requestAnnotationSync(dbClient, ownerDid);
+    for (const annotation of pending) {
+      expect(annotations.get(annotation.id)).toMatchObject({
+        status: 'uploaded',
+        syncError: null,
+      });
+    }
+  });
+
   it('uploads local ownership and pulls pages through the previous cutoff', async () => {
     const ownerDid = 'did:plc:abcdefghijklmnopqrstuvwx';
     const dbClient = new DbClient();

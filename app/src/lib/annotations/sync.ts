@@ -1,5 +1,7 @@
 import { marginsbible } from '@marginsbible/atproto/lexicons';
 import type { DbClient } from '@tanstack/react-db';
+import { happyViewAuthState } from '../atproto/client';
+import { AppError } from '../error';
 import {
   ensureAnnotationCollectionReady,
   getAnnotationCollections,
@@ -11,7 +13,7 @@ import { cacheAnnotationSnapshot } from './reconcile';
 const activeSyncs = new WeakMap<DbClient, Promise<void>>();
 
 async function synchronizeAnnotations(dbClient: DbClient, ownerDid: string) {
-  if (!navigator.onLine) return;
+  if (!navigator.onLine || happyViewAuthState.expiredDid === ownerDid) return;
 
   const collections = getAnnotationCollections(dbClient);
   await ensureAnnotationCollectionReady(collections.annotations);
@@ -73,10 +75,26 @@ async function synchronizeAnnotations(dbClient: DbClient, ownerDid: string) {
         },
       );
       await transaction.isPersisted.promise;
+      if (
+        AppError.isInstance(error) &&
+        error.code === AppError.Code.SessionExpired
+      ) {
+        return;
+      }
     }
   }
 
-  await pullAnnotations(dbClient, ownerDid);
+  try {
+    await pullAnnotations(dbClient, ownerDid);
+  } catch (error) {
+    if (
+      AppError.isInstance(error) &&
+      error.code === AppError.Code.SessionExpired
+    ) {
+      return;
+    }
+    throw error;
+  }
 }
 
 async function pullAnnotations(dbClient: DbClient, ownerDid: string) {
@@ -122,7 +140,9 @@ export function requestAnnotationSync(
   ownerDid: string,
 ): Promise<void> {
   const activeSync = activeSyncs.get(dbClient);
-  if (activeSync) return activeSync;
+  if (activeSync) {
+    return activeSync.then(() => requestAnnotationSync(dbClient, ownerDid));
+  }
 
   const sync = synchronizeAnnotations(dbClient, ownerDid).finally(() => {
     activeSyncs.delete(dbClient);

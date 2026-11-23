@@ -1,14 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { fetchXrpcRecordPage, getHappyViewSession, parseAtRecordUri } =
-  vi.hoisted(() => ({
-    fetchXrpcRecordPage: vi.fn(),
-    getHappyViewSession: vi.fn(),
-    parseAtRecordUri: vi.fn(),
-  }));
+const {
+  fetchXrpcRecordPage,
+  getAuthenticatedHappyViewClient,
+  getHappyViewSession,
+  parseAtRecordUri,
+} = vi.hoisted(() => ({
+  fetchXrpcRecordPage: vi.fn(),
+  getAuthenticatedHappyViewClient: vi.fn(),
+  getHappyViewSession: vi.fn(),
+  parseAtRecordUri: vi.fn(),
+}));
 
 vi.mock('#/lib/atproto/client', () => ({
-  getAuthenticatedHappyViewClient: vi.fn(),
+  getAuthenticatedHappyViewClient,
   getHappyViewSession,
 }));
 
@@ -20,6 +25,7 @@ vi.mock('#/lib/atproto/xrpc', () => ({
 describe('chapter highlight records', () => {
   beforeEach(() => {
     fetchXrpcRecordPage.mockReset();
+    getAuthenticatedHappyViewClient.mockReset();
     getHappyViewSession.mockReset();
     parseAtRecordUri.mockReset();
   });
@@ -53,4 +59,31 @@ describe('chapter highlight records', () => {
       createdAt,
     });
   }, 10_000);
+
+  it('only deletes highlights owned by the authenticated account', async () => {
+    const did = 'did:plc:abcdefghijklmnopqrstuvwx';
+    const deleteRecord = vi.fn();
+    getAuthenticatedHappyViewClient.mockResolvedValue({
+      session: { did },
+      client: { deleteRecord },
+    });
+    parseAtRecordUri.mockReturnValue({ authorDid: did, rkey: 'highlight-gen' });
+    const { deleteHighlight } = await import('./functions');
+    const uri = `at://${did}/com.marginsbible.highlight/highlight-gen`;
+
+    await deleteHighlight({ data: { uri } });
+    expect(deleteRecord).toHaveBeenCalledWith(
+      'com.marginsbible.highlight',
+      'highlight-gen',
+      { repo: did },
+    );
+    parseAtRecordUri.mockReturnValue({
+      authorDid: 'did:plc:other',
+      rkey: 'highlight-gen',
+    });
+    await expect(deleteHighlight({ data: { uri } })).rejects.toThrow(
+      "Cannot delete another account's highlight",
+    );
+    expect(deleteRecord).toHaveBeenCalledTimes(1);
+  });
 });

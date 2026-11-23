@@ -14,12 +14,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 
 import { normalizeVerseSelection } from '../../lib/bible/selection';
+import type * as AuthFunctions from '../../lib/auth/functions';
 import type * as BibleSource from '../../lib/bible/source';
 import {
   fetchTranslationManifest,
   fetchTranslationSource,
 } from '../../lib/bible/source';
 import type { VerseId } from '../../lib/bible/verse';
+import { getHighlightCollections } from '../../lib/highlights/collections';
+import { createHighlight } from '../../lib/highlights/create';
 import { InterlinearVerse } from '../bible/interlinear/InterlinearVerse';
 import { BookIdProvider } from '../usfm/contexts';
 import { USFMRenderer } from '../usfm/USFMRenderer';
@@ -38,6 +41,11 @@ vi.mock('../../lib/bible/source', async (importOriginal) => ({
   ...(await importOriginal<typeof BibleSource>()),
   fetchTranslationManifest: vi.fn(),
   fetchTranslationSource: vi.fn(),
+}));
+
+vi.mock('../../lib/auth/functions', async (importOriginal) => ({
+  ...(await importOriginal<typeof AuthFunctions>()),
+  getCurrentUserDid: vi.fn().mockResolvedValue(null),
 }));
 
 function VerseButton({ id }: { id: VerseId }) {
@@ -124,6 +132,7 @@ async function renderSelection(selection: string, source?: string) {
   );
   return {
     container,
+    dbClient,
     router,
     async cleanup() {
       root.unmount();
@@ -135,6 +144,45 @@ async function renderSelection(selection: string, source?: string) {
 }
 
 describe('URL verse range selection', () => {
+  it('toggles an existing highlight off and back on in yellow', async () => {
+    localStorage.removeItem('margins.highlights.v1');
+    const view = await renderSelection(
+      'JHN/3:1',
+      '\\c 3\n\\p\n\\v 1 One \\v 2 Two',
+    );
+    try {
+      await createHighlight(view.dbClient, {
+        verseId: 'JHN/3:1',
+        color: 'leek',
+      });
+      const button = page.getByRole('button', {
+        name: 'Highlight',
+        exact: true,
+      });
+      const highlightColor = () =>
+        view.container
+          .querySelector('[data-verse-id="JHN/3:1"]')
+          ?.getAttribute('data-highlighted');
+      await expect.element(button).toHaveAttribute('aria-pressed', 'true');
+      await expect.poll(highlightColor).toBe('leek');
+      await userEvent.click(button);
+      const highlights = getHighlightCollections(view.dbClient).highlights;
+      await expect.poll(() => [...highlights.values()].length).toBe(0);
+      await expect.element(button).toHaveAttribute('aria-pressed', 'false');
+      await expect.poll(highlightColor).toBeNull();
+      await expect.element(button).toBeEnabled();
+      await userEvent.click(button);
+      await expect
+        .poll(() => [...highlights.values()])
+        .toMatchObject([{ verseId: 'JHN/3:1', color: 'lemon' }]);
+      await expect.element(button).toHaveAttribute('aria-pressed', 'true');
+      await expect.poll(highlightColor).toBe('lemon');
+    } finally {
+      await view.cleanup();
+      localStorage.removeItem('margins.highlights.v1');
+    }
+  });
+
   describe('rendered USFM verse boundaries', () => {
     const sources = [
       String.raw`\c 3
