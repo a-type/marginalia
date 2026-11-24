@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getBibleSearchBookIds,
   extractVerses,
+  isBibleSearchBookFilter,
   matchesSearch,
   parseSearchQuery,
   searchRanges,
@@ -8,6 +10,21 @@ import {
 } from './search';
 
 describe('Bible search', () => {
+  it('defines the four named Bible corpus filters', () => {
+    expect(isBibleSearchBookFilter('gospels')).toBe(true);
+    expect(isBibleSearchBookFilter('GEN')).toBe(false);
+    expect(getBibleSearchBookIds('gospels')).toEqual([
+      'MAT',
+      'MRK',
+      'LUK',
+      'JHN',
+    ]);
+    expect(getBibleSearchBookIds('hebrew-bible')).toEqual(
+      expect.arrayContaining(['TOB', 'JDT', 'WIS', 'SIR', 'BAR', '1MA']),
+    );
+    expect(getBibleSearchBookIds('epistles')).not.toContain('REV');
+  });
+
   it('extracts visible verse continuations without notes, headings or attributes', () => {
     const source = String.raw`\id GEN
 \c 1

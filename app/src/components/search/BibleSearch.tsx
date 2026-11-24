@@ -7,11 +7,29 @@ import { useEffect, useRef, useState } from 'react';
 import { downloadTranslation } from '../../lib/bible/translation-jobs';
 import { parseVerseId } from '../../lib/bible/verse';
 import {
+  bibleSearchBookFilters,
+  isBibleSearchBookFilter,
+  type BibleSearchBookFilter,
+} from '../../lib/bible/search';
+import {
   bibleSearchQueryOptions,
   translationsQueryOptions,
 } from '../../queries/translations';
 import { TranslationSelect } from '../bible/TranslationSelect';
 import cls from './BibleSearch.module.css';
+
+function getBibleSearchBookFilterLabel(filter: BibleSearchBookFilter) {
+  switch (filter) {
+    case 'hebrew-bible':
+      return m.bible_search_hebrew_bible();
+    case 'new-testament':
+      return m.bible_search_new_testament();
+    case 'gospels':
+      return m.bible_search_gospels();
+    case 'epistles':
+      return m.bible_search_epistles();
+  }
+}
 
 export function BibleSearch({
   initialTranslation,
@@ -81,8 +99,10 @@ export function BibleSearch({
               <span>
                 {bookId === 'all'
                   ? m.bible_search_all_books()
-                  : record.manifest.books.find((book) => book.id === bookId)
-                      ?.title}
+                  : isBibleSearchBookFilter(bookId)
+                    ? getBibleSearchBookFilterLabel(bookId)
+                    : record.manifest.books.find((book) => book.id === bookId)
+                        ?.title}
               </span>
               <Select.Icon />
             </Select.Trigger>
@@ -90,6 +110,11 @@ export function BibleSearch({
               <Select.Item value="all">
                 {m.bible_search_all_books()}
               </Select.Item>
+              {bibleSearchBookFilters.map((filter) => (
+                <Select.Item key={filter} value={filter}>
+                  {getBibleSearchBookFilterLabel(filter)}
+                </Select.Item>
+              ))}
               {record.manifest.books.map((book) => (
                 <Select.Item key={book.id} value={book.id}>
                   {book.title}

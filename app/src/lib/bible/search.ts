@@ -22,6 +22,153 @@ export interface SearchQuery {
   clauses: string[][];
 }
 
+export type BibleSearchBookFilter =
+  'hebrew-bible' | 'new-testament' | 'gospels' | 'epistles';
+
+export const bibleSearchBookFilters: readonly BibleSearchBookFilter[] = [
+  'hebrew-bible',
+  'new-testament',
+  'gospels',
+  'epistles',
+];
+
+const hebrewBibleBookIds = [
+  'GEN',
+  'EXO',
+  'LEV',
+  'NUM',
+  'DEU',
+  'JOS',
+  'JDG',
+  'RUT',
+  '1SA',
+  '2SA',
+  '1KI',
+  '2KI',
+  '1CH',
+  '2CH',
+  'EZR',
+  'NEH',
+  'EST',
+  'JOB',
+  'PSA',
+  'PRO',
+  'ECC',
+  'SNG',
+  'ISA',
+  'JER',
+  'LAM',
+  'EZK',
+  'DAN',
+  'HOS',
+  'JOL',
+  'AMO',
+  'OBA',
+  'JON',
+  'MIC',
+  'NAM',
+  'HAB',
+  'ZEP',
+  'HAG',
+  'ZEC',
+  'MAL',
+  'TOB',
+  'JDT',
+  'ESG',
+  'WIS',
+  'SIR',
+  'BAR',
+  'LJE',
+  'S3Y',
+  'SUS',
+  'BEL',
+  '1MA',
+  '2MA',
+  '3MA',
+  '4MA',
+  '1ES',
+  '2ES',
+  'MAN',
+  'PS2',
+] as const;
+
+const newTestamentBookIds = [
+  'MAT',
+  'MRK',
+  'LUK',
+  'JHN',
+  'ACT',
+  'ROM',
+  '1CO',
+  '2CO',
+  'GAL',
+  'EPH',
+  'PHP',
+  'COL',
+  '1TH',
+  '2TH',
+  '1TI',
+  '2TI',
+  'TIT',
+  'PHM',
+  'HEB',
+  'JAS',
+  '1PE',
+  '2PE',
+  '1JN',
+  '2JN',
+  '3JN',
+  'JUD',
+  'REV',
+] as const;
+
+const gospelBookIds = ['MAT', 'MRK', 'LUK', 'JHN'] as const;
+
+const epistleBookIds = [
+  'ROM',
+  '1CO',
+  '2CO',
+  'GAL',
+  'EPH',
+  'PHP',
+  'COL',
+  '1TH',
+  '2TH',
+  '1TI',
+  '2TI',
+  'TIT',
+  'PHM',
+  'HEB',
+  'JAS',
+  '1PE',
+  '2PE',
+  '1JN',
+  '2JN',
+  '3JN',
+  'JUD',
+] as const;
+
+export function isBibleSearchBookFilter(
+  value: string,
+): value is BibleSearchBookFilter {
+  return (bibleSearchBookFilters as readonly string[]).includes(value);
+}
+
+export function getBibleSearchBookIds(
+  filter: BibleSearchBookFilter,
+): readonly string[] {
+  switch (filter) {
+    case 'hebrew-bible':
+      return hebrewBibleBookIds;
+    case 'new-testament':
+      return newTestamentBookIds;
+    case 'gospels':
+      return gospelBookIds;
+    case 'epistles':
+      return epistleBookIds;
+  }
+}
+
 export function extractVerses(source: string, bookId: string): SearchVerse[] {
   const verses: SearchVerse[] = [];
   let chapter = 0;

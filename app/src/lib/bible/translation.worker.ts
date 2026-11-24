@@ -6,6 +6,8 @@ import type { SearchToken, SearchVerse } from './search';
 import {
   corpusVersion,
   extractVerses,
+  getBibleSearchBookIds,
+  isBibleSearchBookFilter,
   matchesSearch,
   parseSearchQuery,
   searchRanges,
@@ -270,9 +272,14 @@ async function search(
     );
   if (
     request.bookId &&
+    !isBibleSearchBookFilter(request.bookId) &&
     !record.manifest.books.some((book) => book.id === request.bookId)
   )
     throw new AppError(AppError.Code.BadRequest, 'Book is not in this edition');
+  const searchBookIds =
+    request.bookId && isBibleSearchBookFilter(request.bookId)
+      ? getBibleSearchBookIds(request.bookId)
+      : undefined;
   if (cache?.id !== record.id || cache.generation !== record.generation) {
     cache = undefined;
     const books: CachedVerse[][] = [];
@@ -327,7 +334,9 @@ async function search(
     throw new DOMException('Translation changed', 'AbortError');
   const matches = request.bookId
     ? (current.matches ?? []).filter(({ verse }) =>
-        verse.id.startsWith(`${request.bookId}/`),
+        searchBookIds
+          ? searchBookIds.some((bookId) => verse.id.startsWith(`${bookId}/`))
+          : verse.id.startsWith(`${request.bookId}/`),
       )
     : (current.matches ?? []);
   const start = Math.max(0, Math.floor(request.page)) * 50;
