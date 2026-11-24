@@ -1,5 +1,5 @@
 import { m } from '#/paraglide/messages';
-import { Select } from '@a-type/ui';
+import { Select, type SelectProps, type SelectTriggerProps } from '@a-type/ui';
 import { useQuery } from '@tanstack/react-query';
 import { builtinTranslations } from '../../lib/bible/manifests';
 import { translationsQueryOptions } from '../../queries/translations';
@@ -11,12 +11,13 @@ export function TranslationSelect({
   installedOnly = false,
   disabled = false,
   loading = false,
-}: {
-  value: string;
-  onValueChange: (value: string) => void;
+  size,
+  ...rest
+}: SelectProps & {
   installedOnly?: boolean;
   disabled?: boolean;
   loading?: boolean;
+  size?: SelectTriggerProps['size'];
 }) {
   const translations = useQuery(translationsQueryOptions);
   const installed = (translations.data ?? []).filter(
@@ -40,9 +41,10 @@ export function TranslationSelect({
   );
   return (
     <Select
+      {...rest}
       value={value}
-      onValueChange={(id) => {
-        if (id) onValueChange(id);
+      onValueChange={(id, ev) => {
+        if (id) onValueChange?.(id, ev);
       }}
       disabled={disabled}
       itemToStringLabel={(id) => {
@@ -55,6 +57,7 @@ export function TranslationSelect({
         className={cls.trigger}
         aria-label={m.translation_label()}
         loading={loading}
+        size={size}
       >
         <span>
           {choices.find((translation) => translation.id === value)?.title ??

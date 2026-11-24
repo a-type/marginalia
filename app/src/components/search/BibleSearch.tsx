@@ -1,5 +1,5 @@
 import { m } from '#/paraglide/messages';
-import { ActionButton, Button, Icon, Input, Select } from '@a-type/ui';
+import { Button, Icon, Input } from '@a-type/ui';
 import { useDebouncedValue } from '@tanstack/react-pacer';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
@@ -7,29 +7,12 @@ import { useEffect, useRef, useState } from 'react';
 import { downloadTranslation } from '../../lib/bible/translation-jobs';
 import { parseVerseId } from '../../lib/bible/verse';
 import {
-  bibleSearchBookFilters,
-  isBibleSearchBookFilter,
-  type BibleSearchBookFilter,
-} from '../../lib/bible/search';
-import {
   bibleSearchQueryOptions,
   translationsQueryOptions,
 } from '../../queries/translations';
 import { TranslationSelect } from '../bible/TranslationSelect';
 import cls from './BibleSearch.module.css';
-
-function getBibleSearchBookFilterLabel(filter: BibleSearchBookFilter) {
-  switch (filter) {
-    case 'hebrew-bible':
-      return m.bible_search_hebrew_bible();
-    case 'new-testament':
-      return m.bible_search_new_testament();
-    case 'gospels':
-      return m.bible_search_gospels();
-    case 'epistles':
-      return m.bible_search_epistles();
-  }
-}
+import { BibleSearchBookFilterSelect } from './BibleSearchBookFilterSelect';
 
 export function BibleSearch({
   initialTranslation,
@@ -72,11 +55,6 @@ export function BibleSearch({
   return (
     <div className={cls.root} ref={rootRef}>
       <h2 className={cls.heading}>{m.bible_search_title()}</h2>
-      <TranslationSelect
-        value={translationId}
-        installedOnly
-        onValueChange={onTranslationChange}
-      />
       <Input
         aria-label={m.bible_search_input()}
         placeholder={m.bible_search_input()}
@@ -90,38 +68,18 @@ export function BibleSearch({
           role="group"
           aria-label={m.bible_search_filters()}
         >
-          <Select value={bookId} onValueChange={onBookChange}>
-            <Select.Trigger
-              className={cls.bookFilter}
-              aria-label={m.bible_search_filter_book()}
-              render={<ActionButton />}
-            >
-              <span>
-                {bookId === 'all'
-                  ? m.bible_search_all_books()
-                  : isBibleSearchBookFilter(bookId)
-                    ? getBibleSearchBookFilterLabel(bookId)
-                    : record.manifest.books.find((book) => book.id === bookId)
-                        ?.title}
-              </span>
-              <Select.Icon />
-            </Select.Trigger>
-            <Select.Content>
-              <Select.Item value="all">
-                {m.bible_search_all_books()}
-              </Select.Item>
-              {bibleSearchBookFilters.map((filter) => (
-                <Select.Item key={filter} value={filter}>
-                  {getBibleSearchBookFilterLabel(filter)}
-                </Select.Item>
-              ))}
-              {record.manifest.books.map((book) => (
-                <Select.Item key={book.id} value={book.id}>
-                  {book.title}
-                </Select.Item>
-              ))}
-            </Select.Content>
-          </Select>
+          <TranslationSelect
+            value={translationId}
+            installedOnly
+            onValueChange={(v) => v && onTranslationChange(v)}
+            size="small"
+          />
+          <BibleSearchBookFilterSelect
+            books={record.manifest.books}
+            value={bookId}
+            onValueChange={onBookChange}
+            size="small"
+          />
         </div>
       )}
       {!record && (
