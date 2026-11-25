@@ -294,6 +294,8 @@ function BibleReaderContent({
     manifest,
     goTo,
   );
+  useDisablePullToRefresh();
+
   return (
     <div className={cls.root}>
       <section className={cls.content}>
@@ -825,4 +827,21 @@ function useReconcileChapterHighlights({
     bookId,
     chapter,
   ]);
+}
+
+function useDisablePullToRefresh() {
+  useLayoutEffect(() => {
+    window.document.documentElement.style.setProperty(
+      'overscroll-behavior-y',
+      'contain',
+    );
+    window.document.body.style.setProperty('overscroll-behavior-y', 'contain');
+
+    return () => {
+      window.document.documentElement.style.removeProperty(
+        'overscroll-behavior-y',
+      );
+      window.document.body.style.removeProperty('overscroll-behavior-y');
+    };
+  }, []);
 }
