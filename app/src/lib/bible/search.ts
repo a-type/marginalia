@@ -6,7 +6,7 @@ import type { HighlightRecord } from '../highlights/collections';
 import type { VerseId } from './verse';
 import { formatVerseId, parseVerseLabel } from './verse';
 
-export const corpusVersion = 1;
+export const corpusVersion = 2;
 
 export interface SearchVerse {
   id: VerseId;
@@ -228,10 +228,12 @@ export function extractVerses(source: string, bookId: string): SearchVerse[] {
   let previousLabel = '';
   const seen = new Set<VerseId>();
 
-  function walk(nodes: USFMNode[], blocks = false) {
+  function walk(nodes: USFMNode[], blocks = false, inline = false) {
     for (const node of nodes) {
       if (node.type === 'text') {
-        if (current) current.text += (blocks ? ' ' : '') + node.value;
+        if (current)
+          current.text +=
+            (blocks ? ' ' : '') + node.value.replace(/\\[+]?[\w-]+\*/g, '');
         continue;
       }
       if (node.category === 'chapter') {
@@ -273,19 +275,22 @@ export function extractVerses(source: string, bookId: string): SearchVerse[] {
           seen.add(id);
         }
         previousLabel = label;
-        walk(node.children);
+        walk(node.children, false, true);
       } else if (
         ['paragraph', 'poetry', 'list', 'table', 'break'].includes(
           node.category,
         )
       ) {
         if (current) current.text += ' ';
-        walk(node.children, true);
+        walk(node.children, true, true);
       } else if (
-        (node.category === 'character' || node.category === 'word') &&
+        (node.category === 'character' ||
+          node.category === 'word' ||
+          (inline &&
+            (node.category === 'unknown' || node.category === 'milestone'))) &&
         !['ca', 'va'].includes(node.marker)
       ) {
-        walk(node.children);
+        walk(node.children, false, true);
       }
     }
   }

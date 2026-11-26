@@ -3,10 +3,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   createMemoryHistory,
   createRootRoute,
+  createRoute,
   createRouter,
+  Outlet,
   RouterProvider,
 } from '@tanstack/react-router';
 import { createElement, useState } from 'react';
+import type { FunctionComponent } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { expect, it, vi } from 'vitest';
@@ -20,11 +23,64 @@ import {
 } from '../../lib/bible/translation-jobs';
 import { getHighlightCollections } from '../../lib/highlights/collections';
 import { BibleSearch } from './BibleSearch';
+import {
+  ensureSearchTranslation,
+  validateBibleSearchParams,
+} from './searchParams';
 
 vi.mock('../../lib/auth/functions', async (importOriginal) => ({
   ...(await importOriginal<typeof AuthFunctions>()),
   getCurrentUserDid: vi.fn().mockResolvedValue('did:plc:owner'),
 }));
+
+function createSearchRouter(component: FunctionComponent, initial = '/search') {
+  const rootRoute = createRootRoute({ component: Outlet });
+  const searchRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/search',
+    validateSearch: validateBibleSearchParams,
+    beforeLoad: ({ search }) => ensureSearchTranslation(search),
+    component,
+  });
+  const readerRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/$translation/$book/$chapter',
+    component: () => createElement('p', null, 'Reader'),
+  });
+  return createRouter({
+    routeTree: rootRoute.addChildren([searchRoute, readerRoute]),
+    history: createMemoryHistory({ initialEntries: [initial] }),
+  });
+}
+
+it('adds the current translation to a search link without losing its filters', async () => {
+  const key = 'margins:translation';
+  const previous = localStorage.getItem(key);
+  const dbClient = new DbClient();
+  const queryClient = new QueryClient();
+  try {
+    localStorage.setItem(key, 'eng_kjv');
+    const router = createSearchRouter(
+      () => null,
+      '/search?q=123&notes=true&order=oldest',
+    );
+    await router.load();
+    await vi.waitFor(() =>
+      expect(router.state.location.search).toMatchObject({
+        translation: 'eng_kjv',
+        q: '123',
+        notes: true,
+        order: 'oldest',
+      }),
+    );
+    expect(router.state.location.pathname).toBe('/search');
+  } finally {
+    if (previous === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, previous);
+    queryClient.clear();
+    await dbClient.cleanup();
+  }
+});
 
 it('shows one-line previews of the current user’s notes on matching verses', async () => {
   const translationId = `local-${crypto.randomUUID()}`;
@@ -105,17 +161,14 @@ it('shows one-line previews of the current user’s notes on matching verses', a
       syncError: null,
     }).isPersisted.promise;
 
-    const route = createRootRoute({
-      component: () =>
+    const router = createSearchRouter(
+      () =>
         createElement(BibleSearch, {
           initialTranslation: translationId,
           isActive: true,
         }),
-    });
-    const router = createRouter({
-      routeTree: route,
-      history: createMemoryHistory({ initialEntries: ['/'] }),
-    });
+      `/search?translation=${translationId}`,
+    );
     await router.load();
     flushSync(() =>
       root.render(
@@ -200,7 +253,7 @@ it('browses locally persisted notes and highlights together and filters search',
     await importTranslation(
       new File(
         [
-          '\\id GEN\n\\c 1\n\\v 1 First light.\n\\v 2 Second verse.\n\\v 3 Other light.',
+          '\\id GEN\n\\c 1\n\\v 1 First \\qs light\\qs*.\n\\v 2 Second verse.\n\\v 3 Other light.',
         ],
         'Bible.usfm',
       ),
@@ -257,11 +310,10 @@ it('browses locally persisted notes and highlights together and filters search',
         }),
       );
     }
-    const route = createRootRoute({ component: SearchHarness });
-    const router = createRouter({
-      routeTree: route,
-      history: createMemoryHistory({ initialEntries: ['/'] }),
-    });
+    const router = createSearchRouter(
+      SearchHarness,
+      `/search?translation=${translationId}`,
+    );
     await router.load();
     flushSync(() =>
       root.render(
@@ -286,11 +338,21 @@ it('browses locally persisted notes and highlights together and filters search',
     await userEvent.click(notesButton);
     await expect.element(notesButton).toHaveAttribute('aria-pressed', 'true');
     await expect.element(page.getByText('2 matching verses')).toBeVisible();
+    expect(router.state.location.search).toMatchObject({
+      translation: translationId,
+      notes: true,
+    });
     expect(container.querySelectorAll('ol li')).toHaveLength(2);
     await userEvent.click(
       page.getByRole('combobox', { name: 'Filter results by book' }),
     );
     await userEvent.click(page.getByRole('option', { name: 'New Testament' }));
+    await expect.element(page.getByText('No matching verses')).toBeVisible();
+    expect(router.state.location.search.book).toBe('new-testament');
+    router.history.back();
+    await expect.element(page.getByText('2 matching verses')).toBeVisible();
+    expect(router.state.location.search.book).toBeUndefined();
+    router.history.forward();
     await expect.element(page.getByText('No matching verses')).toBeVisible();
     await userEvent.click(
       page.getByRole('combobox', { name: 'Filter results by book' }),
@@ -341,18 +403,71 @@ it('browses locally persisted notes and highlights together and filters search',
     );
     await expect.element(page.getByText('2 matching verses')).toBeVisible();
     expect(container.querySelectorAll('ol li')).toHaveLength(2);
+    expect(router.state.location.search).toMatchObject({
+      translation: translationId,
+      q: 'light',
+      notes: true,
+      highlights: true,
+      order: 'oldest',
+    });
+    const firstResult = container.querySelector('ol li');
+    expect(firstResult?.textContent).toContain('First light.');
+    expect(firstResult?.textContent).not.toContain('\\qs');
+    expect(firstResult?.querySelector('mark')?.textContent).toBe('light');
     await userEvent.click(page.getByRole('button', { name: 'Pause search' }));
     await userEvent.click(page.getByRole('button', { name: 'Resume search' }));
-    await expect.element(notesButton).toHaveAttribute('aria-pressed', 'false');
+    await expect.element(notesButton).toHaveAttribute('aria-pressed', 'true');
     await expect
       .element(highlightsButton)
-      .toHaveAttribute('aria-pressed', 'false');
+      .toHaveAttribute('aria-pressed', 'true');
     await expect
       .element(page.getByRole('textbox', { name: 'Words or quoted phrase' }))
-      .toHaveValue('');
+      .toHaveValue('light');
     await expect
       .element(page.getByRole('combobox', { name: 'Annotation order' }))
-      .not.toBeInTheDocument();
+      .toBeInTheDocument();
+
+    const restoredRouter = createSearchRouter(
+      SearchHarness,
+      router.state.location.href,
+    );
+    await restoredRouter.load();
+    flushSync(() =>
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(
+            DbProvider,
+            { client: dbClient },
+            createElement(RouterProvider, { router: restoredRouter }),
+          ),
+        ),
+      ),
+    );
+    await expect
+      .element(page.getByRole('textbox', { name: 'Words or quoted phrase' }))
+      .toHaveValue('light');
+    await expect.element(notesButton).toHaveAttribute('aria-pressed', 'true');
+    await expect
+      .element(highlightsButton)
+      .toHaveAttribute('aria-pressed', 'true');
+    await expect.element(page.getByText('2 matching verses')).toBeVisible();
+    expect(container.querySelector('ol li')?.textContent).toContain('GEN 1:1');
+    await userEvent.click(
+      page.getByRole('button', { name: /GEN 1:1 First light/ }),
+    );
+    await expect
+      .element(page.getByText('Reader', { exact: true }))
+      .toBeVisible();
+    expect(restoredRouter.state.location.pathname).toBe(
+      `/${translationId}/GEN/1`,
+    );
+    restoredRouter.history.back();
+    await expect
+      .element(page.getByRole('textbox', { name: 'Words or quoted phrase' }))
+      .toHaveValue('light');
+    await expect.element(notesButton).toHaveAttribute('aria-pressed', 'true');
   } finally {
     flushSync(() => root.unmount());
     container.remove();
@@ -372,5 +487,104 @@ it('browses locally persisted notes and highlights together and filters search',
     queryClient.clear();
     await Promise.all([originalClient.cleanup(), dbClient.cleanup()]);
     await removeTranslation(translationId);
+  }
+});
+
+it('restores a search link, paginates, and updates the translation in the URL', async () => {
+  const translationId = `local-${crypto.randomUUID()}`;
+  const alternateId = `local-${crypto.randomUUID()}`;
+  const dbClient = new DbClient();
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root = createRoot(container);
+  try {
+    const source =
+      '\\id GEN\n\\c 1\n' +
+      Array.from(
+        { length: 60 },
+        (_, index) => `\\v ${index + 1} Light.\n`,
+      ).join('') +
+      '\\id EXO\n\\c 1\n\\v 1 Light.';
+    await importTranslation(
+      new File([source], 'Bible.usfm'),
+      'Original edition',
+      translationId,
+    );
+    await importTranslation(
+      new File([source], 'Bible.usfm'),
+      'Alternate edition',
+      alternateId,
+    );
+    const router = createSearchRouter(
+      () =>
+        createElement(BibleSearch, {
+          initialTranslation: alternateId,
+          isActive: true,
+        }),
+      `/search?translation=${translationId}&q=light&book=GEN&page=2`,
+    );
+    await router.load();
+    flushSync(() =>
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(
+            DbProvider,
+            { client: dbClient },
+            createElement(RouterProvider, { router }),
+          ),
+        ),
+      ),
+    );
+
+    await expect.element(page.getByText('60 matching verses')).toBeVisible();
+    await expect.element(page.getByText('Page 2 of 2')).toBeVisible();
+    expect(container.querySelector('ol li')?.textContent).toContain('GEN 1:51');
+    await userEvent.click(
+      page.getByRole('button', { name: 'Previous results' }),
+    );
+    await expect.element(page.getByText('Page 1 of 2')).toBeVisible();
+    expect(router.state.location.search.page).toBeUndefined();
+    await userEvent.click(page.getByRole('button', { name: 'Next results' }));
+    await expect.element(page.getByText('Page 2 of 2')).toBeVisible();
+    expect(router.state.location.search.page).toBe(2);
+    await userEvent.click(page.getByRole('combobox', { name: 'Translation' }));
+    await userEvent.click(
+      page.getByRole('option', { name: /Alternate edition/ }),
+    );
+    await expect.element(page.getByText('61 matching verses')).toBeVisible();
+    expect(router.state.location.search).toMatchObject({
+      translation: alternateId,
+      q: 'light',
+    });
+    expect(router.state.location.search.book).toBeUndefined();
+    expect(router.state.location.search.page).toBeUndefined();
+    router.history.back();
+    await expect.element(page.getByText('Page 2 of 2')).toBeVisible();
+    expect(router.state.location.search).toMatchObject({
+      translation: translationId,
+      book: 'GEN',
+      page: 2,
+    });
+    const input = page.getByRole('textbox', { name: 'Words or quoted phrase' });
+    await userEvent.fill(input, '');
+    await userEvent.type(input, 'light');
+    await expect.element(input).toHaveValue('light');
+    await expect.element(page.getByText('60 matching verses')).toBeVisible();
+    expect(router.state.location.search.q).toBe('light');
+    expect(router.state.location.search.page).toBeUndefined();
+  } finally {
+    flushSync(() => root.unmount());
+    container.remove();
+    queryClient.clear();
+    await dbClient.cleanup();
+    await Promise.all([
+      removeTranslation(translationId),
+      removeTranslation(alternateId),
+    ]);
   }
 });

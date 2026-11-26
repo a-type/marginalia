@@ -1,11 +1,12 @@
 import { useDbClient, useLiveQuery } from '@tanstack/react-db';
 import { useDebouncedValue } from '@tanstack/react-pacer';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { getRouteApi, useNavigate } from '@tanstack/react-router';
+import { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { getAnnotationCollections } from '../../lib/annotations/collections';
 import {
+  corpusVersion,
   getAnnotatedVerseIds,
   isMySearchAnnotation,
 } from '../../lib/bible/search';
@@ -18,31 +19,32 @@ import {
 } from '../../queries/translations';
 import { currentUserDidQueryOptions } from '../../queries/user';
 
+const searchRoute = getRouteApi('/search');
+
 function useBibleSearchState(
   initialTranslation: string,
-  isActive: boolean,
   onSelect?: () => void,
 ) {
-  const [translationId, setTranslationId] = useState(initialTranslation);
-  const [bookId, setBookId] = useState('all');
-  const [rawQuery, setRawQuery] = useState('');
+  const search = searchRoute.useSearch();
+  const navigate = useNavigate({ from: '/search' });
+  const translationId = search.translation ?? initialTranslation;
+  const bookId = search.book ?? 'all';
+  const rawQuery = search.q ?? '';
   const [query] = useDebouncedValue(rawQuery, { wait: 300 });
-  const [page, setPage] = useState(0);
-  const [myNotes, setMyNotes] = useState(false);
-  const [myHighlights, setMyHighlights] = useState(false);
-  const [annotationOrder, setAnnotationOrder] = useState<'oldest' | 'newest'>(
-    'newest',
-  );
-  useEffect(() => {
-    if (!isActive) return;
-    setTranslationId(initialTranslation);
-    setBookId('all');
-    setRawQuery('');
-    setPage(0);
-    setMyNotes(false);
-    setMyHighlights(false);
-    setAnnotationOrder('newest');
-  }, [initialTranslation, isActive]);
+  const page = (search.page ?? 1) - 1;
+  const myNotes = search.notes === true;
+  const myHighlights = search.highlights === true;
+  const annotationOrder = search.order ?? 'newest';
+  const updateSearch = (patch: Partial<typeof search>, replace = false) => {
+    void navigate({
+      replace,
+      search: (previous) => ({
+        ...previous,
+        translation: previous.translation ?? initialTranslation,
+        ...patch,
+      }),
+    });
+  };
 
   const dbClient = useDbClient();
   const annotations = getAnnotationCollections(dbClient).annotations;
@@ -85,7 +87,9 @@ function useBibleSearchState(
     (translation) => translation.id === translationId,
   );
   const ready =
-    record?.sourceStatus === 'ready' && record.searchStatus === 'ready';
+    record?.sourceStatus === 'ready' &&
+    record.searchStatus === 'ready' &&
+    record.corpusVersion === corpusVersion;
   const results = useQuery({
     ...bibleSearchQueryOptions(
       translationId,
@@ -104,7 +108,6 @@ function useBibleSearchState(
     networkMode: 'always',
     mutationFn: () => downloadTranslation(translationId),
   });
-  const navigate = useNavigate();
   const select = useMutation({
     networkMode: 'always',
     mutationFn: async (id: Parameters<typeof parseVerseId>[0]) => {
@@ -145,36 +148,31 @@ function useBibleSearchState(
     download,
     select,
     shown,
-    onTranslationChange: (id: string) => {
-      setTranslationId(id);
-      setBookId('all');
-      setPage(0);
-    },
-    onQueryChange: (value: string) => {
-      setRawQuery(value);
-      setPage(0);
-    },
+    onTranslationChange: (id: string) =>
+      updateSearch({ translation: id, book: undefined, page: undefined }),
+    onQueryChange: (value: string) =>
+      updateSearch({ q: value || undefined, page: undefined }, true),
     onBookChange: (value: string | null) => {
       if (!value) return;
-      setBookId(value);
-      setPage(0);
+      updateSearch({
+        book: value === 'all' ? undefined : value,
+        page: undefined,
+      });
     },
     myNotes,
     myAnnotations,
     myHighlights,
     annotationOrder,
-    onMyNotesChange: (value: boolean) => {
-      setMyNotes(value);
-      setPage(0);
-    },
-    onMyHighlightsChange: (value: boolean) => {
-      setMyHighlights(value);
-      setPage(0);
-    },
+    onMyNotesChange: (value: boolean) =>
+      updateSearch({ notes: value ? true : undefined, page: undefined }),
+    onMyHighlightsChange: (value: boolean) =>
+      updateSearch({ highlights: value ? true : undefined, page: undefined }),
     onAnnotationOrderChange: (value: string | null) => {
       if (value === 'oldest' || value === 'newest') {
-        setAnnotationOrder(value);
-        setPage(0);
+        updateSearch({
+          order: value === 'oldest' ? value : undefined,
+          page: undefined,
+        });
       }
     },
     annotationError:
@@ -184,8 +182,8 @@ function useBibleSearchState(
     searching: Boolean(query.trim()) || hasAnnotationFilter,
     onSelectVerse: (id: Parameters<typeof parseVerseId>[0]) =>
       select.mutate(id),
-    previousPage: () => setPage(page - 1),
-    nextPage: () => setPage(page + 1),
+    previousPage: () => updateSearch({ page: page > 1 ? page : undefined }),
+    nextPage: () => updateSearch({ page: page + 2 }),
   };
 }
 
@@ -195,16 +193,14 @@ const BibleSearchContext = createContext<ReturnType<
 
 export function BibleSearchProvider({
   initialTranslation,
-  isActive,
   onSelect,
   children,
 }: {
   initialTranslation: string;
-  isActive: boolean;
   onSelect?: () => void;
   children: ReactNode;
 }) {
-  const value = useBibleSearchState(initialTranslation, isActive, onSelect);
+  const value = useBibleSearchState(initialTranslation, onSelect);
   return (
     <BibleSearchContext.Provider value={value}>
       {children}

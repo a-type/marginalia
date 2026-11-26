@@ -116,6 +116,22 @@ created
     ]);
   });
 
+  it('keeps inline text without USFM markers, including unknown paired markers', () => {
+    const source = String.raw`\c 1
+\p \v 1 Before \qs Selah\qs* and \zcustom custom words\zcustom* after \w light|lemma="hidden"\w*.
+\v 2 No \+unmatched* markers.`;
+    const verses = extractVerses(source, 'GEN');
+    expect(verses.map((verse) => verse.text)).toEqual([
+      'Before Selah and custom words after light.',
+      'No markers.',
+    ]);
+    const tokens = tokenize(verses[0].text);
+    expect(matchesSearch(tokens, parseSearchQuery('"custom words"'))).toBe(
+      true,
+    );
+    expect(searchRanges(tokens, parseSearchQuery('light'))).toEqual([[36, 41]]);
+  });
+
   it('anchors bridges once and merges consecutive verse parts', () => {
     expect(
       extractVerses('\\c 1\n\\v 1-2 One.\n\\v 3a First\n\\v 3b second.', 'GEN'),

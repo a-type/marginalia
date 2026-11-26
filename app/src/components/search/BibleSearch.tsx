@@ -24,7 +24,6 @@ export function BibleSearch({
   return (
     <BibleSearchProvider
       initialTranslation={initialTranslation}
-      isActive={isActive}
       onSelect={onSelect}
     >
       <BibleSearchContent isActive={isActive} />

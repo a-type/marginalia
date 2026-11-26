@@ -67,6 +67,7 @@ const CHARACTER_MARKERS = new Set([
   'pn',
   'png',
   'qt',
+  'qs',
   'rq',
   'sig',
   'sls',

@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { defaultTranslationId } from './manifests';
+import { corpusVersion } from './search';
 
 const storage = vi.hoisted(() => ({
   listTranslations: vi.fn(),
@@ -40,6 +41,40 @@ it('does not automatically download WEB when no translation is installed', async
   expect(postMessage).not.toHaveBeenCalled();
 });
 
+it('rebuilds an outdated ready search corpus from stored translation source', async () => {
+  const postMessage = vi.fn();
+  vi.stubGlobal(
+    'Worker',
+    class {
+      postMessage = postMessage;
+    },
+  );
+  vi.stubGlobal('window', {
+    location: { pathname: '/' },
+    addEventListener: vi.fn(),
+  });
+  storage.listTranslations.mockResolvedValue([
+    {
+      id: 'local-test',
+      origin: 'import',
+      sourceStatus: 'ready',
+      searchStatus: 'ready',
+      corpusVersion: corpusVersion - 1,
+    },
+  ]);
+  const { startTranslationService } = await import('./translation-jobs');
+  startTranslationService();
+  await vi.waitFor(() =>
+    expect(postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'install',
+        translationId: 'local-test',
+        explicit: false,
+      }),
+    ),
+  );
+});
+
 it.each([
   ['downloading', 'queued', 1, 2],
   ['ready', 'preparing', 1, 2],
@@ -66,6 +101,7 @@ it.each([
         origin: 'remote',
         sourceStatus,
         searchStatus,
+        corpusVersion,
         owner: 'previous-worker',
         leaseUntil: Date.now() + 30_000,
       },

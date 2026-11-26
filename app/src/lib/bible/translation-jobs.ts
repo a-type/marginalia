@@ -1,12 +1,13 @@
 import { AppError } from '../error';
 import type { TranslationManifest } from './manifests';
-import type { SearchVerse } from './search';
+import { corpusVersion, type SearchVerse } from './search';
 import type { VerseId } from './verse';
 import {
   cancelTranslation,
   deleteTranslation,
   listTranslations,
 } from './translations';
+import type { StoredTranslation } from './translations';
 
 export type TranslationCommand =
   | {
@@ -140,6 +141,15 @@ export async function removeTranslation(translationId: string) {
 }
 
 let started = false;
+function needsTranslationWork(record: StoredTranslation) {
+  return (
+    record.sourceStatus !== 'paused' &&
+    (record.sourceStatus !== 'ready' ||
+      record.searchStatus !== 'ready' ||
+      record.corpusVersion !== corpusVersion)
+  );
+}
+
 export function startTranslationService() {
   if (started || typeof window === 'undefined') return;
   getWorker();
@@ -150,10 +160,7 @@ export function startTranslationService() {
     try {
       const records = await listTranslations();
       const leasedJobs = records.filter(
-        (record) =>
-          record.owner &&
-          record.sourceStatus !== 'paused' &&
-          (record.sourceStatus !== 'ready' || record.searchStatus !== 'ready'),
+        (record) => record.owner && needsTranslationWork(record),
       );
       if (leasedJobs.length) {
         recoveryTimer = setTimeout(
@@ -174,10 +181,7 @@ export function startTranslationService() {
           (!record.owner || (record.leaseUntil ?? 0) < Date.now())
         ) {
           await deleteTranslation(record.id, false);
-        } else if (
-          record.sourceStatus !== 'paused' &&
-          (record.sourceStatus !== 'ready' || record.searchStatus !== 'ready')
-        ) {
+        } else if (needsTranslationWork(record)) {
           void downloadTranslation(record.id, false, priorityBook).catch(
             () => {},
           );

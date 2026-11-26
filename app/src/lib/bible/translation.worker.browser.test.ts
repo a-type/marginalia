@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import { builtinTranslations } from './manifests';
+import { corpusVersion } from './search';
 import type {
   SearchResult,
   WorkerRequest,
@@ -59,6 +60,7 @@ it('imports, prepares and searches persisted verses in a fresh worker without ra
   const request = <TResult>(
     command:
       | Omit<Extract<WorkerRequest, { action: 'import' }>, 'requestId'>
+      | Omit<Extract<WorkerRequest, { action: 'install' }>, 'requestId'>
       | Omit<Extract<WorkerRequest, { action: 'search' }>, 'requestId'>,
   ) =>
     new Promise<TResult>((resolve, reject) => {
@@ -79,7 +81,7 @@ it('imports, prepares and searches persisted verses in a fresh worker without ra
       title: 'Partial edition',
       file: new File(
         [
-          '\\id GEN\n\\c 1\n\\v 1 The light shines.\n\\v 2 Truly, truly.\n' +
+          '\\id GEN\n\\c 1\n\\v 1 The \\qs light\\qs* shines.\n\\v 2 Truly, truly.\n' +
             Array.from({ length: 58 }, (_, i) => `\\v ${i + 3} Extra.\n`).join(
               '',
             ) +
@@ -90,6 +92,40 @@ it('imports, prepares and searches persisted verses in a fresh worker without ra
     });
     expect((await getTranslation(translationId))?.searchStatus).toBe('ready');
     const db = await translationDatabase();
+    const record = await db.get('translations', translationId);
+    const prepared = await db.get('prepared', [translationId, 'GEN']);
+    if (!record || !prepared) throw new Error('Missing prepared translation');
+    await db.put('translations', {
+      ...record,
+      corpusVersion: corpusVersion - 1,
+    });
+    await db.put('prepared', {
+      ...prepared,
+      version: corpusVersion - 1,
+      verses: prepared.verses.map((verse) =>
+        verse.id === 'GEN/1:1'
+          ? { ...verse, text: 'The \\qs* shines.' }
+          : verse,
+      ),
+    });
+    await expect(
+      request({ action: 'search', translationId, query: 'light', page: 0 }),
+    ).rejects.toThrow('not ready');
+    await request({ action: 'install', translationId, explicit: false });
+    expect((await getTranslation(translationId))?.corpusVersion).toBe(
+      corpusVersion,
+    );
+    const rebuilt = await request<SearchResult>({
+      action: 'search',
+      translationId,
+      query: 'light',
+      page: 0,
+    });
+    expect(rebuilt.verses[0]).toMatchObject({
+      id: 'GEN/1:1',
+      text: 'The light shines.',
+      ranges: [[4, 9]],
+    });
     await db.delete('books', [translationId, 'GEN']);
     await db.delete('books', [translationId, 'REV']);
     worker.terminate();
