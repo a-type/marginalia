@@ -1,6 +1,7 @@
 import { AppError } from '../error';
 import type { TranslationManifest } from './manifests';
 import type { SearchVerse } from './search';
+import type { VerseId } from './verse';
 import {
   cancelTranslation,
   deleteTranslation,
@@ -23,6 +24,7 @@ export type TranslationCommand =
       query: string;
       page: number;
       bookId?: string;
+      verseIds?: VerseId[];
     }
   | { action: 'cancelSearch'; requestId: number };
 export type WorkerRequest = TranslationCommand & { requestId: number };
@@ -120,9 +122,10 @@ export const searchTranslation = (
   page: number,
   signal?: AbortSignal,
   bookId?: string,
+  verseIds?: VerseId[],
 ) =>
   translationRequest<SearchResult>(
-    { action: 'search', translationId, query, page, bookId },
+    { action: 'search', translationId, query, page, bookId, verseIds },
     signal,
   );
 

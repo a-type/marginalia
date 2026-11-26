@@ -1,6 +1,8 @@
 import { parseUSFMCached } from '../../components/usfm/parser';
 import type { USFMNode } from '../../components/usfm/types';
+import type { AnnotationRecord } from '../annotations/collections';
 import { AppError } from '../error';
+import type { HighlightRecord } from '../highlights/collections';
 import type { VerseId } from './verse';
 import { formatVerseId, parseVerseLabel } from './verse';
 
@@ -20,6 +22,56 @@ export interface SearchToken {
 
 export interface SearchQuery {
   clauses: string[][];
+}
+
+export function isMySearchAnnotation(
+  authorDid: string | null,
+  accountDid: string | null,
+): boolean {
+  return (
+    authorDid === null || (accountDid !== null && authorDid === accountDid)
+  );
+}
+
+export function getAnnotatedVerseIds(
+  annotations: readonly AnnotationRecord[],
+  highlights: readonly HighlightRecord[],
+  accountDid: string | null,
+  order: 'oldest' | 'newest',
+): VerseId[] {
+  const dates = new Map<VerseId, number>();
+  const add = (id: VerseId, createdAt: string) => {
+    const time = Date.parse(createdAt);
+    if (!Number.isFinite(time)) throw new Error('Invalid annotation date');
+    const previous = dates.get(id);
+    if (
+      previous === undefined ||
+      (order === 'oldest' ? time < previous : time > previous)
+    ) {
+      dates.set(id, time);
+    }
+  };
+  for (const annotation of annotations) {
+    if (isMySearchAnnotation(annotation.authorDid, accountDid)) {
+      for (const id of annotation.verses) add(id, annotation.createdAt);
+    }
+  }
+  for (const highlight of highlights) {
+    if (
+      isMySearchAnnotation(highlight.authorDid, accountDid) &&
+      highlight.status !== 'deleting' &&
+      highlight.status !== 'deleted'
+    ) {
+      add(highlight.verseId, highlight.createdAt);
+    }
+  }
+  return [...dates.entries()]
+    .sort(
+      ([leftId, left], [rightId, right]) =>
+        (order === 'oldest' ? left - right : right - left) ||
+        leftId.localeCompare(rightId),
+    )
+    .map(([id]) => id);
 }
 
 export type BibleSearchBookFilter =

@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { queryOptions } from '@tanstack/react-query';
 import { fetchBibleCatalog } from '../lib/bible/fetch-bible';
 import { extractVerses } from '../lib/bible/search';
+import type { VerseId } from '../lib/bible/verse';
 import {
   fetchTranslationManifest,
   fetchTranslationSource,
@@ -83,11 +84,12 @@ export const bibleSearchQueryOptions = (
   query: string,
   page: number,
   bookId?: string,
+  verseIds?: VerseId[],
 ) =>
   queryOptions({
-    queryKey: ['bible-search', translationId, query, bookId, page],
+    queryKey: ['bible-search', translationId, query, bookId, page, verseIds],
     queryFn: ({ signal }) =>
-      searchTranslation(translationId, query, page, signal, bookId),
+      searchTranslation(translationId, query, page, signal, bookId, verseIds),
     networkMode: 'always',
     retry: false,
     gcTime: 0,

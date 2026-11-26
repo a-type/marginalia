@@ -11,6 +11,7 @@ import {
   getTranslation,
   translationDatabase,
 } from './translations';
+import { formatVerseId } from './verse';
 
 it.each(builtinTranslations)(
   'downloads and prepares $id from bundled metadata',
@@ -78,7 +79,11 @@ it('imports, prepares and searches persisted verses in a fresh worker without ra
       title: 'Partial edition',
       file: new File(
         [
-          '\\id GEN\n\\c 1\n\\v 1 The light shines.\n\\v 2 Truly, truly.\n\\id REV\n\\c 1\n\\v 1 The light remains.',
+          '\\id GEN\n\\c 1\n\\v 1 The light shines.\n\\v 2 Truly, truly.\n' +
+            Array.from({ length: 58 }, (_, i) => `\\v ${i + 3} Extra.\n`).join(
+              '',
+            ) +
+            '\\id REV\n\\c 1\n\\v 1 The light remains.',
         ],
         'Bible.usfm',
       ),
@@ -110,6 +115,59 @@ it('imports, prepares and searches persisted verses in a fresh worker without ra
     });
     expect(genesisResults.total).toBe(1);
     expect(genesisResults.verses.map((verse) => verse.id)).toEqual(['GEN/1:1']);
+    const annotated = await request<SearchResult>({
+      action: 'search',
+      translationId,
+      query: '',
+      page: 0,
+      verseIds: ['REV/1:1', 'GEN/1:2', 'GEN/1:1'],
+    });
+    expect(annotated.verses.map((verse) => verse.id)).toEqual([
+      'REV/1:1',
+      'GEN/1:2',
+      'GEN/1:1',
+    ]);
+    expect(annotated.verses.every((verse) => verse.ranges.length === 0)).toBe(
+      true,
+    );
+    const filtered = await request<SearchResult>({
+      action: 'search',
+      translationId,
+      query: 'light',
+      page: 0,
+      bookId: 'GEN',
+      verseIds: ['REV/1:1', 'GEN/1:2', 'GEN/1:1'],
+    });
+    expect(filtered.verses.map((verse) => verse.id)).toEqual(['GEN/1:1']);
+    const noAnnotations = await request<SearchResult>({
+      action: 'search',
+      translationId,
+      query: '',
+      page: 0,
+      verseIds: [],
+    });
+    expect(noAnnotations.total).toBe(0);
+    const noFilter = await request<SearchResult>({
+      action: 'search',
+      translationId,
+      query: '',
+      page: 0,
+    });
+    expect(noFilter.total).toBe(0);
+    const orderedIds = Array.from({ length: 60 }, (_, i) =>
+      formatVerseId('GEN', 1, 60 - i),
+    );
+    const secondPage = await request<SearchResult>({
+      action: 'search',
+      translationId,
+      query: '',
+      page: 1,
+      verseIds: orderedIds,
+    });
+    expect(secondPage.total).toBe(60);
+    expect(secondPage.verses.map((verse) => verse.id)).toEqual(
+      orderedIds.slice(50),
+    );
     await db.delete('prepared', [translationId, 'GEN']);
     await db.delete('prepared', [translationId, 'REV']);
     const warm = await request<SearchResult>({

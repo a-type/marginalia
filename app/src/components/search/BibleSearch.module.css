@@ -20,14 +20,13 @@
 .actionBar {
   display: flex;
   align-items: stretch;
+  flex-wrap: wrap;
   gap: var(--m-sp-sm);
   min-width: 0;
   width: 100%;
 }
-.actionBar > div {
-  flex: 1 1 auto;
-  min-width: 0;
-  width: 100%;
+.actionBar > button {
+  flex: 0 0 auto;
 }
 .searchInput {
   width: 100%;
@@ -72,6 +71,16 @@
 .result mark {
   color: inherit;
   background: var(--m-accent-light);
+}
+.notePreview {
+  min-width: 0;
+  max-width: 100%;
+}
+.noteText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .pagination {
   display: flex;

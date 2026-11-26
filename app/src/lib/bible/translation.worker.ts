@@ -312,7 +312,11 @@ async function search(
     const matches: CachedVerse[] = [];
     for (const book of current.books) {
       for (let index = 0; index < book.length; index++) {
-        if (matchesSearch(book[index].tokens, query)) matches.push(book[index]);
+        if (
+          request.query.trim() === '' ||
+          matchesSearch(book[index].tokens, query)
+        )
+          matches.push(book[index]);
         if (index && index % 500 === 0) {
           await yieldTask();
           check();
@@ -332,13 +336,23 @@ async function search(
     latest.searchStatus !== 'ready'
   )
     throw new DOMException('Translation changed', 'AbortError');
-  const matches = request.bookId
+  let matches = request.bookId
     ? (current.matches ?? []).filter(({ verse }) =>
         searchBookIds
           ? searchBookIds.some((bookId) => verse.id.startsWith(`${bookId}/`))
           : verse.id.startsWith(`${request.bookId}/`),
       )
     : (current.matches ?? []);
+  if (!request.verseIds && request.query.trim() === '') matches = [];
+  if (request.verseIds) {
+    const positions = new Map(request.verseIds.map((id, index) => [id, index]));
+    matches = matches
+      .filter(({ verse }) => positions.has(verse.id))
+      .sort(
+        (left, right) =>
+          positions.get(left.verse.id)! - positions.get(right.verse.id)!,
+      );
+  }
   const start = Math.max(0, Math.floor(request.page)) * 50;
   return {
     total: matches.length,

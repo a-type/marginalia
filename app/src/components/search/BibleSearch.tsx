@@ -1,18 +1,16 @@
 import { m } from '#/paraglide/messages';
-import { Button, Icon, Input } from '@a-type/ui';
-import { useDebouncedValue } from '@tanstack/react-pacer';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
-import { useEffect, useRef, useState } from 'react';
-import { downloadTranslation } from '../../lib/bible/translation-jobs';
+import { Box, Button, Icon, Input } from '@a-type/ui';
+import { useEffect, useRef } from 'react';
+import type { AnnotationRecord } from '../../lib/annotations/collections';
+import type { VerseId } from '../../lib/bible/verse';
 import { parseVerseId } from '../../lib/bible/verse';
-import {
-  bibleSearchQueryOptions,
-  translationsQueryOptions,
-} from '../../queries/translations';
-import { TranslationSelect } from '../bible/TranslationSelect';
 import cls from './BibleSearch.module.css';
+import { BibleSearchAnnotationOrderSelect } from './BibleSearchAnnotationOrderSelect';
 import { BibleSearchBookFilterSelect } from './BibleSearchBookFilterSelect';
+import { BibleSearchProvider, useBibleSearch } from './BibleSearchContext';
+import { BibleSearchHighlightsFilter } from './BibleSearchHighlightsFilter';
+import { BibleSearchNotesFilter } from './BibleSearchNotesFilter';
+import { BibleSearchTranslationFilter } from './BibleSearchTranslationFilter';
 
 export function BibleSearch({
   initialTranslation,
@@ -23,10 +21,20 @@ export function BibleSearch({
   isActive: boolean;
   onSelect?: () => void;
 }) {
+  return (
+    <BibleSearchProvider
+      initialTranslation={initialTranslation}
+      isActive={isActive}
+      onSelect={onSelect}
+    >
+      <BibleSearchContent isActive={isActive} />
+    </BibleSearchProvider>
+  );
+}
+
+function BibleSearchContent({ isActive }: { isActive: boolean }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const {
-    translationId,
-    bookId,
     rawQuery,
     query,
     page,
@@ -37,13 +45,13 @@ export function BibleSearch({
     download,
     select,
     shown,
-    onTranslationChange,
     onQueryChange,
-    onBookChange,
-    onSelectVerse,
+    annotationError,
+    annotationsReady,
+    searching,
     previousPage,
     nextPage,
-  } = useBibleSearch(initialTranslation, isActive, onSelect);
+  } = useBibleSearch();
 
   useEffect(() => {
     if (isActive)
@@ -54,7 +62,7 @@ export function BibleSearch({
 
   return (
     <div className={cls.root} ref={rootRef}>
-      <h2 className={cls.heading}>{m.bible_search_title()}</h2>
+      <h2 className="sr-only">{m.bible_search_title()}</h2>
       <Input
         aria-label={m.bible_search_input()}
         placeholder={m.bible_search_input()}
@@ -68,18 +76,11 @@ export function BibleSearch({
           role="group"
           aria-label={m.bible_search_filters()}
         >
-          <TranslationSelect
-            value={translationId}
-            installedOnly
-            onValueChange={(v) => v && onTranslationChange(v)}
-            size="small"
-          />
-          <BibleSearchBookFilterSelect
-            books={record.manifest.books}
-            value={bookId}
-            onValueChange={onBookChange}
-            size="small"
-          />
+          <BibleSearchTranslationFilter />
+          <BibleSearchBookFilterSelect />
+          <BibleSearchHighlightsFilter />
+          <BibleSearchNotesFilter />
+          <BibleSearchAnnotationOrderSelect />
         </div>
       )}
       {!record && (
@@ -136,8 +137,14 @@ export function BibleSearch({
             m.translation_storage_error()}
         </p>
       )}
+      {annotationError && (
+        <p role="alert">{m.bible_search_annotations_error()}</p>
+      )}
       <div role="status" aria-live="polite">
-        {ready && query.trim() && (results.isFetching || rawQuery !== query)
+        {ready &&
+        searching &&
+        !annotationError &&
+        (!annotationsReady || results.isFetching || rawQuery !== query)
           ? m.bible_search_loading()
           : shown
             ? shown.total
@@ -145,12 +152,7 @@ export function BibleSearch({
               : m.bible_search_empty()
             : ''}
       </div>
-      <BibleSearchResults
-        shown={shown}
-        books={record?.manifest.books ?? []}
-        isSelecting={select.isPending}
-        onSelect={onSelectVerse}
-      />
+      <BibleSearchResults />
       {shown && shown.total > 50 && (
         <nav className={cls.pagination} aria-label={m.bible_search_title()}>
           <Button
@@ -181,116 +183,18 @@ export function BibleSearch({
   );
 }
 
-function useBibleSearch(
-  initialTranslation: string,
-  isActive: boolean,
-  onSelect?: () => void,
-) {
-  const [translationId, setTranslationId] = useState(initialTranslation);
-  const [bookId, setBookId] = useState('all');
-  const [rawQuery, setRawQuery] = useState('');
-  const [query] = useDebouncedValue(rawQuery, { wait: 300 });
-  const [page, setPage] = useState(0);
-  useEffect(() => {
-    if (!isActive) return;
-    setTranslationId(initialTranslation);
-    setBookId('all');
-    setRawQuery('');
-    setPage(0);
-  }, [initialTranslation, isActive]);
-
-  const translations = useQuery(translationsQueryOptions);
-  const record = translations.data?.find(
-    (translation) => translation.id === translationId,
-  );
-  const ready =
-    record?.sourceStatus === 'ready' && record.searchStatus === 'ready';
-  const results = useQuery({
-    ...bibleSearchQueryOptions(
-      translationId,
-      query,
-      page,
-      bookId === 'all' ? undefined : bookId,
-    ),
-    enabled: ready && Boolean(query.trim()) && rawQuery === query,
-  });
-  const download = useMutation({
-    networkMode: 'always',
-    mutationFn: () => downloadTranslation(translationId),
-  });
-  const navigate = useNavigate();
-  const select = useMutation({
-    networkMode: 'always',
-    mutationFn: async (id: Parameters<typeof parseVerseId>[0]) => {
-      const verse = parseVerseId(id);
-      await navigate({
-        to: '/$translation/$book/$chapter',
-        params: {
-          translation: translationId,
-          book: verse.bookId,
-          chapter: String(verse.chapter),
-        },
-        search: { verses: id },
-        hash: `verse-${id}`,
-        hashScrollIntoView: { block: 'start', behavior: 'instant' },
-      });
-      onSelect?.();
-    },
-  });
-  const shown =
-    ready && rawQuery === query && !results.isFetching
-      ? results.data
-      : undefined;
-  const onTranslationChange = (id: string) => {
-    setTranslationId(id);
-    setBookId('all');
-    setPage(0);
-  };
-  const onQueryChange = (value: string) => {
-    setRawQuery(value);
-    setPage(0);
-  };
-  const onBookChange = (value: string | null) => {
-    if (!value) return;
-    setBookId(value);
-    setPage(0);
-  };
-  return {
-    translationId,
-    bookId,
-    rawQuery,
-    query,
-    page,
-    translations,
-    record,
-    ready,
-    results,
-    download,
-    select,
-    shown,
-    onTranslationChange,
-    onQueryChange,
-    onBookChange,
-    onSelectVerse: (id: Parameters<typeof parseVerseId>[0]) =>
-      select.mutate(id),
-    previousPage: () => setPage(page - 1),
-    nextPage: () => setPage(page + 1),
-  };
-}
-
-function BibleSearchResults({
-  shown,
-  books,
-  isSelecting,
-  onSelect,
-}: {
-  shown: ReturnType<typeof useBibleSearch>['shown'];
-  books: NonNullable<
-    ReturnType<typeof useBibleSearch>['record']
-  >['manifest']['books'];
-  isSelecting: boolean;
-  onSelect: (id: Parameters<typeof parseVerseId>[0]) => void;
-}) {
+function BibleSearchResults() {
+  const { shown, record, select, onSelectVerse, myAnnotations } =
+    useBibleSearch();
+  const books = record?.manifest.books ?? [];
+  const notesByVerse = new Map<VerseId, AnnotationRecord[]>();
+  for (const note of myAnnotations) {
+    for (const id of note.verses) {
+      const notes = notesByVerse.get(id) ?? [];
+      notes.push(note);
+      notesByVerse.set(id, notes);
+    }
+  }
   return (
     <ol className={cls.results}>
       {shown?.verses.map((verse) => {
@@ -313,13 +217,25 @@ function BibleSearchResults({
             <button
               type="button"
               className={cls.result}
-              disabled={isSelecting}
-              onClick={() => onSelect(verse.id)}
+              disabled={select.isPending}
+              onClick={() => onSelectVerse(verse.id)}
             >
               <strong>
                 {title} {location.chapter}:{verse.label}
               </strong>
               <span>{parts}</span>
+              {notesByVerse.get(verse.id)?.map((note) => (
+                <Box
+                  key={note.id}
+                  render={<span />}
+                  surface
+                  border
+                  p="sm"
+                  className={cls.notePreview}
+                >
+                  <span className={cls.noteText}>{note.comment}</span>
+                </Box>
+              ))}
             </button>
           </li>
         );

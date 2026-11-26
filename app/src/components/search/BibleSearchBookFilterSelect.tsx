@@ -4,8 +4,9 @@ import {
   type BibleSearchBookFilter,
 } from '#/lib/bible/search';
 import { m } from '#/paraglide/messages';
-import { Select, type SelectProps, type SelectTriggerProps } from '@a-type/ui';
+import { Select } from '@a-type/ui';
 import cls from './BibleSearchBookFilterSelect.module.css';
+import { useBibleSearch } from './BibleSearchContext';
 
 function getBibleSearchBookFilterLabel(filter: BibleSearchBookFilter) {
   switch (filter) {
@@ -20,29 +21,22 @@ function getBibleSearchBookFilterLabel(filter: BibleSearchBookFilter) {
   }
 }
 
-export function BibleSearchBookFilterSelect({
-  value,
-  books,
-  onValueChange,
-  size,
-  ...props
-}: SelectProps & {
-  books: Array<{ id: string; title: string }>;
-  size?: SelectTriggerProps['size'];
-}) {
+export function BibleSearchBookFilterSelect() {
+  const { bookId, onBookChange, record } = useBibleSearch();
+  const books = record?.manifest.books ?? [];
   return (
-    <Select {...props} value={value} onValueChange={onValueChange}>
+    <Select value={bookId} onValueChange={onBookChange}>
       <Select.Trigger
         className={cls.bookFilter}
         aria-label={m.bible_search_filter_book()}
-        size={size}
+        size="small"
       >
         <span>
-          {!value || value === 'all'
+          {bookId === 'all'
             ? m.bible_search_all_books()
-            : isBibleSearchBookFilter(value)
-              ? getBibleSearchBookFilterLabel(value)
-              : books.find((book) => book.id === value)?.title}
+            : isBibleSearchBookFilter(bookId)
+              ? getBibleSearchBookFilterLabel(bookId)
+              : books.find((book) => book.id === bookId)?.title}
         </span>
         <Select.Icon />
       </Select.Trigger>

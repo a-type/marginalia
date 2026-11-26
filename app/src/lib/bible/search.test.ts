@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getAnnotatedVerseIds,
   getBibleSearchBookIds,
   extractVerses,
   isBibleSearchBookFilter,
@@ -8,8 +9,78 @@ import {
   searchRanges,
   tokenize,
 } from './search';
+import type { AnnotationRecord } from '../annotations/collections';
+import type { HighlightRecord } from '../highlights/collections';
 
 describe('Bible search', () => {
+  it('combines only the active user and local annotations, ordered by creation time', () => {
+    const note = (
+      authorDid: string | null,
+      createdAt: string,
+      verses: AnnotationRecord['verses'],
+    ): AnnotationRecord => ({
+      id: createdAt,
+      rkey: createdAt,
+      uri: null,
+      cid: null,
+      authorDid,
+      bookId: 'GEN',
+      chapter: 1,
+      chapterKeys: ['GEN/1'],
+      verses,
+      comment: 'note',
+      createdAt,
+      status: 'pending',
+      syncError: null,
+    });
+    const highlight = (
+      authorDid: string | null,
+      createdAt: string,
+      verseId: HighlightRecord['verseId'],
+      status: HighlightRecord['status'] = 'synced',
+    ): HighlightRecord => ({
+      id: createdAt,
+      rkey: createdAt,
+      uri: null,
+      cid: null,
+      authorDid,
+      verseId,
+      bookId: 'GEN',
+      chapter: 1,
+      verse: 1,
+      color: 'lemon',
+      createdAt,
+      status,
+      syncError: null,
+    });
+    const notes = [
+      note('me', '2020-01-01T00:00:00Z', ['GEN/1:1', 'GEN/1:2']),
+      note('other', '2018-01-01T00:00:00Z', ['GEN/1:3']),
+      note(null, '2022-01-01T00:00:00Z', ['GEN/1:4']),
+    ];
+    const highlights = [
+      highlight('me', '2023-01-01T00:00:00Z', 'GEN/1:1'),
+      highlight('me', '2019-01-01T00:00:00Z', 'GEN/1:5', 'deleting'),
+      highlight('other', '2024-01-01T00:00:00Z', 'GEN/1:6'),
+    ];
+    expect(getAnnotatedVerseIds(notes, highlights, 'me', 'newest')).toEqual([
+      'GEN/1:1',
+      'GEN/1:4',
+      'GEN/1:2',
+    ]);
+    expect(getAnnotatedVerseIds(notes, highlights, 'me', 'oldest')).toEqual([
+      'GEN/1:1',
+      'GEN/1:2',
+      'GEN/1:4',
+    ]);
+    expect(getAnnotatedVerseIds(notes, [], null, 'newest')).toEqual([
+      'GEN/1:4',
+    ]);
+    expect(getAnnotatedVerseIds([], highlights, 'me', 'newest')).toEqual([
+      'GEN/1:1',
+    ]);
+  });
+
   it('defines the four named Bible corpus filters', () => {
     expect(isBibleSearchBookFilter('gospels')).toBe(true);
     expect(isBibleSearchBookFilter('GEN')).toBe(false);
